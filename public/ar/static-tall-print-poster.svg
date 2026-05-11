@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1800" role="img" aria-label="Static tall orange abstract wall print">
+  <rect width="900" height="1800" fill="#f3eee4"/>
+  <rect x="72" y="72" width="756" height="1656" rx="8" fill="#fff9ed" stroke="#1b1a18" stroke-width="14"/>
+  <circle cx="278" cy="455" r="170" fill="#d87743"/>
+  <path d="M168 1004c156-268 373-334 564-194v612H168z" fill="#244e56"/>
+  <path d="M178 1190c170-142 326-148 542-42" fill="none" stroke="#f3c65f" stroke-width="34" stroke-linecap="round"/>
+  <path d="M570 222c-64 188-49 346 46 474" fill="none" stroke="#1b1a18" stroke-width="28" stroke-linecap="round"/>
+  <rect x="237" y="1490" width="426" height="34" fill="#d87743"/>
+</svg>
