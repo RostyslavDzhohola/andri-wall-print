@@ -6,7 +6,7 @@ What: Validate the checked-in 45 x 90 cm GLB/USDZ sample from the homepage on iP
 
 Why: Real wall placement is the first blocking milestone. Browser rendering alone does not prove the AR promise.
 
-Context: Use the homepage native AR sample, Vercel preview URL by default, or the local HTTPS tunnel fallback in `docs/local-https-ar-testing.md`.
+Context: Use the homepage on the Vercel production URL. The old browser-camera overlay has been removed; this should be judged only by native AR placement on a phone.
 
 Depends on / blocked by: Manual access to target phones and a wall where physical scale can be judged.
 
@@ -16,7 +16,7 @@ What: Let a user-provided wall-art image become platform AR assets after the sta
 
 Why: The open-source promise is "turn any wall-art image into AR," but the first slice deliberately uses one checked-in static sample so wall placement can be validated first.
 
-Context: Start from the accepted static architecture: a generated tall 1:2 flat print, fixed physical size, checked-in GLB/USDZ assets, model-viewer on the AR homepage, and real-device validation through a local HTTPS tunnel. After that works, decide whether image-to-GLB/USDZ generation should happen client-side, server-side, or at build time.
+Context: Start from the static homepage demo: a generated tall 1:2 flat print, fixed physical size, checked-in GLB/USDZ assets, and real-device validation from the Vercel production URL. After that works, decide whether image-to-GLB/USDZ generation should happen client-side, server-side, or at build time.
 
 Depends on / blocked by: Static GLB/USDZ sample must pass the iPhone and Android wall-placement gate.
 
@@ -36,6 +36,6 @@ What: Document tested devices, browsers, AR mode used, placement quality, known 
 
 Why: WebAR behavior differs across iPhone Safari, Android Chrome, desktop browsers, and unsupported devices. The project needs durable device knowledge once testing produces real results.
 
-Context: The first implementation should include lightweight support and fallback UI only. After real-device testing, turn those results into a README support matrix for open-source users and contributors.
+Context: Keep the demo narrow until real-device testing proves what works. After real-device testing, turn those results into a README support matrix for open-source users and contributors.
 
 Depends on / blocked by: Real iPhone and Android testing must produce enough results to document honestly.

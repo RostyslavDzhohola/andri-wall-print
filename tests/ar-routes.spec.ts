@@ -3,20 +3,16 @@ import { expect, test } from "@playwright/test";
 test("homepage renders the native AR sample", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /Preview one real-size wall print/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Place this print on your wall/i })).toBeVisible();
   await expect(page.locator("model-viewer")).toHaveAttribute("src", "/ar/static-tall-print.glb");
   await expect(page.locator("model-viewer")).toHaveAttribute("ios-src", "/ar/static-tall-print.usdz");
-  await expect(page.getByTestId("open-ar-sample")).toHaveAttribute(
-    "href",
-    "/ar/static-tall-print.usdz"
-  );
+  await expect(page.getByTestId("place-print-button")).toBeAttached();
+  await expect(page.getByText("Camera not started")).toHaveCount(0);
+  await expect(page.getByText("Picture mode")).toHaveCount(0);
 });
 
-test("picture mode fallback is available from the homepage", async ({ page }) => {
-  await page.goto("/");
-  await page.getByTestId("header-picture-mode-link").click();
+test("old picture mode route is removed", async ({ page }) => {
+  const response = await page.goto("/picture-mode");
 
-  await expect(page).toHaveURL(/\/picture-mode$/);
-  await expect(page.getByRole("heading", { name: "Preview Picture" })).toBeVisible();
-  await expect(page.getByText(/scan a wall, tap to place/i)).toBeVisible();
+  expect(response?.status()).toBe(404);
 });

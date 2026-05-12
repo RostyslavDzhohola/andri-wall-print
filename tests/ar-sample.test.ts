@@ -24,10 +24,6 @@ describe("AR_SAMPLE", () => {
     }
   });
 
-  it("keeps the browser fallback on a separate route", () => {
-    expect(AR_SAMPLE.fallbackHref).toBe("/picture-mode");
-  });
-
   it("formats meters for user-facing fixed-size copy", () => {
     expect(formatMeters(AR_SAMPLE.print.widthMeters)).toBe("45 cm");
     expect(formatMeters(AR_SAMPLE.print.heightMeters)).toBe("90 cm");

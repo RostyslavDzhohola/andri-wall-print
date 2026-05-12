@@ -15,7 +15,6 @@ export type ArSample = {
     usdz: ArAssetPath;
     poster: ArAssetPath;
   };
-  fallbackHref: ArAssetPath;
 };
 
 export const AR_SAMPLE: ArSample = {
@@ -32,8 +31,7 @@ export const AR_SAMPLE: ArSample = {
     glb: "/ar/static-tall-print.glb",
     usdz: "/ar/static-tall-print.usdz",
     poster: "/ar/static-tall-print-poster.svg"
-  },
-  fallbackHref: "/picture-mode"
+  }
 };
 
 export function formatMeters(value: number) {
