@@ -18,9 +18,9 @@ export type ArSample = {
 };
 
 export const AR_SAMPLE: ArSample = {
-  id: "static-tall-print",
-  title: "Static Tall Print",
-  description: "A checked-in 1:2 flat wall print for proving native AR placement.",
+  id: "dragon-wall-print",
+  title: "Dragon Wall Print",
+  description: "A high-detail cinematic dragon artwork for proving native AR wall placement.",
   print: {
     aspectRatio: "1:2",
     widthMeters: 0.45,
@@ -28,9 +28,9 @@ export const AR_SAMPLE: ArSample = {
     label: "45 x 90 cm"
   },
   assets: {
-    glb: "/ar/static-tall-print.glb",
-    usdz: "/ar/static-tall-print.usdz",
-    poster: "/ar/static-tall-print-poster.svg"
+    glb: "/ar/dragon-wall-print.glb",
+    usdz: "/ar/dragon-wall-print.usdz",
+    poster: "/artworks/dragon-wall-print.png"
   }
 };
 
