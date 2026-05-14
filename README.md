@@ -45,3 +45,18 @@ Do not run `pnpm dev` unless deliberately requested.
 ## Phone testing
 
 Use the Vercel production URL on your phone. Desktop verification only confirms the page and model assets load.
+
+### Fast phone testing with ngrok
+
+Use Vercel as the stable phone test URL. For faster local iteration on a real phone, use the local dev server through an existing authenticated `ngrok` install:
+
+```sh
+pnpm dev
+ngrok http 3000
+```
+
+If Next prints a different local port, tunnel that port instead. For example, if Next prints `http://localhost:3001`, run `ngrok http 3001`.
+
+Open the generated `https://...ngrok...` URL on the phone. Do not open `localhost` on the phone, because `localhost` points at the phone itself, not this Mac.
+
+Page and CSS edits should refresh normally through the ngrok URL. Native AR viewers may cache `.usdz` and `.glb` assets more aggressively, so model changes may need a renamed asset or a versioned URL before the phone shows the new file.
