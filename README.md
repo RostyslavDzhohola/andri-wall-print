@@ -5,25 +5,29 @@ Next.js web app for previewing printed wall art from a standalone client link.
 ## What it does
 
 - Runs as a browser link with no authentication and no install.
-- Opens the homepage as the working phone demo for one checked-in 1:2 tall print.
+- Opens the homepage as a static phone demo for multiple checked-in 1:2 tall prints.
 - Uses `@google/model-viewer` for a client-only GLB/USDZ handoff to iPhone Quick Look and Android Scene Viewer.
-- Shows one action: place the real-size print on a wall through the phone's native AR viewer.
+- Shows one pre-AR interaction: cycle through pictures, then place the selected real-size print on a wall through the phone's native AR viewer.
 - Removes the old browser-camera overlay and fallback route.
 
 ## Phone demo
 
-The current demo is intentionally fixed:
+The current demo is intentionally fixed to one physical size:
 
 - Print: 45 x 90 cm, 1:2 aspect ratio.
-- GLB: `/ar/static-tall-print.glb`.
-- USDZ: `/ar/static-tall-print.usdz`.
-- Poster: `/ar/static-tall-print-poster.svg`.
+- Included samples:
+  - Dragon Wall Print: `/ar/dragon-wall-print.glb`, `/ar/dragon-wall-print.usdz`, `/artworks/dragon-wall-print.png`.
+  - Terra Forms: `/ar/terra-forms.glb`, `/ar/terra-forms.usdz`, `/artworks/terra-forms.png`.
+  - Coastal Blocks: `/ar/coastal-blocks.glb`, `/ar/coastal-blocks.usdz`, `/artworks/coastal-blocks.png`.
+  - Botanical Study: `/ar/botanical-study.glb`, `/ar/botanical-study.usdz`, `/artworks/botanical-study.png`.
+  - Elven Portrait: `/ar/elven-wall-print.glb`, `/ar/elven-wall-print.usdz`, `/artworks/elven-wall-print.png`.
+  - Cyberpunk Skyline: `/ar/cyberpunk-wall-print.glb`, `/ar/cyberpunk-wall-print.usdz`, `/artworks/cyberpunk-wall-print.png`.
 
-Open the deployed URL on iPhone Safari or Android Chrome. Tap `Place print on wall`. On supported phones, this opens the native AR viewer so you can point at a wall and place the print.
+Open the deployed URL on iPhone Safari or Android Chrome. Cycle through the pictures, then tap `Place on wall`. On supported phones, this opens the native AR viewer so you can point at a wall and place the selected print.
 
 ## Browser limits
 
-Desktop browsers may only show the model preview. They are not the real acceptance path for wall placement.
+The homepage is deliberately a static presentation. Desktop browsers are not the real acceptance path for wall placement.
 
 ## Install
 
@@ -44,7 +48,7 @@ Do not run `pnpm dev` unless deliberately requested.
 
 ## Phone testing
 
-Use the Vercel production URL on your phone. Desktop verification only confirms the page and model assets load.
+Use the Vercel production URL on your phone. Desktop verification only confirms the static page and model assets load.
 
 ### Fast phone testing with ngrok
 
