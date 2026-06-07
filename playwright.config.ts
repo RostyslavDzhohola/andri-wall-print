@@ -12,7 +12,8 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: "pnpm build && pnpm exec next start -p 3107",
+        command:
+          "CONVEX_URL= NEXT_PUBLIC_CONVEX_URL= PHASE0_PREVIEW_LOCAL_FALLBACK=1 pnpm build && CONVEX_URL= NEXT_PUBLIC_CONVEX_URL= PHASE0_PREVIEW_LOCAL_FALLBACK=1 pnpm exec next start -p 3107",
         url: "http://127.0.0.1:3107",
         reuseExistingServer: false,
         timeout: 120_000

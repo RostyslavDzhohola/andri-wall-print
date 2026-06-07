@@ -4,3 +4,5 @@ tsconfig.tsbuildinfo
 *.log
 .DS_Store
 test-results/
+.gstack/
+.env*.local

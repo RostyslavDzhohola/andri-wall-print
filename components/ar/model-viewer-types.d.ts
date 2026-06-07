@@ -7,6 +7,8 @@ declare module "react" {
         alt?: string;
         ar?: boolean | "";
         "ar-modes"?: string;
+        "ar-placement"?: "floor" | "wall";
+        "ar-scale"?: "auto" | "fixed";
         "camera-controls"?: boolean | "";
         "disable-zoom"?: boolean | "";
         "ios-src"?: string;

@@ -7,7 +7,7 @@ import struct
 import zipfile
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 
 def align(value: int, boundary: int = 4) -> int:
@@ -18,27 +18,73 @@ def padded(data: bytes, boundary: int = 4, pad: bytes = b" ") -> bytes:
     return data + pad * (align(len(data), boundary) - len(data))
 
 
-def normalize_artwork(source: Path, output: Path) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with Image.open(source) as image:
+def render_pdf_page(source: Path, max_texture_px: int) -> Image.Image:
+    try:
+        import pypdfium2 as pdfium
+    except ImportError as exc:
+        raise RuntimeError(
+            f"Cannot render {source}: Pillow could not read the PDF and pypdfium2 is not installed."
+        ) from exc
+
+    pdf = pdfium.PdfDocument(str(source))
+    try:
+        page = pdf[0]
+        page_width, page_height = page.get_size()
+        scale = min(1.0, max_texture_px / max(page_width, page_height))
+        bitmap = page.render(scale=scale, fill_color=(0, 0, 0, 0))
+        return bitmap.to_pil().convert("RGBA")
+    finally:
+        pdf.close()
+
+
+def open_source_image(source: Path, max_texture_px: int) -> Image.Image:
+    try:
+        with Image.open(source) as image:
+            return image.convert("RGBA")
+    except UnidentifiedImageError:
+        if source.suffix.lower() == ".pdf":
+            return render_pdf_page(source, max_texture_px)
+        raise
+
+
+def apply_alpha_cutout(image: Image.Image, alpha_cutoff: int) -> Image.Image:
+    if image.mode != "RGBA":
         image = image.convert("RGBA")
+
+    alpha = image.getchannel("A")
+    alpha = alpha.point(lambda value: 255 if value >= alpha_cutoff else 0)
+    image.putalpha(alpha)
+    return image
+
+
+def normalize_artwork(source: Path, output: Path, preserve_aspect: bool, max_texture_px: int, alpha_cutoff: int) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with open_source_image(source, max_texture_px) as image:
         source_width, source_height = image.size
-        target_ratio = 1 / 2
-        current_ratio = source_width / source_height
 
-        if current_ratio > target_ratio:
-            crop_width = int(source_height * target_ratio)
-            left = (source_width - crop_width) // 2
-            box = (left, 0, left + crop_width, source_height)
+        if preserve_aspect:
+            scale = min(1.0, max_texture_px / max(source_width, source_height))
+            target_size = (round(source_width * scale), round(source_height * scale))
+            image = image.resize(target_size, Image.Resampling.LANCZOS)
         else:
-            crop_height = int(source_width / target_ratio)
-            top = (source_height - crop_height) // 2
-            box = (0, top, source_width, top + crop_height)
+            target_ratio = 1 / 2
+            current_ratio = source_width / source_height
 
-        image.crop(box).resize((1024, 2048), Image.Resampling.LANCZOS).save(output, "PNG")
+            if current_ratio > target_ratio:
+                crop_width = int(source_height * target_ratio)
+                left = (source_width - crop_width) // 2
+                box = (left, 0, left + crop_width, source_height)
+            else:
+                crop_height = int(source_width / target_ratio)
+                top = (source_height - crop_height) // 2
+                box = (0, top, source_width, top + crop_height)
+
+            image = image.crop(box).resize((1024, 2048), Image.Resampling.LANCZOS)
+
+        apply_alpha_cutout(image, alpha_cutoff).save(output, "PNG")
 
 
-def make_glb(texture_path: Path, output: Path, width_meters: float, height_meters: float) -> None:
+def make_glb(texture_path: Path, output: Path, title: str, width_meters: float, height_meters: float) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     texture = texture_path.read_bytes()
 
@@ -89,7 +135,7 @@ def make_glb(texture_path: Path, output: Path, width_meters: float, height_meter
         "asset": {"version": "2.0", "generator": "preview-picture build-ar-print-assets.py"},
         "scene": 0,
         "scenes": [{"nodes": [0]}],
-        "nodes": [{"mesh": 0, "name": "Dragon Wall Print"}],
+        "nodes": [{"mesh": 0, "name": title}],
         "meshes": [
             {
                 "primitives": [
@@ -105,6 +151,8 @@ def make_glb(texture_path: Path, output: Path, width_meters: float, height_meter
         "materials": [
             {
                 "name": "Printed Artwork",
+                "alphaMode": "MASK",
+                "alphaCutoff": 0.5,
                 "doubleSided": True,
                 "pbrMetallicRoughness": {
                     "baseColorTexture": {"index": 0},
@@ -185,6 +233,8 @@ def Xform "Print"
             {{
                 uniform token info:id = "UsdPreviewSurface"
                 color3f inputs:diffuseColor.connect = </Print/Materials/PrintedArtwork/Texture.outputs:rgb>
+                float inputs:opacity.connect = </Print/Materials/PrintedArtwork/Texture.outputs:a>
+                float inputs:opacityThreshold = 0.5
                 float inputs:metallic = 0
                 float inputs:roughness = 0.74
                 token outputs:surface
@@ -196,6 +246,7 @@ def Xform "Print"
                 asset inputs:file = @{texture_name}@
                 token inputs:sourceColorSpace = "sRGB"
                 float2 inputs:st.connect = </Print/Materials/PrintedArtwork/StReader.outputs:result>
+                float outputs:a
                 color3f outputs:rgb
             }}
 
@@ -238,14 +289,20 @@ def main() -> int:
     parser.add_argument("--title", required=True)
     parser.add_argument("--width-meters", required=True, type=float)
     parser.add_argument("--height-meters", required=True, type=float)
+    parser.add_argument("--preserve-aspect", action="store_true")
+    parser.add_argument("--max-texture-px", default=2048, type=int)
+    parser.add_argument("--alpha-cutoff", default=128, type=int)
     args = parser.parse_args()
+
+    if not 1 <= args.alpha_cutoff <= 255:
+        parser.error("--alpha-cutoff must be between 1 and 255")
 
     texture_path = Path("public/artworks") / f"{args.id}.png"
     glb_path = Path("public/ar") / f"{args.id}.glb"
     usdz_path = Path("public/ar") / f"{args.id}.usdz"
 
-    normalize_artwork(args.source, texture_path)
-    make_glb(texture_path, glb_path, args.width_meters, args.height_meters)
+    normalize_artwork(args.source, texture_path, args.preserve_aspect, args.max_texture_px, args.alpha_cutoff)
+    make_glb(texture_path, glb_path, args.title, args.width_meters, args.height_meters)
     make_usdz(texture_path, usdz_path, args.title, args.width_meters, args.height_meters)
 
     print(f"Wrote {texture_path}")

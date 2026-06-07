@@ -2,85 +2,33 @@
 
 import { ChevronLeft, ChevronRight, Ruler, Smartphone } from "lucide-react";
 import Script from "next/script";
-import type { MouseEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
+import { NativeArLauncher, type ArDiagnostics } from "@/components/ar/native-ar-launcher";
 import { AR_SAMPLES, DEFAULT_AR_SAMPLE, formatMeters } from "@/lib/ar-sample";
 
-type ArDiagnostics = {
-  quickLookRel: boolean;
-  isIOS: boolean;
-  isSafari: boolean;
-  isWKWebViewLike: boolean;
-  canActivateModelViewerAR: boolean | null;
+type NativeArSampleProps = {
+  samples?: typeof AR_SAMPLES;
+  heading?: string;
+  intro?: string;
 };
 
-type ModelViewerElement = HTMLElement & {
-  activateAR?: () => Promise<void>;
-  canActivateAR?: boolean;
-};
-
-export function NativeArSample() {
+export function NativeArSample({
+  samples = AR_SAMPLES,
+  heading = "Place this print on your wall.",
+  intro = "Choose a picture, open native AR, and move around there to see how the selected print looks on the wall."
+}: NativeArSampleProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const selectedSample = AR_SAMPLES[selectedIndex] ?? DEFAULT_AR_SAMPLE;
-  const quickLookUrl = `${selectedSample.assets.usdz}#allowsContentScaling=0`;
+  const selectedSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
   const [diagnostics, setDiagnostics] = useState<ArDiagnostics | null>(null);
-  const modelViewerRef = useRef<ModelViewerElement | null>(null);
-
-  useEffect(() => {
-    const modelViewer = modelViewerRef.current;
-
-    if (!modelViewer) {
-      return;
-    }
-
-    modelViewer.setAttribute("alt", `${selectedSample.title}: ${selectedSample.print.label} ${selectedSample.print.aspectRatio} wall print`);
-    modelViewer.setAttribute("ios-src", selectedSample.assets.usdz);
-    modelViewer.setAttribute("poster", selectedSample.assets.poster);
-    modelViewer.setAttribute("src", selectedSample.assets.glb);
-  }, [selectedSample.assets.glb, selectedSample.assets.poster, selectedSample.assets.usdz, selectedSample.print.aspectRatio, selectedSample.print.label, selectedSample.title]);
-
-  useEffect(() => {
-    const readDiagnostics = () => {
-      const modelViewer = modelViewerRef.current;
-      const anchor = document.createElement("a");
-      const userAgent = window.navigator.userAgent;
-      const webkitWindow = window as Window & { webkit?: { messageHandlers?: unknown } };
-
-      setDiagnostics({
-        quickLookRel: Boolean(anchor.relList?.supports?.("ar")),
-        isIOS: /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
-        isSafari: /Safari\//.test(userAgent) && !/CriOS\/|FxiOS\/|EdgiOS\//.test(userAgent),
-        isWKWebViewLike: Boolean(webkitWindow.webkit?.messageHandlers),
-        canActivateModelViewerAR: typeof modelViewer?.canActivateAR === "boolean" ? modelViewer.canActivateAR : null
-      });
-    };
-
-    readDiagnostics();
-    const timers = [window.setTimeout(readDiagnostics, 600), window.setTimeout(readDiagnostics, 1800)];
-
-    return () => {
-      timers.forEach(window.clearTimeout);
-    };
-  }, [selectedSample.id]);
+  const hasMultipleSamples = samples.length > 1;
 
   const selectPrevious = () => {
-    setSelectedIndex((current) => (current - 1 + AR_SAMPLES.length) % AR_SAMPLES.length);
+    setSelectedIndex((current) => (current - 1 + samples.length) % samples.length);
   };
 
   const selectNext = () => {
-    setSelectedIndex((current) => (current + 1) % AR_SAMPLES.length);
-  };
-
-  const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
-    const modelViewer = modelViewerRef.current;
-
-    if (diagnostics?.quickLookRel || !modelViewer?.activateAR) {
-      return;
-    }
-
-    event.preventDefault();
-    void modelViewer.activateAR();
+    setSelectedIndex((current) => (current + 1) % samples.length);
   };
 
   return (
@@ -104,10 +52,10 @@ export function NativeArSample() {
           <section className="flex flex-col justify-center gap-5 rounded-lg border border-[#d7d1c5] bg-[#fffdf8] p-5 md:p-7">
             <div className="grid gap-3">
               <h1 className="text-4xl font-semibold leading-none tracking-[0px] text-balance md:text-6xl">
-                Place this print on your wall.
+                {heading}
               </h1>
               <p className="text-base leading-7 text-[#5f5c55]">
-                Choose a picture, open native AR, and move around there to see how the selected print looks on the wall.
+                {intro}
               </p>
             </div>
 
@@ -146,42 +94,32 @@ export function NativeArSample() {
               draggable={false}
               src={selectedSample.assets.poster}
             />
-            <model-viewer
-              alt={`${selectedSample.title}: ${selectedSample.print.label} ${selectedSample.print.aspectRatio} wall print`}
-              ar
-              ar-modes="quick-look scene-viewer"
-              aria-hidden="true"
-              data-testid="ar-launcher-model"
-              ios-src={selectedSample.assets.usdz}
-              poster={selectedSample.assets.poster}
-              ref={modelViewerRef}
-              reveal="manual"
-              src={selectedSample.assets.glb}
-              tabIndex={-1}
-              className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
-            />
             <div className="absolute bottom-4 left-4 right-4 z-20 rounded-lg border border-[#d7d1c5] bg-[#fffdf8]/95 p-3 shadow-lg backdrop-blur">
               <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    aria-label="Previous picture"
-                    className="inline-flex size-11 items-center justify-center rounded-full border border-[#d7d1c5] bg-white text-[#3d3932] transition hover:border-[#1c4f59]"
-                    data-testid="previous-artwork"
-                    onClick={selectPrevious}
-                    type="button"
-                  >
-                    <ChevronLeft className="size-5" />
-                  </button>
-                  <button
-                    aria-label="Next picture"
-                    className="inline-flex size-11 items-center justify-center rounded-full border border-[#d7d1c5] bg-white text-[#3d3932] transition hover:border-[#1c4f59]"
-                    data-testid="next-artwork"
-                    onClick={selectNext}
-                    type="button"
-                  >
-                    <ChevronRight className="size-5" />
-                  </button>
-                </div>
+                {hasMultipleSamples ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      aria-label="Previous picture"
+                      className="inline-flex size-11 items-center justify-center rounded-full border border-[#d7d1c5] bg-white text-[#3d3932] transition hover:border-[#1c4f59]"
+                      data-testid="previous-artwork"
+                      onClick={selectPrevious}
+                      type="button"
+                    >
+                      <ChevronLeft className="size-5" />
+                    </button>
+                    <button
+                      aria-label="Next picture"
+                      className="inline-flex size-11 items-center justify-center rounded-full border border-[#d7d1c5] bg-white text-[#3d3932] transition hover:border-[#1c4f59]"
+                      data-testid="next-artwork"
+                      onClick={selectNext}
+                      type="button"
+                    >
+                      <ChevronRight className="size-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="hidden sm:block" />
+                )}
 
                 <div className="min-w-0 text-center sm:text-left">
                   <div className="truncate text-base font-semibold text-[#2f2b26]" data-testid="selected-artwork-title">
@@ -192,17 +130,7 @@ export function NativeArSample() {
                   </div>
                 </div>
 
-                <a
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1c4f59] px-5 py-3 text-base font-semibold text-white shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
-                  data-testid="quick-look-link"
-                  href={quickLookUrl}
-                  onClick={placeInAr}
-                  rel="ar"
-                >
-                  <img className="size-5 rounded-sm object-cover" src={selectedSample.assets.poster} alt="" aria-hidden="true" />
-                  <Smartphone className="size-5" />
-                  Place on wall
-                </a>
+                <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
               </div>
             </div>
           </section>

@@ -9,10 +9,13 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "assets:phase0:chicago": "bash scripts/build-chicago-phase0-assets.sh",
+    "convex:seed:phase0": "node scripts/seed-convex-phase0-assets.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
     "@google/model-viewer": "^4.2.0",
+    "convex": "^1.40.0",
     "lucide-react": "1.14.0",
     "next": "16.2.5",
     "react": "19.2.6",

@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
             value: "model/vnd.usdz+zip"
           }
         ]
+      },
+      {
+        source: "/ar/:path*.glb",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "model/gltf-binary"
+          }
+        ]
       }
     ];
   },

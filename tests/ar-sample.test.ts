@@ -9,8 +9,11 @@ function publicPath(pathname: string) {
 }
 
 describe("AR_SAMPLES", () => {
-  it("keeps every proof as one fixed 1:2 print size", () => {
+  it("keeps client proofs first, followed by the original fixed-size samples", () => {
     expect(AR_SAMPLES.map((sample) => sample.id)).toEqual([
+      "chicago-final-1",
+      "chicago-final-2",
+      "chicago-final-3",
       "dragon-wall-print",
       "terra-forms",
       "coastal-blocks",
@@ -19,7 +22,9 @@ describe("AR_SAMPLES", () => {
       "cyberpunk-wall-print"
     ]);
 
-    for (const sample of AR_SAMPLES) {
+    expect(AR_SAMPLES.slice(0, 3).map((sample) => sample.print.label)).toEqual(["152 x 127 cm", "91 x 152 cm", "122 x 152 cm"]);
+
+    for (const sample of AR_SAMPLES.slice(3)) {
       expect(sample.print.aspectRatio).toBe("1:2");
       expect(sample.print.widthMeters).toBe(0.45);
       expect(sample.print.heightMeters).toBe(0.9);
@@ -27,8 +32,8 @@ describe("AR_SAMPLES", () => {
     }
   });
 
-  it("keeps the dragon print as the default sample", () => {
-    expect(DEFAULT_AR_SAMPLE.id).toBe("dragon-wall-print");
+  it("keeps the first client print as the default sample", () => {
+    expect(DEFAULT_AR_SAMPLE.id).toBe("chicago-final-1");
   });
 
   it("points every sample at checked-in AR assets", () => {
@@ -42,7 +47,7 @@ describe("AR_SAMPLES", () => {
   });
 
   it("formats meters for user-facing fixed-size copy", () => {
-    expect(formatMeters(DEFAULT_AR_SAMPLE.print.widthMeters)).toBe("45 cm");
-    expect(formatMeters(DEFAULT_AR_SAMPLE.print.heightMeters)).toBe("90 cm");
+    expect(formatMeters(DEFAULT_AR_SAMPLE.print.widthMeters)).toBe("152 cm");
+    expect(formatMeters(DEFAULT_AR_SAMPLE.print.heightMeters)).toBe("127 cm");
   });
 });

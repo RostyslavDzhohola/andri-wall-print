@@ -1,11 +1,11 @@
-export type ArAssetPath = `/${string}`;
+export type ArAssetPath = string;
 
 export type ArSample = {
   id: string;
   title: string;
   description: string;
   print: {
-    aspectRatio: "1:2";
+    aspectRatio: string;
     widthMeters: number;
     heightMeters: number;
     label: string;
@@ -25,6 +25,54 @@ const PRINT_SIZE: ArSample["print"] = {
 };
 
 export const AR_SAMPLES: ArSample[] = [
+  {
+    id: "chicago-final-1",
+    title: "Chicago Final 1",
+    description: "Client-supplied Chicago wall artwork with the original 60 x 50 inch PDF proportions.",
+    print: {
+      aspectRatio: "6:5",
+      widthMeters: 1.524,
+      heightMeters: 1.27,
+      label: "152 x 127 cm"
+    },
+    assets: {
+      glb: "/ar/chicago-final-1.glb",
+      usdz: "/ar/chicago-final-1.usdz",
+      poster: "/artworks/chicago-final-1.png"
+    }
+  },
+  {
+    id: "chicago-final-2",
+    title: "Chicago Final 2",
+    description: "Client-supplied Chicago lakefront artwork with the original 36 x 60 inch PDF proportions.",
+    print: {
+      aspectRatio: "3:5",
+      widthMeters: 0.914,
+      heightMeters: 1.524,
+      label: "91 x 152 cm"
+    },
+    assets: {
+      glb: "/ar/chicago-final-2.glb",
+      usdz: "/ar/chicago-final-2.usdz",
+      poster: "/artworks/chicago-final-2.png"
+    }
+  },
+  {
+    id: "chicago-final-3",
+    title: "Chicago Final 3",
+    description: "Client-supplied Chicago train artwork with the original 48 x 60 inch PDF proportions.",
+    print: {
+      aspectRatio: "4:5",
+      widthMeters: 1.22,
+      heightMeters: 1.524,
+      label: "122 x 152 cm"
+    },
+    assets: {
+      glb: "/ar/chicago-final-3.glb",
+      usdz: "/ar/chicago-final-3.usdz",
+      poster: "/artworks/chicago-final-3.png"
+    }
+  },
   {
     id: "dragon-wall-print",
     title: "Dragon Wall Print",
