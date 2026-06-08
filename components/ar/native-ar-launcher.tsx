@@ -189,7 +189,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       return;
     }
 
-    if (diagnostics?.quickLookRel || !modelViewer?.activateAR) {
+    if (currentDiagnostics.quickLookRel || !modelViewer?.activateAR) {
       return;
     }
 
@@ -233,6 +233,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
             rel="ar"
             title={accessNotice?.message ?? "Place this print on a wall"}
           >
+            <img className="size-5 rounded-sm object-cover" src={sample.assets.poster} alt="" aria-hidden="true" />
             <Smartphone className="size-5" />
             Place on wall
           </a>

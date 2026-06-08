@@ -6,3 +6,4 @@ tsconfig.tsbuildinfo
 test-results/
 .gstack/
 .env*.local
+.vercel

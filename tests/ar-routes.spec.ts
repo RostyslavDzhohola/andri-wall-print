@@ -61,7 +61,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("ar-launcher-model")).not.toHaveAttribute("camera-controls", "");
   await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-1.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("quick-look-link")).toHaveAttribute("rel", "ar");
-  await expect(page.getByTestId("quick-look-link").locator("img")).toHaveCount(0);
+  await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
   await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
   await expect(page.getByTestId("ar-launcher-model")).toHaveCount(1);
   await expect(page.getByText("The gallery uses real GLB/USDZ wall-placement assets.")).toHaveCount(0);
@@ -86,6 +86,7 @@ test("bottom controls cycle the selected picture and native AR target", async ({
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/ar/chicago-final-2.glb");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/ar/chicago-final-2.usdz");
   await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-2.usdz#allowsContentScaling=0");
+  await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-2.png");
 
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Chicago Final 3");
@@ -113,7 +114,7 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
       await expect(page.getByTestId("quick-look-link")).not.toHaveAttribute("aria-disabled", "true");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Requires iPhone Safari.");
-      await expect(page.getByTestId("quick-look-link").locator("img")).toHaveCount(0);
+      await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
       await page.getByTestId("quick-look-link").hover();
       await expect(page.getByTestId("ar-access-warning")).toContainText("Requires iPhone Safari.");
 
@@ -141,7 +142,7 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
       await expect(page.getByTestId("quick-look-link")).not.toHaveAttribute("aria-disabled", "true");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Use Safari on iPhone.");
-      await expect(page.getByTestId("quick-look-link").locator("img")).toHaveCount(0);
+      await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
       await page.getByTestId("quick-look-link").hover();
       await expect(page.getByTestId("ar-access-warning")).toContainText("Use Safari on iPhone.");
 
