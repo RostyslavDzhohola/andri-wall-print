@@ -1,18 +1,20 @@
+const blobBaseUrl = "https://tu8dyrkppxcttpj1.public.blob.vercel-storage.com";
+
 const workVideos = [
   {
     id: "wall-print-1",
-    poster: "/artworks/chicago-final-1.png",
-    src: "/work-videos/wall-print-1.mp4"
+    poster: `${blobBaseUrl}/work-videos/wall-print-1-poster.jpg`,
+    src: `${blobBaseUrl}/work-videos/wall-print-1.mp4`
   },
   {
     id: "wall-print-2",
-    poster: "/artworks/chicago-final-2.png",
-    src: "/work-videos/wall-print-2.mp4"
+    poster: `${blobBaseUrl}/work-videos/wall-print-2-poster.jpg`,
+    src: `${blobBaseUrl}/work-videos/wall-print-2.mp4`
   },
   {
     id: "wall-print-3",
-    poster: "/artworks/chicago-final-3.png",
-    src: "/work-videos/wall-print-3.mp4"
+    poster: `${blobBaseUrl}/work-videos/wall-print-3-poster.jpg`,
+    src: `${blobBaseUrl}/work-videos/wall-print-3.mp4`
   }
 ] as const;
 
