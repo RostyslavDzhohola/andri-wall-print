@@ -62,6 +62,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-1.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("quick-look-link")).toHaveAttribute("rel", "ar");
   await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
+  await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveClass(/sr-only/);
   await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
   await expect(page.getByTestId("ar-launcher-model")).toHaveCount(1);
   await expect(page.getByText("The gallery uses real GLB/USDZ wall-placement assets.")).toHaveCount(0);
@@ -124,7 +125,6 @@ test.describe("mobile homepage layout", () => {
   });
 });
 
-
 test("bottom controls cycle the selected picture and native AR target", async ({ page }) => {
   await page.goto("/");
 
@@ -135,6 +135,7 @@ test("bottom controls cycle the selected picture and native AR target", async ({
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/ar/chicago-final-2.usdz");
   await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-2.usdz#allowsContentScaling=0");
   await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-2.png");
+  await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveClass(/sr-only/);
 
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Chicago Final 3");
@@ -163,6 +164,7 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByTestId("quick-look-link")).not.toHaveAttribute("aria-disabled", "true");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Requires iPhone Safari.");
       await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
+      await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveClass(/sr-only/);
       await page.getByTestId("quick-look-link").hover();
       await expect(page.getByTestId("ar-access-warning")).toContainText("Requires iPhone Safari.");
 
@@ -172,6 +174,31 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByText("This wall placement only works on iPhone in Safari.")).toBeVisible();
       await page.getByRole("button", { name: "Dismiss" }).click();
       await expect(page.getByRole("heading", { name: "Open this on iPhone Safari" })).toHaveCount(0);
+    });
+  });
+
+  test.describe("iPhone Safari browser", () => {
+    test.use({
+      hasTouch: true,
+      isMobile: true,
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+      viewport: { width: 390, height: 844 }
+    });
+
+    test("shows placement reset guidance before continuing to AR", async ({ page }) => {
+      await page.goto("/");
+
+      await page.getByTestId("quick-look-link").click();
+      await expect(page).toHaveURL("/");
+      await expect(page.getByRole("heading", { name: "Before you place it" })).toBeVisible();
+      await expect(page.getByText("If the print disappears or drifts, tap Object, then AR to reset the placement view.")).toBeVisible();
+      await expect(page.locator("strong").filter({ hasText: "Object" })).toBeVisible();
+      await expect(page.locator("strong").filter({ hasText: "AR" })).toBeVisible();
+      await expect(page.getByTestId("continue-to-ar-link")).toHaveAttribute("href", "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+      await expect(page.getByTestId("continue-to-ar-link")).toHaveAttribute("rel", "ar");
+      await expect(page.locator('[data-testid="continue-to-ar-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
+      await expect(page.locator('[data-testid="continue-to-ar-link"] > img')).toHaveClass(/sr-only/);
     });
   });
 
@@ -191,6 +218,7 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByTestId("quick-look-link")).not.toHaveAttribute("aria-disabled", "true");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Use Safari on iPhone.");
       await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveAttribute("src", "/artworks/chicago-final-1.png");
+      await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveClass(/sr-only/);
       await page.getByTestId("quick-look-link").hover();
       await expect(page.getByTestId("ar-access-warning")).toContainText("Use Safari on iPhone.");
 
