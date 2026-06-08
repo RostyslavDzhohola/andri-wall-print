@@ -45,6 +45,7 @@ export function ArPreviewSurface({
   return (
     <main className="min-h-screen bg-background text-foreground">
       <Script
+        crossOrigin="anonymous"
         id="model-viewer"
         src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.2.0/model-viewer.min.js"
         strategy="afterInteractive"
