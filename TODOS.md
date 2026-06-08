@@ -30,6 +30,16 @@ Context: Test both an immediate checked-sample preview link and a generated PNG-
 
 Depends on / blocked by: Clerk setup, Convex function push, deployed URL, and real phones.
 
+## P1: Run Authenticated Seller Design Review
+
+What: Run GStack design review on the signed-in seller surfaces: `/admin`, `/admin/new`, and bundle detail pages.
+
+Why: The unauthenticated design review on 2026-06-08 could only inspect the redirect and Clerk shell. The actual seller form and dashboard need visual QA once auth is available.
+
+Context: Full report: `/Users/Rostyslav/.gstack/projects/preview-picture/designs/design-audit-20260608-022640/design-audit-localhost-3000.md`.
+
+Depends on / blocked by: Clerk setup, allowlisted local seller account, and seeded bundle state.
+
 ## P1: Harden Uploaded PNG Generation
 
 What: Add image dimension sniffing, optional PNG normalization, and stricter malformed-image rejection before generation.
@@ -59,6 +69,26 @@ Why: Current tests cover shared validators, generator structure, public adapter 
 Context: Use a focused Convex test harness instead of broad UI-only coverage.
 
 Depends on / blocked by: Choosing the test harness for Convex generic functions.
+
+## P2: Fix Clerk Widget Brand Name
+
+What: Make Clerk render `Wall Print Pro`, not `Wallprintpro`, inside sign-in and sign-up screens.
+
+Why: The rest of the product uses the spaced brand name, and the current widget title reads like an unpolished app-config default.
+
+Context: The 2026-06-08 design review added a branded loading shell, but the settled Clerk widget still renders its own app name.
+
+Depends on / blocked by: Clerk app display-name configuration or a deeper Clerk appearance override.
+
+## P2: Create DESIGN.md For Brand Baseline
+
+What: Save the current color, spacing, component, and typography baseline in `DESIGN.md`, then choose whether Geist should stay or be replaced by a more distinctive display/body pairing.
+
+Why: The current UI is clean, but the type system still reads generic for a brand-forward wall-print landing surface.
+
+Context: Use the inferred design system from `/Users/Rostyslav/.gstack/projects/preview-picture/designs/design-audit-20260608-022640/design-audit-localhost-3000.md`.
+
+Depends on / blocked by: Brand direction for Wall Print Pro.
 
 ## P2: Add Device Support Matrix
 
