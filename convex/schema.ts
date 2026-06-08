@@ -1,7 +1,15 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-import { assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
+import {
+  assetMetaValidator,
+  assetStorageIdsValidator,
+  assetUrlsValidator,
+  previewBundleCropValidator,
+  previewBundleSourceValidator,
+  previewBundleStatusValidator,
+  printValidator
+} from "./validators";
 
 export default defineSchema({
   arPreviews: defineTable({
@@ -15,5 +23,56 @@ export default defineSchema({
     status: v.union(v.literal("ready"), v.literal("unavailable")),
     createdAt: v.number(),
     updatedAt: v.number()
-  }).index("by_slug", ["slug"])
+  }).index("by_slug", ["slug"]),
+  builderInvites: defineTable({
+    sellerSubject: v.string(),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    maxGenerations: v.number(),
+    generatedCount: v.number(),
+    maxUploadStarts: v.number(),
+    uploadStartedCount: v.number(),
+    revokedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  })
+    .index("by_token_hash", ["tokenHash"])
+    .index("by_seller_createdAt", ["sellerSubject", "createdAt"]),
+  previewBundles: defineTable({
+    publicSlug: v.string(),
+    sellerSubject: v.string(),
+    sellerEmail: v.optional(v.string()),
+    builderInviteId: v.optional(v.id("builderInvites")),
+    createdVia: v.optional(v.union(v.literal("seller"), v.literal("builder"))),
+    title: v.string(),
+    description: v.string(),
+    source: previewBundleSourceValidator,
+    crop: previewBundleCropValidator,
+    print: printValidator,
+    generatorVersion: v.string(),
+    idempotencyKey: v.string(),
+    status: previewBundleStatusValidator,
+    rejectionReason: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    assetStorageIds: v.optional(assetStorageIdsValidator),
+    assetUrls: v.optional(assetUrlsValidator),
+    assetMeta: v.optional(assetMetaValidator),
+    job: v.optional(
+      v.object({
+        attempt: v.number(),
+        scheduledAt: v.number(),
+        startedAt: v.optional(v.number()),
+        completedAt: v.optional(v.number()),
+        error: v.optional(v.string())
+      })
+    ),
+    revokedAt: v.optional(v.number()),
+    publicReadyAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  })
+    .index("by_public_slug", ["publicSlug"])
+    .index("by_seller_createdAt", ["sellerSubject", "createdAt"])
+    .index("by_status_createdAt", ["status", "createdAt"])
+    .index("by_idempotency_key", ["idempotencyKey"])
 });

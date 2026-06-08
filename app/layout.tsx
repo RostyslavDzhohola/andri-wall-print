@@ -1,11 +1,24 @@
 import type { Metadata, Viewport } from "next";
 
+import { AppProviders } from "@/components/app-providers";
+
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Preview Picture",
-  description: "No-install wall art preview for clients."
+  title: "Wall Print Pro",
+  description: "Admin workspace for wall preview links.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png"
+  }
 };
+
+export const dynamic = "force-dynamic";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -20,8 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+      <body>
+        <AppProviders
+          clerkPublishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+          convexUrl={process.env.NEXT_PUBLIC_CONVEX_URL}
+        >
+          {children}
+        </AppProviders>
+      </body>
     </html>
   );
 }

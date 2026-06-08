@@ -4,15 +4,32 @@ import { Smartphone } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getFixedScaleQuickLookHref } from "@/lib/ar-launcher";
 import type { ArSample } from "@/lib/ar-sample";
+import { cn } from "@/lib/utils";
 
 export type ArDiagnostics = {
   quickLookRel: boolean;
+  isIPhone: boolean;
   isIOS: boolean;
+  isAndroid: boolean;
+  isLikelyPhoneOrTablet: boolean;
   isSafari: boolean;
+  isChrome: boolean;
+  isBrowserUnknown: boolean;
   isWKWebViewLike: boolean;
   canActivateModelViewerAR: boolean | null;
+};
+
+type ArAccessNotice = {
+  message: string;
+  title: string;
+  description: string;
+  blockLaunch: boolean;
 };
 
 type ModelViewerElement = HTMLElement & {
@@ -26,10 +43,107 @@ type NativeArLauncherProps = {
   onDiagnosticsChange: (diagnostics: ArDiagnostics) => void;
 };
 
+function getBrowserDeviceDiagnostics(modelViewer: ModelViewerElement | null): ArDiagnostics {
+  const anchor = document.createElement("a");
+  const userAgent = window.navigator.userAgent;
+  const navigatorWithUserAgentData = navigator as Navigator & {
+    userAgentData?: {
+      mobile?: boolean;
+    };
+  };
+  const isIPadOSDesktopMode = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  const isIPhone = /iPhone/.test(userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || isIPadOSDesktopMode;
+  const isAndroid = /Android/.test(userAgent);
+  const isKnownIOSNonSafari = /CriOS\/|FxiOS\/|EdgiOS\/|OPiOS\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\//.test(userAgent);
+  const isChrome = /Chrome\/|CriOS\//.test(userAgent) && !/Edg\/|EdgiOS\/|OPR\//.test(userAgent);
+  const isSafari = /Version\/[\d.]+.*Safari\//.test(userAgent) && !isKnownIOSNonSafari && !/Chrome\/|Chromium\/|Edg\//.test(userAgent);
+  const isTouchCapable = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+  const hasCoarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  const hasHoverPointer = window.matchMedia?.("(hover: hover)").matches ?? false;
+  const isLikelyPhoneOrTablet =
+    isIOS || isAndroid || Boolean(navigatorWithUserAgentData.userAgentData?.mobile) || (isTouchCapable && hasCoarsePointer && !hasHoverPointer);
+  const webkitWindow = window as Window & { webkit?: { messageHandlers?: unknown } };
+  const isBrowserUnknown = isLikelyPhoneOrTablet && !isSafari && !isChrome && !isKnownIOSNonSafari;
+
+  return {
+    quickLookRel: Boolean(anchor.relList?.supports?.("ar")),
+    isIPhone,
+    isIOS,
+    isAndroid,
+    isLikelyPhoneOrTablet,
+    isSafari,
+    isChrome,
+    isBrowserUnknown,
+    isWKWebViewLike: Boolean(webkitWindow.webkit?.messageHandlers),
+    canActivateModelViewerAR: typeof modelViewer?.canActivateAR === "boolean" ? modelViewer.canActivateAR : null
+  };
+}
+
+function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | null {
+  if (!diagnostics) {
+    return {
+      message: "Checking device and browser.",
+      title: "Checking your browser",
+      description: "Wall placement only works on iPhone in Safari. Try again after this browser check finishes.",
+      blockLaunch: true
+    };
+  }
+
+  if (!diagnostics.isLikelyPhoneOrTablet) {
+    return {
+      message: "Requires iPhone Safari.",
+      title: "Open this on iPhone Safari",
+      description: "This wall placement only works on iPhone in Safari. Desktop browsers can preview the artwork, but they cannot launch the wall placement viewer.",
+      blockLaunch: true
+    };
+  }
+
+  if (diagnostics.isIPhone && diagnostics.isSafari) {
+    return null;
+  }
+
+  if (diagnostics.isIPhone && !diagnostics.isBrowserUnknown) {
+    return {
+      message: "Use Safari on iPhone.",
+      title: "Use Safari on this iPhone",
+      description: "This wall placement only works on iPhone in Safari. Open this same link in Safari, then tap Place on wall again.",
+      blockLaunch: true
+    };
+  }
+
+  if (diagnostics.isAndroid) {
+    return {
+      message: "Requires iPhone Safari.",
+      title: "Open this on iPhone Safari",
+      description: "This wall placement only works on iPhone in Safari. This device can preview the artwork, but it cannot launch the iPhone wall placement viewer.",
+      blockLaunch: true
+    };
+  }
+
+  if (diagnostics.isBrowserUnknown) {
+    return {
+      message: "Browser not confirmed.",
+      title: "Browser not confirmed",
+      description: "We could not confirm that this is iPhone Safari. This wall placement only works on iPhone in Safari.",
+      blockLaunch: true
+    };
+  }
+
+  return {
+    message: "Requires iPhone Safari.",
+    title: "Open this on iPhone Safari",
+    description: "This wall placement only works on iPhone in Safari.",
+    blockLaunch: true
+  };
+}
+
 export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: NativeArLauncherProps) {
   const quickLookUrl = getFixedScaleQuickLookHref(sample.assets.usdz);
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
   const [arError, setArError] = useState<string | null>(null);
+  const [dialogNotice, setDialogNotice] = useState<ArAccessNotice | null>(null);
+  const accessNotice = getArAccessNotice(diagnostics);
 
   useEffect(() => {
     const modelViewer = modelViewerRef.current;
@@ -38,28 +152,19 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       return;
     }
 
-    modelViewer.setAttribute("alt", `${sample.title}: ${sample.print.label} ${sample.print.aspectRatio} wall print`);
+    modelViewer.setAttribute("alt", `${sample.title} wall print`);
     modelViewer.setAttribute("ar-placement", "wall");
     modelViewer.setAttribute("ar-scale", "fixed");
     modelViewer.setAttribute("ios-src", sample.assets.usdz);
     modelViewer.setAttribute("poster", sample.assets.poster);
     modelViewer.setAttribute("src", sample.assets.glb);
-  }, [sample.assets.glb, sample.assets.poster, sample.assets.usdz, sample.print.aspectRatio, sample.print.label, sample.title]);
+  }, [sample.assets.glb, sample.assets.poster, sample.assets.usdz, sample.title]);
 
   useEffect(() => {
     const readDiagnostics = () => {
       const modelViewer = modelViewerRef.current;
-      const anchor = document.createElement("a");
-      const userAgent = window.navigator.userAgent;
-      const webkitWindow = window as Window & { webkit?: { messageHandlers?: unknown } };
 
-      onDiagnosticsChange({
-        quickLookRel: Boolean(anchor.relList?.supports?.("ar")),
-        isIOS: /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
-        isSafari: /Safari\//.test(userAgent) && !/CriOS\/|FxiOS\/|EdgiOS\//.test(userAgent),
-        isWKWebViewLike: Boolean(webkitWindow.webkit?.messageHandlers),
-        canActivateModelViewerAR: typeof modelViewer?.canActivateAR === "boolean" ? modelViewer.canActivateAR : null
-      });
+      onDiagnosticsChange(getBrowserDeviceDiagnostics(modelViewer));
     };
 
     readDiagnostics();
@@ -72,6 +177,17 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
   const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
     const modelViewer = modelViewerRef.current;
+    const currentDiagnostics = getBrowserDeviceDiagnostics(modelViewer);
+    const currentAccessNotice = getArAccessNotice(currentDiagnostics);
+
+    onDiagnosticsChange(currentDiagnostics);
+
+    if (currentAccessNotice?.blockLaunch) {
+      event.preventDefault();
+      setArError(null);
+      setDialogNotice(currentAccessNotice);
+      return;
+    }
 
     if (diagnostics?.quickLookRel || !modelViewer?.activateAR) {
       return;
@@ -79,16 +195,17 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     event.preventDefault();
     setArError(null);
+    setDialogNotice(null);
     void modelViewer.activateAR().catch((error: unknown) => {
       console.error("Failed to activate native AR.", error);
-      setArError("AR could not start from this browser. Open this preview in Safari on iPhone or Chrome on Android.");
+      setArError("Wall preview could not start from this browser. Open this client preview page in Safari on iPhone.");
     });
   };
 
   return (
     <div className="grid gap-2 sm:justify-items-end">
       <model-viewer
-        alt={`${sample.title}: ${sample.print.label} ${sample.print.aspectRatio} wall print`}
+        alt={`${sample.title} wall print`}
         ar
         ar-modes="quick-look scene-viewer"
         ar-placement="wall"
@@ -103,21 +220,51 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
         tabIndex={-1}
         className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
       />
-      <a
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1c4f59] px-5 py-3 text-base font-semibold text-white shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
-        data-testid="quick-look-link"
-        href={quickLookUrl}
-        onClick={placeInAr}
-        rel="ar"
-      >
-        <img className="size-5 rounded-sm object-cover" src={sample.assets.poster} alt="" aria-hidden="true" />
-        <Smartphone className="size-5" />
-        Place on wall
-      </a>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a
+            className={cn(
+              buttonVariants(),
+              "h-12 rounded-full px-5 py-3 text-base shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
+            )}
+            data-testid="quick-look-link"
+            href={quickLookUrl}
+            onClick={placeInAr}
+            rel="ar"
+            title={accessNotice?.message ?? "Place this print on a wall"}
+          >
+            <Smartphone className="size-5" />
+            Place on wall
+          </a>
+        </TooltipTrigger>
+        <TooltipContent
+          className="max-w-64 text-center text-xs leading-5"
+          data-testid="ar-access-warning"
+          side="top"
+          sideOffset={8}
+        >
+          {accessNotice?.message ?? "Place this print on a wall."}
+        </TooltipContent>
+      </Tooltip>
+      <Dialog open={Boolean(dialogNotice)} onOpenChange={(open) => !open && setDialogNotice(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialogNotice?.title}</DialogTitle>
+            <DialogDescription>{dialogNotice?.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button className="h-11 rounded-full px-5" type="button">
+                Dismiss
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {arError ? (
-        <p aria-live="polite" className="max-w-64 text-center text-xs font-medium leading-5 text-[#8d2f22] sm:text-right">
-          {arError}
-        </p>
+        <Alert aria-live="polite" className="max-w-64" variant="destructive">
+          <AlertDescription className="text-center text-xs leading-5 sm:text-right">{arError}</AlertDescription>
+        </Alert>
       ) : null}
     </div>
   );

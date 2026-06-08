@@ -85,39 +85,6 @@ export const AR_SAMPLES: ArSample[] = [
     }
   },
   {
-    id: "terra-forms",
-    title: "Terra Forms",
-    description: "A warm abstract composition with organic shapes and grounded gallery colors.",
-    print: PRINT_SIZE,
-    assets: {
-      glb: "/ar/terra-forms.glb",
-      usdz: "/ar/terra-forms.usdz",
-      poster: "/artworks/terra-forms.png"
-    }
-  },
-  {
-    id: "coastal-blocks",
-    title: "Coastal Blocks",
-    description: "A coastal color-block print with layered waves, sun, and clean graphic lines.",
-    print: PRINT_SIZE,
-    assets: {
-      glb: "/ar/coastal-blocks.glb",
-      usdz: "/ar/coastal-blocks.usdz",
-      poster: "/artworks/coastal-blocks.png"
-    }
-  },
-  {
-    id: "botanical-study",
-    title: "Botanical Study",
-    description: "A tall botanical illustration with layered leaves and restrained natural accents.",
-    print: PRINT_SIZE,
-    assets: {
-      glb: "/ar/botanical-study.glb",
-      usdz: "/ar/botanical-study.usdz",
-      poster: "/artworks/botanical-study.png"
-    }
-  },
-  {
     id: "elven-wall-print",
     title: "Elven Portrait",
     description: "An original high-fantasy portrait with luminous forest detail and silver ceremonial styling.",

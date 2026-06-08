@@ -9,6 +9,10 @@
  */
 
 import type * as arPreviews from "../arPreviews.js";
+import type * as builderInvites from "../builderInvites.js";
+import type * as bundleGeneration from "../bundleGeneration.js";
+import type * as previewBundles from "../previewBundles.js";
+import type * as sellerAuth from "../sellerAuth.js";
 import type * as validators from "../validators.js";
 
 import type {
@@ -19,6 +23,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   arPreviews: typeof arPreviews;
+  builderInvites: typeof builderInvites;
+  bundleGeneration: typeof bundleGeneration;
+  previewBundles: typeof previewBundles;
+  sellerAuth: typeof sellerAuth;
   validators: typeof validators;
 }>;
 

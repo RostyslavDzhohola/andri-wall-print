@@ -2,6 +2,25 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.ngrok-free.dev"],
+  async redirects() {
+    return [
+      {
+        source: "/seller",
+        destination: "/admin",
+        permanent: false
+      },
+      {
+        source: "/seller/new",
+        destination: "/admin/new",
+        permanent: false
+      },
+      {
+        source: "/seller/bundles/:bundleId",
+        destination: "/admin/bundles/:bundleId",
+        permanent: false
+      }
+    ];
+  },
   async headers() {
     return [
       {

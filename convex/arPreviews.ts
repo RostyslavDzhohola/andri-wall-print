@@ -9,7 +9,7 @@ import {
   printValidator
 } from "./validators";
 
-const publicPreviewValidator = v.object({
+const readyPublicPreviewValidator = v.object({
   id: v.string(),
   slug: v.string(),
   title: v.string(),
@@ -21,8 +21,18 @@ const publicPreviewValidator = v.object({
     usdz: v.union(v.string(), v.null())
   }),
   assetMeta: assetMetaValidator,
-  status: v.union(v.literal("ready"), v.literal("unavailable"))
+  status: v.literal("ready")
 });
+
+const publicPreviewValidator = v.union(
+  readyPublicPreviewValidator,
+  v.object({
+    id: v.string(),
+    slug: v.string(),
+    status: v.union(v.literal("preparing"), v.literal("unavailable")),
+    reason: v.optional(v.string())
+  })
+);
 
 function assertSeedToken(seedToken: string) {
   const configuredToken = process.env.PHASE0_SEED_TOKEN;
@@ -95,12 +105,95 @@ export const upsertSeedPreview = mutationGeneric({
   }
 });
 
+async function getStorageAssetUrls(
+  ctx: any,
+  assetStorageIds: { poster: string; glb: string; usdz: string }
+) {
+  const [poster, glb, usdz] = await Promise.all([
+    ctx.storage.getUrl(assetStorageIds.poster),
+    ctx.storage.getUrl(assetStorageIds.glb),
+    ctx.storage.getUrl(assetStorageIds.usdz)
+  ]);
+
+  return {
+    poster,
+    glb,
+    usdz
+  };
+}
+
 export const getPublicPreview = queryGeneric({
   args: {
     slug: v.string()
   },
   returns: v.union(publicPreviewValidator, v.null()),
   handler: async (ctx, args) => {
+    const bundle = await ctx.db
+      .query("previewBundles")
+      .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.slug))
+      .first();
+
+    if (bundle) {
+      if (bundle.status === "ready") {
+        const assets =
+          bundle.assetUrls ??
+          (bundle.assetStorageIds ? await getStorageAssetUrls(ctx, bundle.assetStorageIds) : { poster: null, glb: null, usdz: null });
+
+        if (assets.poster && assets.glb && assets.usdz && bundle.assetMeta) {
+          return {
+            id: bundle.publicSlug,
+            slug: bundle.publicSlug,
+            title: bundle.title,
+            description: bundle.description,
+            print: bundle.print,
+            assets,
+            assetMeta: bundle.assetMeta,
+            status: "ready" as const
+          };
+        }
+
+        if (assets.poster && assets.glb && assets.usdz && bundle.assetUrls) {
+          return {
+            id: bundle.publicSlug,
+            slug: bundle.publicSlug,
+            title: bundle.title,
+            description: bundle.description,
+            print: bundle.print,
+            assets,
+            assetMeta: {
+              poster: { fileName: "sample-poster", contentType: "image/png", byteLength: 0 },
+              glb: { fileName: "sample.glb", contentType: "model/gltf-binary", byteLength: 0 },
+              usdz: { fileName: "sample.usdz", contentType: "model/vnd.usdz+zip", byteLength: 0 }
+            },
+            status: "ready" as const
+          };
+        }
+
+        return {
+          id: bundle.publicSlug,
+          slug: bundle.publicSlug,
+          status: "unavailable" as const,
+          reason: "This client preview is not available."
+        };
+      }
+
+      if (["uploaded", "validating", "generating"].includes(bundle.status)) {
+        return {
+          id: bundle.publicSlug,
+          slug: bundle.publicSlug,
+          status: "preparing" as const,
+          reason: "This client preview is being prepared. Check back shortly."
+        };
+      }
+
+      return {
+        id: bundle.publicSlug,
+        slug: bundle.publicSlug,
+        status: "unavailable" as const,
+        reason: "This client preview is not available."
+      };
+    }
+
     const preview = await ctx.db
       .query("arPreviews")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -128,7 +221,7 @@ export const getPublicPreview = queryGeneric({
         usdz
       },
       assetMeta: preview.assetMeta,
-      status: preview.status
+      status: "ready" as const
     };
   }
 });

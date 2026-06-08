@@ -122,6 +122,52 @@ describe("Convex public preview adapter", () => {
     ]);
   });
 
+  it("parses preparing bundle responses without exposing artwork", async () => {
+    const fetcher: PublicPreviewOptions["fetcher"] = async () =>
+      jsonResponse({
+        status: "success",
+        value: {
+          id: "client-proof-abc",
+          slug: "client-proof-abc",
+          status: "preparing"
+        }
+      });
+
+    await expect(
+      getPublicPreview("client-proof-abc", {
+        convexUrl: "https://steady-otter-123.convex.cloud",
+        fetcher
+      })
+    ).resolves.toEqual({
+      status: "preparing",
+      slug: "client-proof-abc",
+      reason: "This client preview is being prepared. Check back shortly."
+    });
+  });
+
+  it("parses unavailable bundle responses without exposing artwork", async () => {
+    const fetcher: PublicPreviewOptions["fetcher"] = async () =>
+      jsonResponse({
+        status: "success",
+        value: {
+          id: "client-proof-abc",
+          slug: "client-proof-abc",
+          status: "unavailable"
+        }
+      });
+
+    await expect(
+      getPublicPreview("client-proof-abc", {
+        convexUrl: "https://steady-otter-123.convex.cloud",
+        fetcher
+      })
+    ).resolves.toEqual({
+      status: "unavailable",
+      slug: "client-proof-abc",
+      reason: "This client preview is unavailable."
+    });
+  });
+
   it("returns unavailable when Convex returns a null asset URL", async () => {
     const fetcher: PublicPreviewOptions["fetcher"] = async () =>
       jsonResponse({
@@ -152,7 +198,7 @@ describe("Convex public preview adapter", () => {
     ).resolves.toEqual({
       status: "unavailable",
       slug: "chicago-final-1",
-      reason: "Convex preview is missing one or more asset URLs."
+      reason: "This client preview is not available."
     });
   });
 
@@ -165,7 +211,7 @@ describe("Convex public preview adapter", () => {
     await expect(getPublicPreview("chicago-final-1", { allowLocalFallback: false })).resolves.toEqual({
       status: "unavailable",
       slug: "chicago-final-1",
-      reason: "Convex URL is not configured."
+      reason: "This client preview is unavailable."
     });
   });
 });

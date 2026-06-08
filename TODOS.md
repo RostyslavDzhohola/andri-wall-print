@@ -1,71 +1,71 @@
 # TODOs
 
-## P0: Prove The Static Print Gallery On Real Devices
+## P0: Finish Clerk/Convex Auth Setup
 
-What: Validate the checked-in GLB/USDZ samples from the homepage on iPhone Safari and Android Chrome.
+What: Finish the remaining local Clerk app credentials for Wall Print Pro by setting `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `WALL_PRINT_PRO_SELLER_EMAILS`.
 
-Why: Real wall placement is the first blocking milestone. Browser rendering alone does not prove the AR promise.
+Why: Convex now has `CLERK_JWT_ISSUER_DOMAIN`; the admin UI still needs the Clerk frontend/backend keys, and admin mutations require an authenticated allowlisted identity.
 
-Context: Use the homepage on the Vercel production URL. The old browser-camera overlay has been removed; this should be judged only by native AR placement on a phone.
+Context: Do not commit secrets. The Wall Print Pro Clerk development issuer is `https://sacred-shrimp-11.clerk.accounts.dev`, and it is already set locally and in the Convex dev deployment.
 
-Depends on / blocked by: Manual access to target phones and a wall where physical scale can be judged.
+Depends on / blocked by: Clerk publishable key, Clerk secret key, and admin allowlist choice.
 
-## P1: Validate Convex-Backed Public Preview Links
+## P0: Push Convex Functions After Clerk Issuer Exists
 
-What: Serve a single artwork from `/preview/[slug]` using Convex storage URLs for poster, GLB, and USDZ.
+What: Keep Convex functions deployed after auth or schema changes.
 
-Why: Phone QA should validate the real customer link shape, not only a raw asset URL or local homepage gallery.
+Why: The local implementation uses generic Convex references so the repo can typecheck without generated API updates, but the deployment still needs new schema/functions pushed when auth or backend code changes.
 
-Context: Start with the checked-in Chicago Phase 0 assets and Convex storage URLs. Do not add Clerk, seller uploads, or runtime AR generation yet.
+Context: `pnpm exec convex codegen` has succeeded once with the real Clerk issuer and pushed `previewBundles`, `bundleGeneration`, `sellerAuth`, and Clerk `auth.config.ts` to the dev deployment.
 
-Depends on / blocked by: Convex deployment with seeded Phase 0 records and phone checks against deployed Vercel URLs.
+Depends on / blocked by: Future backend changes.
 
-## P2: Keep PDF Handling Manual For Phase 0 Seeds
+## P1: Validate Admin Preview Links On Real Devices
 
-What: Use `pnpm assets:phase0:chicago` only for known local Chicago proof PDFs, then seed the generated files with `pnpm convex:seed:phase0`.
+What: Create a ready sample preview link from `/admin/new`, open its `/preview/[slug]` link on iPhone Safari and Android Chrome, and tap `Place on wall`.
 
-Why: The Phase 0 public path is proving native AR and asset delivery, not accepting arbitrary PDFs from sellers.
+Why: Browser tests prove routing and AR handoff markup, but native wall placement is the actual acceptance path.
 
-Context: Public v2 uploads should remain image-only until the PDF extraction, validation, and preview failure modes are designed.
+Context: Test both an immediate checked-sample preview link and a generated PNG-upload preview link.
 
-Depends on / blocked by: Local Chicago PDF proof files and a configured Convex `PHASE0_SEED_TOKEN`.
+Depends on / blocked by: Clerk setup, Convex function push, deployed URL, and real phones.
 
-## P3: Add First-Class PDF Upload Support Later
+## P1: Harden Uploaded PNG Generation
 
-What: Design PDF uploads as a separate v2 feature with validation, preview extraction, size limits, and clear seller-facing failure states.
+What: Add image dimension sniffing, optional PNG normalization, and stricter malformed-image rejection before generation.
 
-Why: PDFs have different page, crop, transparency, and font/image embedding behavior than plain images.
+Why: The current TypeScript generator builds GLB/USDZ from PNG bytes and enforces byte budgets, but it does not yet resize, crop, or decode arbitrary PNGs.
 
-Context: Do not blend this into the Phase 0 public preview proof.
+Context: Keep PDFs manual. The first uploaded path is PNG-only.
 
-Depends on / blocked by: Static AR and image-only upload path decisions.
+Depends on / blocked by: Real admin-upload QA and decision on server-side image library.
 
-## Later: Add Dynamic Image-To-AR Asset Generation
+## P2: Revisit Advanced Physical-Size Overrides After Phone QA
 
-What: Let a user-provided wall-art image become platform AR assets after the static proof works.
+What: Decide whether the admin create flow needs an advanced print-size override after testing real saved-artwork and uploaded-artwork client previews on phones.
 
-Why: The open-source promise is "turn any wall-art image into AR," but the first slice deliberately uses checked-in static samples so wall placement can be validated first.
+Why: The EOD flow now uses saved artwork metadata or the current default print size so sellers can create preview links without extra fields.
 
-Context: Start from the static homepage demo: generated flat prints, checked-in GLB/USDZ assets, and real-device validation from the Vercel production URL. After that works, decide whether image-to-GLB/USDZ generation should happen client-side, server-side, or at build time.
+Context: Only add the override if real phone placement shows that the simplified flow is not accurate enough for client handoff.
 
-Depends on / blocked by: Static GLB/USDZ samples must pass the iPhone and Android wall-placement gate.
+Depends on / blocked by: Real iPhone and Android `Place on wall` results for one saved-artwork preview and one uploaded-artwork preview.
 
-## P1: Automate AR Asset Optimization And Size Checks
+## P1: Add Convex Function Harness Tests
 
-What: Add checks that catch oversized or missing image/model assets before they ship.
+What: Add mocked Convex identity/database tests for unauthenticated, non-allowlisted, allowlisted, stale completion, retry, revoke, and ownership paths.
 
-Why: Mobile AR can feel broken if GLB, USDZ, poster, or texture assets are too large or invalid.
+Why: Current tests cover shared validators, generator structure, public adapter behavior, and route behavior. Function-level auth/state coverage is still a gap.
 
-Context: The first slice should use manually optimized assets and a simple mobile budget. Once more samples or dynamic generation exist, add automated validation for file existence, file size, and possibly model integrity so future assets do not silently slow down phone testing.
+Context: Use a focused Convex test harness instead of broad UI-only coverage.
 
-Depends on / blocked by: Static sample should work first; this becomes more important when multiple samples or generated assets are added.
+Depends on / blocked by: Choosing the test harness for Convex generic functions.
 
-## P1: Create A Device Support Matrix
+## P2: Add Device Support Matrix
 
 What: Document tested devices, browsers, AR mode used, placement quality, known limits, and fallback behavior.
 
-Why: WebAR behavior differs across iPhone Safari, Android Chrome, desktop browsers, and unsupported devices. The project needs durable device knowledge once testing produces real results.
+Why: WebAR behavior differs across iPhone Safari, Android Chrome, desktop browsers, and unsupported devices.
 
-Context: Keep the demo narrow until real-device testing proves what works. After real-device testing, turn those results into a README support matrix for open-source users and contributors.
+Context: Fill this only from real phone results, not desktop assumptions.
 
-Depends on / blocked by: Real iPhone and Android testing must produce enough results to document honestly.
+Depends on / blocked by: Real iPhone and Android testing.

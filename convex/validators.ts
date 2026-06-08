@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 
+import { PREVIEW_BUNDLE_STATUSES } from "../lib/preview-bundle-contract";
+
 type PrintPayload = {
   widthMeters: number;
   heightMeters: number;
@@ -25,6 +27,12 @@ export const assetStorageIdsValidator = v.object({
   usdz: v.id("_storage")
 });
 
+export const assetUrlsValidator = v.object({
+  poster: v.string(),
+  glb: v.string(),
+  usdz: v.string()
+});
+
 export const assetMetaValidator = v.object({
   poster: v.object({
     fileName: v.string(),
@@ -43,6 +51,27 @@ export const assetMetaValidator = v.object({
     byteLength: v.number()
   })
 });
+
+export const previewBundleStatusValidator = v.union(...PREVIEW_BUNDLE_STATUSES.map((status) => v.literal(status)));
+
+export const previewBundleCropValidator = v.object({
+  mode: v.union(v.literal("contain"), v.literal("cover"))
+});
+
+export const previewBundleSourceValidator = v.union(
+  v.object({
+    kind: v.literal("upload"),
+    storageId: v.id("_storage"),
+    originalFileName: v.string(),
+    contentType: v.string(),
+    byteLength: v.number(),
+    sourceFingerprint: v.optional(v.string())
+  }),
+  v.object({
+    kind: v.literal("sample"),
+    sampleId: v.string()
+  })
+);
 
 function assertPositiveFiniteNumber(fieldName: string, value: number) {
   if (!Number.isFinite(value) || value <= 0) {

@@ -1,4 +1,4 @@
-import type { ArSample } from "@/lib/ar-sample";
+import type { ArSample } from "./ar-sample";
 
 export type ArAssetKind = "poster" | "glb" | "usdz";
 

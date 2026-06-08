@@ -15,9 +15,6 @@ describe("AR_SAMPLES", () => {
       "chicago-final-2",
       "chicago-final-3",
       "dragon-wall-print",
-      "terra-forms",
-      "coastal-blocks",
-      "botanical-study",
       "elven-wall-print",
       "cyberpunk-wall-print"
     ]);

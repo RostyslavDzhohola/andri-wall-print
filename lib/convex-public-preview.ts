@@ -1,11 +1,16 @@
-import { AR_SAMPLES, type ArSample } from "@/lib/ar-sample";
-import { hasReadyArAssetUrls } from "@/lib/ar-launcher";
+import { AR_SAMPLES, type ArSample } from "./ar-sample";
+import { hasReadyArAssetUrls } from "./ar-launcher";
 
 export type PublicPreviewResult =
   | {
       status: "ready";
       sample: ArSample;
       source: "convex" | "local-fallback";
+    }
+  | {
+      status: "preparing";
+      slug: string;
+      reason: string;
     }
   | {
       status: "unavailable";
@@ -61,6 +66,14 @@ function readNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readPreviewStatus(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return readString(value.status);
+}
+
 export function parseConvexPreviewValue(value: unknown): ArSample | null {
   if (!isRecord(value)) {
     return null;
@@ -108,6 +121,27 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
 
 export async function getPublicPreview(slug: string, options: PublicPreviewOptions = {}): Promise<PublicPreviewResult> {
   const convexUrl = options.convexUrl ?? readConvexUrl();
+  const allowLocalFallback = options.allowLocalFallback ?? process.env.PHASE0_PREVIEW_LOCAL_FALLBACK === "1";
+
+  if (allowLocalFallback) {
+    const sample = AR_SAMPLES.find((candidate) => candidate.id === slug);
+
+    if (sample) {
+      return {
+        status: "ready",
+        sample,
+        source: "local-fallback"
+      };
+    }
+
+    if (process.env.PHASE0_PREVIEW_LOCAL_FALLBACK === "1" || !convexUrl) {
+      return {
+        status: "unavailable",
+        slug,
+        reason: "This client preview is unavailable."
+      };
+    }
+  }
 
   if (convexUrl) {
     const response = await (options.fetcher ?? fetch)(`${normalizeConvexUrl(convexUrl)}/api/query`, {
@@ -128,7 +162,7 @@ export async function getPublicPreview(slug: string, options: PublicPreviewOptio
       return {
         status: "unavailable",
         slug,
-        reason: `Convex query returned HTTP ${response.status}.`
+        reason: "This client preview is unavailable."
       };
     }
 
@@ -138,11 +172,28 @@ export async function getPublicPreview(slug: string, options: PublicPreviewOptio
       return {
         status: "unavailable",
         slug,
-        reason: body.errorMessage ?? "Convex query failed."
+        reason: "This client preview is unavailable."
       };
     }
 
     const sample = parseConvexPreviewValue(body.value);
+    const previewStatus = readPreviewStatus(body.value);
+
+    if (previewStatus === "preparing") {
+      return {
+        status: "preparing",
+        slug,
+        reason: "This client preview is being prepared. Check back shortly."
+      };
+    }
+
+    if (previewStatus === "unavailable") {
+      return {
+        status: "unavailable",
+        slug,
+        reason: "This client preview is unavailable."
+      };
+    }
 
     if (sample && hasReadyArAssetUrls(sample)) {
       return {
@@ -155,25 +206,13 @@ export async function getPublicPreview(slug: string, options: PublicPreviewOptio
     return {
       status: "unavailable",
       slug,
-      reason: "Convex preview is missing one or more asset URLs."
+      reason: "This client preview is not available."
     };
-  }
-
-  if (options.allowLocalFallback ?? process.env.PHASE0_PREVIEW_LOCAL_FALLBACK === "1") {
-    const sample = AR_SAMPLES.find((candidate) => candidate.id === slug);
-
-    if (sample) {
-      return {
-        status: "ready",
-        sample,
-        source: "local-fallback"
-      };
-    }
   }
 
   return {
     status: "unavailable",
     slug,
-    reason: "Convex URL is not configured."
+    reason: "This client preview is unavailable."
   };
 }

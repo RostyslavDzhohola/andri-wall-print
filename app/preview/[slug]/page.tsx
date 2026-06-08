@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-import { NativeArSample } from "@/components/ar/native-ar-sample";
+import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
+import { BrandMark } from "@/components/brand/brand-mark";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicPreview } from "@/lib/convex-public-preview";
 
 export const dynamic = "force-dynamic";
@@ -18,35 +21,39 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
 
   if (preview.status === "ready") {
     return (
-      <NativeArSample
+      <ArPreviewSurface
+        brandName="Wall Print Pro"
         samples={[preview.sample]}
-        heading={preview.sample.title}
-        intro="Open native AR from this public preview link to check the print at its real wall size."
+        heading="See it on your wall."
+        intro={`${preview.sample.title} is ready. Use Place on wall to judge the fit in the real room.`}
       />
     );
   }
 
+  const isPreparing = preview.status === "preparing";
+
   return (
-    <main className="min-h-screen bg-[#f7f5ef] px-4 py-6 text-[#171717]">
+    <main className="min-h-screen bg-background px-4 py-6 text-foreground">
       <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-3xl place-items-center">
-        <div className="grid gap-5 rounded-lg border border-[#d7d1c5] bg-[#fffdf8] p-6 shadow-[0_24px_70px_rgba(35,31,25,0.12)]">
-          <div className="grid gap-2">
-            <p className="text-sm font-semibold uppercase tracking-[0px] text-[#6a665f]">Preview unavailable</p>
-            <h1 className="text-3xl font-semibold tracking-[0px] md:text-5xl">This AR preview is not ready.</h1>
-          </div>
-          <p className="text-base leading-7 text-[#5f5c55]" data-testid="preview-unavailable-reason">
-            {preview.reason}
-          </p>
-          <div className="rounded-lg border border-[#ded8cc] bg-[#f7f1e5] p-3 text-sm text-[#4f4a42]">
-            Requested preview: <span className="font-semibold">{slug}</span>
-          </div>
-          <Link
-            className="inline-flex min-h-11 w-fit items-center justify-center rounded-full bg-[#1c4f59] px-5 py-2.5 text-sm font-semibold text-white"
-            href="/"
-          >
-            Open sample gallery
-          </Link>
-        </div>
+        <Card className="w-full shadow-[0_24px_70px_rgba(35,31,25,0.12)]">
+          <CardHeader>
+            <BrandMark href={null} iconSize="lg" />
+            <CardDescription className="font-semibold uppercase">{isPreparing ? "Client preview preparing" : "Client preview unavailable"}</CardDescription>
+            <CardTitle className="text-3xl md:text-5xl">
+              {isPreparing ? "This client preview is being prepared. Check back shortly." : "This client preview is not available."}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5">
+            <p className="text-base leading-7 text-muted-foreground" data-testid="preview-unavailable-reason">
+              {isPreparing
+                ? "This page will show the artwork when it is ready."
+                : "This client preview is unavailable. Ask for a fresh invite link."}
+            </p>
+            <Button asChild className="h-11 w-fit rounded-full px-5">
+              <Link href="/">Open sample gallery</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
     </main>
   );
