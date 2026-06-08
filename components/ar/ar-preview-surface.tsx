@@ -56,19 +56,17 @@ export function ArPreviewSurface({
           {headerAction ? <div className="flex items-center gap-3">{headerAction}</div> : null}
         </header>
 
-        <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] lg:items-stretch">
-          <Card className="justify-center">
-            <CardContent className="grid gap-3 p-5 md:p-7">
-              <h1 className="text-4xl font-semibold leading-none text-balance md:text-6xl">{heading}</h1>
-              <p className="text-base leading-7 text-muted-foreground">{intro}</p>
-            </CardContent>
-          </Card>
+        <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:items-center">
+          <section className="grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
+            <h1 className="max-w-[9ch] text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl">{heading}</h1>
+            <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p>
+          </section>
 
-          <section className="relative min-h-[72vh] overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)]">
+          <section className="relative min-h-[540px] overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[size:46px_46px]" />
             <img
               alt={`${selectedSample.title} wall print`}
-              className="wall-print-shadow relative z-10 mx-auto mt-8 h-[min(62vh,640px)] w-auto rounded-sm object-contain"
+              className="wall-print-shadow relative z-10 mx-auto mt-6 h-[min(47vh,420px)] w-auto rounded-sm object-contain md:mt-8 md:h-[min(62vh,640px)]"
               data-testid="static-artwork-preview"
               draggable={false}
               src={selectedSample.assets.poster}
