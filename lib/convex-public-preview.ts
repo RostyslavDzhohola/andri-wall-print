@@ -1,5 +1,6 @@
 import { AR_SAMPLES, type ArSample } from "./ar-sample";
 import { hasReadyArAssetUrls } from "./ar-launcher";
+import { readConvexRuntimeUrl, readPhase0PreviewLocalFallback } from "./runtime-env";
 
 export type PublicPreviewResult =
   | {
@@ -47,7 +48,7 @@ export type PublicPreviewOptions = {
 };
 
 function readConvexUrl() {
-  return process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
+  return readConvexRuntimeUrl();
 }
 
 function normalizeConvexUrl(convexUrl: string) {
@@ -121,7 +122,7 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
 
 export async function getPublicPreview(slug: string, options: PublicPreviewOptions = {}): Promise<PublicPreviewResult> {
   const convexUrl = options.convexUrl ?? readConvexUrl();
-  const allowLocalFallback = options.allowLocalFallback ?? process.env.PHASE0_PREVIEW_LOCAL_FALLBACK === "1";
+  const allowLocalFallback = options.allowLocalFallback ?? readPhase0PreviewLocalFallback();
 
   if (allowLocalFallback) {
     const sample = AR_SAMPLES.find((candidate) => candidate.id === slug);
@@ -134,7 +135,7 @@ export async function getPublicPreview(slug: string, options: PublicPreviewOptio
       };
     }
 
-    if (process.env.PHASE0_PREVIEW_LOCAL_FALLBACK === "1" || !convexUrl) {
+    if (readPhase0PreviewLocalFallback() || !convexUrl) {
       return {
         status: "unavailable",
         slug,

@@ -5,6 +5,7 @@ import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { readClerkPublishableKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -36,8 +37,8 @@ export default function RootLayout({
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body>
         <AppProviders
-          clerkPublishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-          convexUrl={process.env.NEXT_PUBLIC_CONVEX_URL}
+          clerkPublishableKey={readClerkPublishableKey()}
+          convexUrl={readConvexRuntimeUrl()}
         >
           {children}
         </AppProviders>

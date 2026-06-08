@@ -9,6 +9,7 @@ import { AdminNav } from "@/components/seller/admin-nav";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { readClerkPublishableKey, readClerkSecretKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
 import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
 
 type ClerkEmailAddress = {
@@ -23,7 +24,7 @@ type ClerkUserLike = {
 };
 
 function hasAdminRuntime() {
-  return Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY && process.env.NEXT_PUBLIC_CONVEX_URL);
+  return Boolean(readClerkPublishableKey() && readClerkSecretKey() && readConvexRuntimeUrl());
 }
 
 function getClerkUserEmail(user: ClerkUserLike | null) {
