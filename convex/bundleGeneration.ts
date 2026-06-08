@@ -66,6 +66,7 @@ export const generateBundleAssets = internalAction({
         textureBytes,
         textureFileName: `${stem}.png`,
         textureContentType: "image/png",
+        expectedTextureByteLength: input.source.byteLength,
         title: input.title,
         widthMeters: input.print.widthMeters,
         heightMeters: input.print.heightMeters,

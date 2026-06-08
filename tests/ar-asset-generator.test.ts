@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { generateFlatPrintAssets, makeGlbFlatPrint, makeUsdzFlatPrint } from "@/lib/ar-asset-generator";
+import { assertPngTextureBytes, generateFlatPrintAssets, makeGlbFlatPrint, makeUsdzFlatPrint } from "@/lib/ar-asset-generator";
 
 const ONE_BY_ONE_PNG = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00,
@@ -59,5 +59,20 @@ describe("TypeScript AR asset generator", () => {
     expect(assets.meta.glb.contentType).toBe("model/gltf-binary");
     expect(assets.meta.usdz.contentType).toBe("model/vnd.usdz+zip");
     expect(assets.meta.poster.byteLength + assets.meta.glb.byteLength + assets.meta.usdz.byteLength).toBeLessThan(12_750_000);
+  });
+
+  it("rejects forged upload metadata before generating public AR assets", () => {
+    expect(() => assertPngTextureBytes(ONE_BY_ONE_PNG, ONE_BY_ONE_PNG.byteLength - 1)).toThrow(
+      "Uploaded artwork byte length does not match the stored file."
+    );
+  });
+
+  it("rejects non-PNG bytes before they can be embedded into generated AR assets", () => {
+    expect(() =>
+      generateFlatPrintAssets({
+        ...INPUT,
+        textureBytes: Uint8Array.from([0x47, 0x49, 0x46, 0x38])
+      })
+    ).toThrow("Uploaded artwork is not a valid PNG image.");
   });
 });

@@ -6,6 +6,7 @@ export type FlatPrintAssetInput = {
   textureBytes: Uint8Array;
   textureFileName: string;
   textureContentType: "image/png";
+  expectedTextureByteLength?: number;
   title: string;
   widthMeters: number;
   heightMeters: number;
@@ -49,6 +50,24 @@ function writeUInt32(value: number) {
   const buffer = Buffer.alloc(4);
   buffer.writeUInt32LE(value, 0);
   return buffer;
+}
+
+export function assertPngTextureBytes(textureBytes: Uint8Array, expectedByteLength?: number) {
+  const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+  if (expectedByteLength !== undefined && textureBytes.byteLength !== expectedByteLength) {
+    throw new Error("Uploaded artwork byte length does not match the stored file.");
+  }
+
+  if (textureBytes.byteLength < pngSignature.length) {
+    throw new Error("Uploaded artwork is not a valid PNG image.");
+  }
+
+  for (let index = 0; index < pngSignature.length; index += 1) {
+    if (textureBytes[index] !== pngSignature[index]) {
+      throw new Error("Uploaded artwork is not a valid PNG image.");
+    }
+  }
 }
 
 export function makeGlbFlatPrint(input: FlatPrintAssetInput) {
@@ -335,6 +354,8 @@ export function makeUsdzFlatPrint(input: FlatPrintAssetInput) {
 }
 
 export function generateFlatPrintAssets(input: FlatPrintAssetInput): GeneratedFlatPrintAssets {
+  assertPngTextureBytes(input.textureBytes, input.expectedTextureByteLength);
+
   const poster = Buffer.from(input.textureBytes);
   const glb = makeGlbFlatPrint(input);
   const usdz = makeUsdzFlatPrint(input);
