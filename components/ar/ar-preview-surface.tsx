@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AR_SAMPLES, DEFAULT_AR_SAMPLE, type ArSample } from "@/lib/ar-sample";
+import { cn } from "@/lib/utils";
 
 type ArPreviewSurfaceProps = {
   samples?: ArSample[];
@@ -52,18 +53,18 @@ export function ArPreviewSurface({
         type="module"
       />
       <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-4 md:px-6">
-        <header className="flex items-center justify-between gap-3">
-          <BrandMark ariaLabel={`${brandName} homepage`} className="text-lg" label={brandName} />
-          {headerAction ? <div className="flex items-center gap-3">{headerAction}</div> : null}
+        <header className="flex items-center justify-between gap-4 pt-1 sm:pt-0">
+          <BrandMark ariaLabel={`${brandName} homepage`} className="min-w-0 text-base sm:text-lg" label={brandName} textClassName="truncate" />
+          {headerAction ? <div className="flex shrink-0 items-center gap-3">{headerAction}</div> : null}
         </header>
 
         <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:items-center">
           <section className="grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
-            <h1 className="max-w-[9ch] text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl">{heading}</h1>
+            <h1 className="max-w-none text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl lg:max-w-[9ch]">{heading}</h1>
             <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p>
           </section>
 
-          <section className="relative min-h-[540px] overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
+          <section className="relative overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[size:46px_46px]" />
             <img
               alt={`${selectedSample.title} wall print`}
@@ -72,11 +73,11 @@ export function ArPreviewSurface({
               draggable={false}
               src={selectedSample.assets.poster}
             />
-            <Card className="absolute bottom-4 left-4 right-4 z-20 bg-card/95 py-3 shadow-lg backdrop-blur">
+            <Card className="relative z-20 mx-3 mb-3 mt-4 bg-card/95 py-3 shadow-lg backdrop-blur md:absolute md:bottom-4 md:left-4 md:right-4 md:mx-0 md:mb-0 md:mt-0" data-testid="artwork-controls">
               <CardContent className="px-3">
-                <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 sm:grid-cols-[auto_1fr_auto]">
                   {hasMultipleSamples ? (
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-start gap-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -114,13 +115,15 @@ export function ArPreviewSurface({
                     <div className="hidden sm:block" />
                   )}
 
-                  <div className="min-w-0 text-center sm:text-left">
+                  <div className={cn("min-w-0", hasMultipleSamples ? "text-left" : "col-span-2 text-center sm:col-span-1 sm:text-left")}>
                     <div className="truncate text-base font-semibold" data-testid="selected-artwork-title">
                       {selectedSample.title}
                     </div>
                   </div>
 
-                  <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                  <div className="col-span-2 sm:col-span-1 sm:justify-self-end">
+                    <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                  </div>
                 </div>
               </CardContent>
             </Card>

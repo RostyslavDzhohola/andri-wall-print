@@ -77,6 +77,54 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expectNoBannedRenderedTerms(page);
 });
 
+test.describe("mobile homepage layout", () => {
+  test.use({
+    hasTouch: true,
+    isMobile: true,
+    viewport: { width: 390, height: 844 }
+  });
+
+  test("keeps the header and artwork controls spaced without covering the print", async ({ page }) => {
+    await page.goto("/");
+
+    const metrics = await page.evaluate(() => {
+      const artwork = document.querySelector('[data-testid="static-artwork-preview"]');
+      const controls = document.querySelector('[data-testid="artwork-controls"]');
+      const header = document.querySelector("header");
+      const heading = document.querySelector("h1");
+
+      if (!artwork || !controls || !header || !heading) {
+        throw new Error("Expected mobile hero elements were not rendered.");
+      }
+
+      const artworkRect = artwork.getBoundingClientRect();
+      const controlsRect = controls.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+      const headingRect = heading.getBoundingClientRect();
+      const overlap = Math.max(0, Math.min(artworkRect.bottom, controlsRect.bottom) - Math.max(artworkRect.top, controlsRect.top));
+
+      return {
+        controlsTop: controlsRect.top,
+        headerLeft: headerRect.left,
+        headerRight: headerRect.right,
+        headingLeft: headingRect.left,
+        headingRight: headingRect.right,
+        overlap,
+        printBottom: artworkRect.bottom,
+        viewportWidth: window.innerWidth
+      };
+    });
+
+    expect(metrics.overlap).toBeLessThanOrEqual(1);
+    expect(metrics.controlsTop).toBeGreaterThan(metrics.printBottom);
+    expect(metrics.headerLeft).toBeGreaterThanOrEqual(12);
+    expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
+    expect(metrics.headingLeft).toBeGreaterThanOrEqual(12);
+    expect(metrics.headingRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
+  });
+});
+
+
 test("bottom controls cycle the selected picture and native AR target", async ({ page }) => {
   await page.goto("/");
 
