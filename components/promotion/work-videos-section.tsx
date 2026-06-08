@@ -18,17 +18,17 @@ const workVideos = [
 
 export function WorkVideosSection() {
   return (
-    <section aria-labelledby="work-videos-heading" className="border-t bg-background px-4 py-12 md:px-6" data-testid="work-videos-section">
+    <section aria-labelledby="work-videos-heading" className="border-t bg-background px-4 py-10 md:px-6 md:py-12" data-testid="work-videos-section">
       <div className="mx-auto grid max-w-6xl gap-6">
         <h2 className="text-3xl font-semibold leading-tight md:text-5xl" id="work-videos-heading">
           Check out work
         </h2>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="-mx-4 grid auto-cols-[minmax(16rem,78vw)] grid-flow-col gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid-flow-row lg:grid-cols-3 lg:auto-cols-auto lg:overflow-visible lg:px-0 lg:pb-0">
           {workVideos.map((video) => (
             <div className="overflow-hidden rounded-lg border bg-card" data-testid="work-video-card" key={video.id}>
               <video
-                className="aspect-[9/14] w-full bg-muted object-cover"
+                className="aspect-[4/5] w-full bg-muted object-cover lg:aspect-[9/14]"
                 controls
                 data-testid="work-video"
                 playsInline
