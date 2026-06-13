@@ -17,8 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { AR_SAMPLES, type ArSample } from "@/lib/ar-sample";
-import { normalizeBuilderUploadToPng, validateBuilderSourceUpload, type NormalizedBuilderUpload } from "@/lib/builder-upload-normalization";
-import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
+import {
+  fingerprintBuilderUpload,
+  normalizeBuilderUploadToPng,
+  validateBuilderSourceUpload,
+  type NormalizedBuilderUpload
+} from "@/lib/builder-upload-normalization";
+import { DEFAULT_PREVIEW_BUNDLE_PRINT, formatPreviewBundlePrintDimensions } from "@/lib/preview-bundle-contract";
 import { cn } from "@/lib/utils";
 
 const builderInvitesApi = api.builderInvites;
@@ -88,7 +93,7 @@ function InviteUnavailable({ invite }: { invite: InviteValidation }) {
               Ask the admin for a fresh invite link if this page should collect artwork.
             </p>
             <Button asChild className="h-11 w-fit rounded-full px-5">
-              <Link href="/">Open sample gallery</Link>
+              <Link href="/gallery">Open gallery</Link>
             </Button>
           </CardContent>
         </Card>
@@ -112,7 +117,7 @@ export function BuilderSetupMissing() {
               Ask the admin to refresh the setup before using this invite link.
             </p>
             <Button asChild className="h-11 w-fit rounded-full px-5">
-              <Link href="/">Open sample gallery</Link>
+              <Link href="/gallery">Open gallery</Link>
             </Button>
           </CardContent>
         </Card>
@@ -217,6 +222,7 @@ export function BuilderSurface({ token, samples = AR_SAMPLES }: BuilderSurfacePr
     try {
       const normalized = await normalizeBuilderUploadToPng(file);
       setNormalizedUpload(normalized);
+      const sourceFingerprint = await fingerprintBuilderUpload(normalized.file);
 
       const uploadUrl = await generateUploadUrl({ token });
       const upload = await fetch(uploadUrl, {
@@ -236,6 +242,7 @@ export function BuilderSurface({ token, samples = AR_SAMPLES }: BuilderSurfacePr
         originalFileName: normalized.file.name,
         contentType: normalized.file.type,
         byteLength: normalized.file.size,
+        sourceFingerprint,
         title: titleFromFileName(file.name),
         description: "Wall Print Pro client preview link.",
         print: DEFAULT_PREVIEW_BUNDLE_PRINT
@@ -339,7 +346,7 @@ export function BuilderSurface({ token, samples = AR_SAMPLES }: BuilderSurfacePr
                       <img alt="" className="aspect-[4/3] w-full rounded object-cover" src={sample.assets.poster} />
                       <span className="grid gap-1 px-1 pb-1">
                         <span className="font-semibold text-foreground">{sample.title}</span>
-                        <span className="text-sm text-muted-foreground">{sample.print.label}</span>
+                        <span className="text-sm text-muted-foreground">{formatPreviewBundlePrintDimensions(sample.print)}</span>
                       </span>
                     </Button>
                   ))}
@@ -356,7 +363,7 @@ export function BuilderSurface({ token, samples = AR_SAMPLES }: BuilderSurfacePr
                   </div>
                   <div>
                     <CardTitle className="text-2xl">Uploaded artwork</CardTitle>
-                    <CardDescription>JPEG, PNG, or WebP. The current default print size is applied.</CardDescription>
+                    <CardDescription>JPEG, PNG, or WebP. Choose an artwork file to preview it.</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -373,10 +380,6 @@ export function BuilderSurface({ token, samples = AR_SAMPLES }: BuilderSurfacePr
                     type="file"
                   />
                 </div>
-
-                <Alert>
-                  <AlertDescription>Advanced physical-size overrides are deferred until real phone QA proves they are needed.</AlertDescription>
-                </Alert>
 
                 {normalizedUpload ? (
                   <Alert className="border-status-ready-border bg-status-ready text-status-ready-foreground">

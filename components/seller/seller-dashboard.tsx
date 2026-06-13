@@ -1,10 +1,10 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Copy, ExternalLink, FileImage, Link2, Loader2, Plus, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Copy, DollarSign, ExternalLink, FileImage, Link2, Loader2, Plus, Save, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { CreatePreviewFlow } from "@/components/seller/create-preview-flow";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,12 +20,17 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { AR_SAMPLES } from "@/lib/ar-sample";
 import { getInitialClientPreviewUrl, resolveClientPreviewUrl } from "@/lib/client-preview-url";
+import { formatSquareFeet, formatUsdCents, parseUsdRateInputToCents, type SellerPricingEstimate } from "@/lib/pricing-estimator";
+import { formatPreviewBundlePrintDimensions } from "@/lib/preview-bundle-contract";
 import {
   inviteLinkStatusLabel,
   previewCreationLabel,
@@ -36,6 +41,8 @@ import {
 
 const previewBundlesApi = api.previewBundles;
 const builderInvitesApi = api.builderInvites;
+const sellerPricingApi = api.sellerPricing;
+const dashboardSampleArtwork = AR_SAMPLES.slice(0, 3);
 
 type SellerBundle = {
   id: Id<"previewBundles">;
@@ -43,9 +50,17 @@ type SellerBundle = {
   title: string;
   status: string;
   print: { label: string };
+  pricing: SellerPricingEstimate;
   publicUrl: string;
   createdVia: "seller" | "builder";
   updatedAt: number;
+  confirmations: SellerConfirmation[];
+};
+
+type SellerConfirmation = {
+  id: string;
+  selectedPrintLabel: string;
+  createdAt: number;
 };
 
 type SellerInvite = {
@@ -66,6 +81,12 @@ type CreatedInvite = {
   token: string;
   path: string;
   expiresAt: number;
+};
+
+type SellerPricingState = {
+  currency: "USD";
+  pricePerSquareFootCents: number;
+  updatedAt: number | null;
 };
 
 function formatDate(value: number) {
@@ -113,15 +134,18 @@ export function SellerDashboard() {
   const searchParams = useSearchParams();
   const bundles = useQuery(previewBundlesApi.listForSeller, isAuthenticated ? {} : "skip") as SellerBundle[] | undefined;
   const invites = useQuery(builderInvitesApi.listForSeller, isAuthenticated ? {} : "skip") as SellerInvite[] | undefined;
+  const pricing = useQuery(sellerPricingApi.getForSeller, isAuthenticated ? {} : "skip") as SellerPricingState | undefined;
   const createInvite = useMutation(builderInvitesApi.createInvite);
   const revokeInvite = useMutation(builderInvitesApi.revokeInvite);
   const deleteBundle = useMutation(previewBundlesApi.deleteBundle);
+  const updatePricing = useMutation(sellerPricingApi.updateForSeller);
   const [createdInvite, setCreatedInvite] = useState<CreatedInvite | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreatePreviewOpen, setIsCreatePreviewOpen] = useState(false);
   const [isInviteConfirmOpen, setIsInviteConfirmOpen] = useState(false);
+  const [pricingInput, setPricingInput] = useState("0.00");
   const isAuthorizing = isLoading || !isAuthenticated;
   const [createdInviteUrl, setCreatedInviteUrl] = useState("");
   const counts = useMemo(() => {
@@ -164,6 +188,14 @@ export function SellerDashboard() {
     };
   }, [createdInvite]);
 
+  useEffect(() => {
+    if (!pricing) {
+      return;
+    }
+
+    setPricingInput((pricing.pricePerSquareFootCents / 100).toFixed(2));
+  }, [pricing]);
+
   const copyText = async (value: string, message: string) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -177,6 +209,24 @@ export function SellerDashboard() {
   const copyShareablePath = async (path: string, message: string) => {
     const resolved = await resolveClientPreviewUrl(path);
     await copyText(resolved.url, resolved.warning ? `${message} ${resolved.warning}` : message);
+  };
+
+  const savePricing = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy("pricing");
+    setError(null);
+    setNotice(null);
+
+    try {
+      const pricePerSquareFootCents = parseUsdRateInputToCents(pricingInput);
+      const updated = (await updatePricing({ pricePerSquareFootCents })) as SellerPricingState;
+      setPricingInput((updated.pricePerSquareFootCents / 100).toFixed(2));
+      setNotice("Internal square-foot rate updated.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not update the square-foot rate.");
+    } finally {
+      setBusy(null);
+    }
   };
 
   const createInviteLink = async () => {
@@ -234,7 +284,6 @@ export function SellerDashboard() {
     <section className="grid gap-5 py-6">
       <div className="flex flex-col justify-between gap-4 border-b pb-5 sm:flex-row sm:items-end">
         <div className="grid max-w-2xl gap-2">
-          <p className="text-sm font-medium text-muted-foreground">Wall Print Pro</p>
           <h1 className="text-3xl font-semibold tracking-tight">Admin workspace</h1>
           <p className="text-sm leading-6 text-muted-foreground">
             Create client previews, copy ready links, and keep guest upload invites separate from shareable results.
@@ -290,12 +339,6 @@ export function SellerDashboard() {
               <h2 className="text-xl font-semibold">Client previews</h2>
               <p className="text-sm text-muted-foreground">{bundles?.length ?? 0} total</p>
             </div>
-            <Button asChild className="hidden min-h-11 sm:inline-flex" size="lg" variant="outline">
-              <Link href="/admin/new">
-                <ExternalLink className="size-4" />
-                Full page
-              </Link>
-            </Button>
           </div>
 
           <Card>
@@ -315,8 +358,27 @@ export function SellerDashboard() {
                   <div className="grid gap-2">
                     <h3 className="text-2xl font-semibold">No client previews yet.</h3>
                     <p className="max-w-xl text-sm leading-6 text-muted-foreground">
-                      Create a preview from saved artwork or upload an existing artwork file.
+                      Existing artwork is ready below. Create a client preview when you want a shareable link.
                     </p>
+                  </div>
+                  <div className="grid gap-2" data-testid="dashboard-existing-artwork">
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="text-sm font-semibold">Existing artwork</h4>
+                      <span className="text-xs text-muted-foreground">{dashboardSampleArtwork.length} ready</span>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {dashboardSampleArtwork.map((sample) => (
+                        <div className="grid grid-cols-[56px_1fr] items-center gap-3 rounded-lg border bg-background p-2" key={sample.id}>
+                          <img alt="" className="size-14 rounded-md object-cover" src={sample.assets.poster} />
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold">{sample.title}</div>
+                            <div className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                              {formatPreviewBundlePrintDimensions(sample.print)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <Button className="min-h-11 w-fit" onClick={() => setIsCreatePreviewOpen(true)} size="lg" type="button">
                     <Plus className="size-4" />
@@ -329,6 +391,7 @@ export function SellerDashboard() {
                     <TableRow>
                       <TableHead>Client preview</TableHead>
                       <TableHead className="hidden w-[130px] sm:table-cell">Status</TableHead>
+                      <TableHead className="hidden w-[190px] lg:table-cell">Internal estimate</TableHead>
                       <TableHead className="hidden w-[130px] md:table-cell">Updated</TableHead>
                       <TableHead className="w-[176px] text-right">Actions</TableHead>
                     </TableRow>
@@ -336,19 +399,37 @@ export function SellerDashboard() {
                   <TableBody>
                     {bundles.map((bundle) => {
                       const canCopy = previewStatusGroup(bundle.status) === "ready";
+                      const latestConfirmation = bundle.confirmations[0];
 
                       return (
                         <TableRow key={bundle.id}>
                           <TableCell className="min-w-0 whitespace-normal">
                             <div className="truncate text-base font-semibold">{bundle.title}</div>
                             <div className="mt-1 text-sm text-muted-foreground">
-                              {previewCreationLabel(bundle.createdVia)}
+                              {previewCreationLabel(bundle.createdVia)} · {bundle.print.label}
+                            </div>
+                            {latestConfirmation ? (
+                              <div className="mt-2 flex items-center gap-1.5 text-sm text-foreground" data-testid="dashboard-confirmed-choice">
+                                <CheckCircle2 className="size-4 text-primary" />
+                                <span>
+                                  Confirmed {latestConfirmation.selectedPrintLabel} · {formatDate(latestConfirmation.createdAt)}
+                                </span>
+                              </div>
+                            ) : null}
+                            <div className="mt-1 text-xs text-muted-foreground lg:hidden">
+                              {formatSquareFeet(bundle.pricing.areaSquareFeet)} sq ft · {formatUsdCents(bundle.pricing.estimateCents)}
                             </div>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
                             <Badge className={statusTone(bundle.status)} variant="outline">
                               {previewStatusLabel(bundle.status)}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="font-medium">{formatUsdCents(bundle.pricing.estimateCents)}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {formatSquareFeet(bundle.pricing.areaSquareFeet)} sq ft @ {formatUsdCents(bundle.pricing.pricePerSquareFootCents)}
+                            </div>
                           </TableCell>
                           <TableCell className="hidden text-muted-foreground md:table-cell">{formatDate(bundle.updatedAt)}</TableCell>
                           <TableCell>
@@ -407,7 +488,52 @@ export function SellerDashboard() {
           </Card>
         </section>
 
-        <aside className="grid content-start gap-3" aria-label="Guest upload invites">
+        <aside className="grid content-start gap-3" aria-label="Internal settings and guest upload invites">
+          <Card>
+            <CardHeader>
+              <CardTitle>Internal pricing</CardTitle>
+              <CardDescription className="leading-6">Set the USD square-foot rate used for admin estimates.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              {isAuthorizing || pricing === undefined ? (
+                <div className="grid gap-2">
+                  <Skeleton className="h-11" />
+                  <Skeleton className="h-11" />
+                </div>
+              ) : (
+                <form className="grid gap-3" onSubmit={savePricing}>
+                  <div className="grid gap-2">
+                    <Label htmlFor="price-per-square-foot">USD per sq ft</Label>
+                    <div className="grid grid-cols-[auto_1fr] items-center rounded-lg border bg-background focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                      <span className="grid size-11 place-items-center text-muted-foreground">
+                        <DollarSign className="size-4" />
+                      </span>
+                      <Input
+                        className="h-11 border-0 pl-0 focus-visible:ring-0"
+                        disabled={busy !== null}
+                        id="price-per-square-foot"
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) => setPricingInput(event.target.value)}
+                        step="0.01"
+                        type="number"
+                        value={pricingInput}
+                      />
+                    </div>
+                  </div>
+                  <Button className="min-h-11 w-full" disabled={busy !== null} size="lg" type="submit">
+                    {busy === "pricing" ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                    Save rate
+                  </Button>
+                  <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                    <div className="font-semibold">{formatUsdCents(pricing.pricePerSquareFootCents)} / sq ft</div>
+                    <div className="mt-1 text-muted-foreground">Currency: {pricing.currency}</div>
+                  </div>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Invite upload</CardTitle>

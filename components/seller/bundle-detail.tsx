@@ -1,7 +1,7 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Copy, Loader2, RefreshCw, RotateCcw, Smartphone, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Loader2, RefreshCw, RotateCcw, Smartphone, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { getInitialClientPreviewUrl, resolveClientPreviewUrl } from "@/lib/client-preview-url";
+import { formatSquareFeet, formatUsdCents } from "@/lib/pricing-estimator";
+import { formatPreviewConfirmationAreaBasis } from "@/lib/preview-confirmation-contract";
 import { previewSourceLabel, previewStatusLabel, wallPreviewIssueMessage } from "@/lib/product-copy";
 
 type BundleDetailProps = {
@@ -21,6 +23,15 @@ type BundleDetailProps = {
 };
 
 const previewBundlesApi = api.previewBundles;
+
+function formatDate(value: number) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(value);
+}
 
 export function BundleDetail({ bundleId }: BundleDetailProps) {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -164,7 +175,7 @@ export function BundleDetail({ bundleId }: BundleDetailProps) {
                 Copy link
               </Button>
               <Button asChild className="h-11 rounded-full px-5" variant="outline">
-                <a href={publicUrl || bundle.publicUrl} rel="noreferrer" target="_blank">
+                <a href={bundle.publicUrl} rel="noreferrer" target="_blank">
                   <Smartphone className="size-4" />
                 Open client preview
                 </a>
@@ -196,11 +207,17 @@ export function BundleDetail({ bundleId }: BundleDetailProps) {
               <dd className="text-muted-foreground">{previewSourceLabel(bundle.sourceKind)}</dd>
               <dt className="font-semibold">Print</dt>
               <dd className="text-muted-foreground">{bundle.print.label}</dd>
+              <dt className="font-semibold">Area</dt>
+              <dd className="text-muted-foreground">{formatSquareFeet(bundle.pricing.areaSquareFeet)} sq ft</dd>
+              <dt className="font-semibold">Rate</dt>
+              <dd className="text-muted-foreground">{formatUsdCents(bundle.pricing.pricePerSquareFootCents)} / sq ft</dd>
+              <dt className="font-semibold">Internal estimate</dt>
+              <dd className="text-muted-foreground">{formatUsdCents(bundle.pricing.estimateCents)}</dd>
             </dl>
 
             {bundle.failureReason || bundle.rejectionReason ? (
               <Alert variant="destructive">
-                <AlertDescription>{wallPreviewIssueMessage()}</AlertDescription>
+                <AlertDescription>{bundle.rejectionReason ?? bundle.failureReason ?? wallPreviewIssueMessage()}</AlertDescription>
               </Alert>
             ) : null}
 
@@ -230,6 +247,51 @@ export function BundleDetail({ bundleId }: BundleDetailProps) {
           </CardContent>
         </Card>
       </div>
+
+      <Card data-testid="admin-confirmations">
+        <CardHeader>
+          <CardTitle className="text-xl">Submitted choices</CardTitle>
+          <CardDescription className="leading-6">Confirmed dimensions and notes sent from the client preview page.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {bundle.confirmations.length === 0 ? (
+            <Alert>
+              <AlertDescription>No submitted choices yet.</AlertDescription>
+            </Alert>
+          ) : (
+            bundle.confirmations.map((confirmation: {
+              id: string;
+              selectedPrintLabel: string;
+              areaBasis: { kind: "selected_dimensions"; unit: "square_foot" | "square_meter"; value: number };
+              internalEstimate?: { amount: number; currency: string; label: string; source: "area_rate" };
+              buyerNote?: string;
+              createdAt: number;
+            }) => (
+              <div className="grid gap-3 rounded-lg border bg-muted/40 p-4" key={confirmation.id}>
+                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <CheckCircle2 className="size-4 text-primary" />
+                    <span>{confirmation.selectedPrintLabel}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{formatDate(confirmation.createdAt)}</span>
+                </div>
+                <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
+                  <dt className="font-semibold">Area basis</dt>
+                  <dd className="text-muted-foreground">{formatPreviewConfirmationAreaBasis(confirmation.areaBasis)}</dd>
+                  <dt className="font-semibold">Internal estimate</dt>
+                  <dd className="text-muted-foreground">{confirmation.internalEstimate?.label ?? formatUsdCents(bundle.pricing.estimateCents)}</dd>
+                  {confirmation.buyerNote ? (
+                    <>
+                      <dt className="font-semibold">Note</dt>
+                      <dd className="text-muted-foreground">{confirmation.buyerNote}</dd>
+                    </>
+                  ) : null}
+                </dl>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }

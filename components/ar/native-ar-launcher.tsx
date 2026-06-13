@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getFixedScaleQuickLookHref } from "@/lib/ar-launcher";
+import { getResizableQuickLookHref } from "@/lib/ar-launcher";
 import type { ArSample } from "@/lib/ar-sample";
 import { cn } from "@/lib/utils";
 
@@ -138,7 +138,7 @@ function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | 
 }
 
 export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: NativeArLauncherProps) {
-  const quickLookUrl = getFixedScaleQuickLookHref(sample.assets.usdz);
+  const quickLookUrl = getResizableQuickLookHref(sample.assets.usdz);
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
   const [arError, setArError] = useState<string | null>(null);
   const [preLaunchDialogOpen, setPreLaunchDialogOpen] = useState(false);
@@ -154,7 +154,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     modelViewer.setAttribute("alt", `${sample.title} wall print`);
     modelViewer.setAttribute("ar-placement", "wall");
-    modelViewer.setAttribute("ar-scale", "fixed");
+    modelViewer.setAttribute("ar-scale", "auto");
     modelViewer.setAttribute("ios-src", sample.assets.usdz);
     modelViewer.setAttribute("poster", sample.assets.poster);
     modelViewer.setAttribute("src", sample.assets.glb);
@@ -217,7 +217,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
         ar
         ar-modes="quick-look scene-viewer"
         ar-placement="wall"
-        ar-scale="fixed"
+        ar-scale="auto"
         aria-hidden="true"
         data-testid="ar-launcher-model"
         ios-src={sample.assets.usdz}

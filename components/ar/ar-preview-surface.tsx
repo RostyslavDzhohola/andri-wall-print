@@ -16,9 +16,12 @@ import { cn } from "@/lib/utils";
 type ArPreviewSurfaceProps = {
   samples?: ArSample[];
   heading: string;
-  intro: string;
+  intro?: string;
   brandName?: string;
   headerAction?: ReactNode;
+  headingClassName?: string;
+  sideContent?: ReactNode;
+  showPrintSizeGuide?: boolean;
   afterContent?: ReactNode;
 };
 
@@ -28,6 +31,9 @@ export function ArPreviewSurface({
   intro,
   brandName = "Wall Print Pro",
   headerAction,
+  headingClassName,
+  sideContent,
+  showPrintSizeGuide = false,
   afterContent
 }: ArPreviewSurfaceProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -60,15 +66,21 @@ export function ArPreviewSurface({
 
         <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:items-center">
           <section className="grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
-            <h1 className="max-w-none text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl lg:max-w-[9ch]">{heading}</h1>
-            <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p>
+            <h1 className={cn("max-w-none text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl lg:max-w-[9ch]", headingClassName)}>{heading}</h1>
+            {intro ? <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p> : null}
+            {sideContent ? <div className="max-w-lg">{sideContent}</div> : null}
           </section>
 
           <section className="relative overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[size:46px_46px]" />
             <img
               alt={`${selectedSample.title} wall print`}
-              className="wall-print-shadow relative z-10 mx-auto mt-6 h-[min(47vh,420px)] w-auto rounded-sm object-contain md:mt-8 md:h-[min(62vh,640px)]"
+              className={cn(
+                "wall-print-shadow relative z-10 mx-auto w-auto rounded-sm object-contain",
+                showPrintSizeGuide
+                  ? "mt-10 max-h-[min(43vh,390px)] max-w-[calc(100%-3rem)] md:mt-14 md:max-h-[min(58vh,620px)]"
+                  : "mt-6 h-[min(47vh,420px)] md:mt-8 md:h-[min(62vh,640px)]"
+              )}
               data-testid="static-artwork-preview"
               draggable={false}
               src={selectedSample.assets.poster}

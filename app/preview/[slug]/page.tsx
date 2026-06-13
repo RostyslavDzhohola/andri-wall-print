@@ -4,10 +4,11 @@ import Link from "next/link";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { BrandMark } from "@/components/brand/brand-mark";
+import { PublicPreviewConfirmation } from "@/components/preview/public-preview-confirmation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicPreview } from "@/lib/convex-public-preview";
-import { readClerkPublishableKey, readClerkSecretKey } from "@/lib/runtime-env";
+import { readClerkPublishableKey, readClerkSecretKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
 import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
 
 export const dynamic = "force-dynamic";
@@ -88,15 +89,26 @@ async function PreviewHeaderAction({ publicSlug }: { publicSlug: string }) {
 export default async function PublicPreviewPage({ params }: PublicPreviewPageProps) {
   const { slug } = await params;
   const preview = await getPublicPreview(slug);
+  const buyerAccountsEnabled = Boolean(readClerkPublishableKey() && readConvexRuntimeUrl());
 
   if (preview.status === "ready") {
     return (
       <ArPreviewSurface
         brandName="Wall Print Pro"
         samples={[preview.sample]}
-        heading="See it on your wall."
+        heading="Open on iPhone Safari."
+        headingClassName="max-w-[15ch] text-4xl leading-[1.03] sm:max-w-[16ch] md:text-5xl lg:max-w-[15ch]"
+        intro="To see the wall preview, open this same link in Safari on an iPhone."
         headerAction={<PreviewHeaderAction publicSlug={slug} />}
-        intro={`${preview.sample.title} is ready. Use Place on wall to judge the fit in the real room.`}
+        sideContent={
+          <PublicPreviewConfirmation
+            buyerAccountsEnabled={buyerAccountsEnabled}
+            sample={preview.sample}
+            publicSlug={preview.sample.id}
+            canSubmit={preview.source === "convex"}
+          />
+        }
+        showPrintSizeGuide
       />
     );
   }
@@ -121,7 +133,7 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
                 : "This client preview is unavailable. Ask for a fresh invite link."}
             </p>
             <Button asChild className="h-11 w-fit rounded-full px-5">
-              <Link href="/">Open sample gallery</Link>
+              <Link href="/gallery">Open gallery</Link>
             </Button>
           </CardContent>
         </Card>
