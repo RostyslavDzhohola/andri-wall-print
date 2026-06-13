@@ -1,15 +1,17 @@
+import {
+  formatFeetInchesFromMeters,
+  makePreviewBundlePrintFromCentimeters,
+  makePreviewBundlePrintFromDimensions,
+  type PreviewBundlePrint
+} from "./preview-bundle-contract";
+
 export type ArAssetPath = string;
 
 export type ArSample = {
   id: string;
   title: string;
   description: string;
-  print: {
-    aspectRatio: string;
-    widthMeters: number;
-    heightMeters: number;
-    label: string;
-  };
+  print: PreviewBundlePrint;
   assets: {
     glb: ArAssetPath;
     usdz: ArAssetPath;
@@ -17,24 +19,14 @@ export type ArSample = {
   };
 };
 
-const PRINT_SIZE: ArSample["print"] = {
-  aspectRatio: "1:2",
-  widthMeters: 0.45,
-  heightMeters: 0.9,
-  label: "45 x 90 cm"
-};
+const PRINT_SIZE: ArSample["print"] = makePreviewBundlePrintFromCentimeters(45, 90);
 
 export const AR_SAMPLES: ArSample[] = [
   {
     id: "chicago-final-1",
     title: "Chicago Final 1",
     description: "Client-supplied Chicago wall artwork with the original 60 x 50 inch PDF proportions.",
-    print: {
-      aspectRatio: "6:5",
-      widthMeters: 1.524,
-      heightMeters: 1.27,
-      label: "152 x 127 cm"
-    },
+    print: makePreviewBundlePrintFromDimensions({ width: 60, height: 50, unit: "in" }),
     assets: {
       glb: "/ar/chicago-final-1.glb",
       usdz: "/ar/chicago-final-1.usdz",
@@ -45,12 +37,7 @@ export const AR_SAMPLES: ArSample[] = [
     id: "chicago-final-2",
     title: "Chicago Final 2",
     description: "Client-supplied Chicago lakefront artwork with the original 36 x 60 inch PDF proportions.",
-    print: {
-      aspectRatio: "3:5",
-      widthMeters: 0.914,
-      heightMeters: 1.524,
-      label: "91 x 152 cm"
-    },
+    print: makePreviewBundlePrintFromDimensions({ width: 36, height: 60, unit: "in" }),
     assets: {
       glb: "/ar/chicago-final-2.glb",
       usdz: "/ar/chicago-final-2.usdz",
@@ -61,12 +48,7 @@ export const AR_SAMPLES: ArSample[] = [
     id: "chicago-final-3",
     title: "Chicago Final 3",
     description: "Client-supplied Chicago train artwork with the original 48 x 60 inch PDF proportions.",
-    print: {
-      aspectRatio: "4:5",
-      widthMeters: 1.22,
-      heightMeters: 1.524,
-      label: "122 x 152 cm"
-    },
+    print: makePreviewBundlePrintFromDimensions({ width: 48, height: 60, unit: "in" }),
     assets: {
       glb: "/ar/chicago-final-3.glb",
       usdz: "/ar/chicago-final-3.usdz",
@@ -117,5 +99,9 @@ export function getArSample(id: string) {
 }
 
 export function formatMeters(value: number) {
-  return `${Math.round(value * 100)} cm`;
+  return formatFeetInchesFromMeters(value);
+}
+
+export function formatPrintSize(print: ArSample["print"]) {
+  return `${formatMeters(print.widthMeters)} wide x ${formatMeters(print.heightMeters)} tall`;
 }

@@ -1,6 +1,7 @@
 import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 
+import { normalizePreviewBundlePrintDisplay } from "../lib/preview-bundle-contract";
 import {
   assertValidAssetMeta,
   assertValidPrint,
@@ -145,7 +146,7 @@ export const getPublicPreview = queryGeneric({
             slug: bundle.publicSlug,
             title: bundle.title,
             description: bundle.description,
-            print: bundle.print,
+            print: normalizePreviewBundlePrintDisplay(bundle.print),
             assets,
             assetMeta: bundle.assetMeta,
             status: "ready" as const
@@ -158,7 +159,7 @@ export const getPublicPreview = queryGeneric({
             slug: bundle.publicSlug,
             title: bundle.title,
             description: bundle.description,
-            print: bundle.print,
+            print: normalizePreviewBundlePrintDisplay(bundle.print),
             assets,
             assetMeta: {
               poster: { fileName: "sample-poster", contentType: "image/png", byteLength: 0 },
@@ -214,7 +215,7 @@ export const getPublicPreview = queryGeneric({
       slug: preview.slug,
       title: preview.title,
       description: preview.description,
-      print: preview.print,
+      print: normalizePreviewBundlePrintDisplay(preview.print),
       assets: {
         poster,
         glb,

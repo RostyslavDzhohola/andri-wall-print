@@ -11,8 +11,11 @@
 import type * as arPreviews from "../arPreviews.js";
 import type * as builderInvites from "../builderInvites.js";
 import type * as bundleGeneration from "../bundleGeneration.js";
+import type * as buyerAccounts from "../buyerAccounts.js";
 import type * as previewBundles from "../previewBundles.js";
 import type * as sellerAuth from "../sellerAuth.js";
+import type * as sellerPricing from "../sellerPricing.js";
+import type * as uploadValidation from "../uploadValidation.js";
 import type * as validators from "../validators.js";
 
 import type {
@@ -25,8 +28,11 @@ declare const fullApi: ApiFromModules<{
   arPreviews: typeof arPreviews;
   builderInvites: typeof builderInvites;
   bundleGeneration: typeof bundleGeneration;
+  buyerAccounts: typeof buyerAccounts;
   previewBundles: typeof previewBundles;
   sellerAuth: typeof sellerAuth;
+  sellerPricing: typeof sellerPricing;
+  uploadValidation: typeof uploadValidation;
   validators: typeof validators;
 }>;
 

@@ -1,6 +1,11 @@
 import { Buffer } from "node:buffer";
 
 import { AR_ASSET_SIZE_BUDGET_BYTES, AR_SAMPLE_TOTAL_SIZE_BUDGET_BYTES, type ArAssetKind } from "./ar-launcher";
+import { formatFeetInchesFromMeters } from "./preview-bundle-contract";
+
+export type FlatPrintSizeGuideOptions = {
+  enabled: boolean;
+};
 
 export type FlatPrintAssetInput = {
   textureBytes: Uint8Array;
@@ -11,6 +16,7 @@ export type FlatPrintAssetInput = {
   widthMeters: number;
   heightMeters: number;
   generator: string;
+  sizeGuide?: FlatPrintSizeGuideOptions;
 };
 
 export type GeneratedFlatPrintAssets = {
@@ -52,20 +58,89 @@ function writeUInt32(value: number) {
   return buffer;
 }
 
+function formatSizeGuideMeters(value: number) {
+  return formatFeetInchesFromMeters(value);
+}
+
+function getSizeGuideLabels(input: FlatPrintAssetInput) {
+  const widthLabel = `${formatSizeGuideMeters(input.widthMeters)} wide`;
+  const heightLabel = `${formatSizeGuideMeters(input.heightMeters)} tall`;
+
+  return {
+    widthLabel,
+    heightLabel,
+    summary: `${widthLabel} x ${heightLabel}`
+  };
+}
+
+type SizeGuideGeometry = {
+  points: number[];
+  triangleIndices: number[];
+  quadIndices: number[];
+  min: [number, number, number];
+  max: [number, number, number];
+};
+
+function isSizeGuideEnabled(input: FlatPrintAssetInput) {
+  return input.sizeGuide?.enabled === true;
+}
+
+function makeSizeGuideGeometry(input: FlatPrintAssetInput): SizeGuideGeometry {
+  const halfWidth = input.widthMeters / 2;
+  const halfHeight = input.heightMeters / 2;
+  const shortSide = Math.min(input.widthMeters, input.heightMeters);
+  const thickness = Math.max(shortSide * 0.012, 0.006);
+  const gap = Math.max(shortSide * 0.06, 0.035);
+  const tickLength = Math.max(shortSide * 0.09, 0.05);
+  const zOffset = 0.008;
+  const points: number[] = [];
+  const triangleIndices: number[] = [];
+  const quadIndices: number[] = [];
+
+  const addRect = (xMin: number, yMin: number, xMax: number, yMax: number) => {
+    const base = points.length / 3;
+
+    points.push(xMin, yMin, zOffset, xMax, yMin, zOffset, xMax, yMax, zOffset, xMin, yMax, zOffset);
+    triangleIndices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    quadIndices.push(base, base + 1, base + 2, base + 3);
+  };
+
+  const horizontalGuideY = -halfHeight - gap;
+  const verticalGuideX = halfWidth + gap;
+
+  addRect(-halfWidth, horizontalGuideY - thickness / 2, halfWidth, horizontalGuideY + thickness / 2);
+  addRect(-halfWidth - thickness / 2, horizontalGuideY - tickLength / 2, -halfWidth + thickness / 2, horizontalGuideY + tickLength / 2);
+  addRect(halfWidth - thickness / 2, horizontalGuideY - tickLength / 2, halfWidth + thickness / 2, horizontalGuideY + tickLength / 2);
+  addRect(verticalGuideX - thickness / 2, -halfHeight, verticalGuideX + thickness / 2, halfHeight);
+  addRect(verticalGuideX - tickLength / 2, -halfHeight - thickness / 2, verticalGuideX + tickLength / 2, -halfHeight + thickness / 2);
+  addRect(verticalGuideX - tickLength / 2, halfHeight - thickness / 2, verticalGuideX + tickLength / 2, halfHeight + thickness / 2);
+
+  const xs = points.filter((_value, index) => index % 3 === 0);
+  const ys = points.filter((_value, index) => index % 3 === 1);
+
+  return {
+    points,
+    triangleIndices,
+    quadIndices,
+    min: [Math.min(...xs), Math.min(...ys), zOffset],
+    max: [Math.max(...xs), Math.max(...ys), zOffset]
+  };
+}
+
 export function assertPngTextureBytes(textureBytes: Uint8Array, expectedByteLength?: number) {
   const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
   if (expectedByteLength !== undefined && textureBytes.byteLength !== expectedByteLength) {
-    throw new Error("Uploaded artwork byte length does not match the stored file.");
+    throw new Error("Uploaded artwork byte length does not match the stored file. Choose the file again.");
   }
 
   if (textureBytes.byteLength < pngSignature.length) {
-    throw new Error("Uploaded artwork is not a valid PNG image.");
+    throw new Error("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
   }
 
   for (let index = 0; index < pngSignature.length; index += 1) {
     if (textureBytes[index] !== pngSignature[index]) {
-      throw new Error("Uploaded artwork is not a valid PNG image.");
+      throw new Error("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
     }
   }
 }
@@ -90,15 +165,22 @@ export function makeGlbFlatPrint(input: FlatPrintAssetInput) {
   ]);
   const uvBytes = writeFloat32([0, 0, 1, 0, 1, 1, 0, 1]);
   const indexBytes = writeUint16([0, 1, 2, 0, 2, 3]);
-  const chunks = [
+  const sizeGuide = isSizeGuideEnabled(input) ? makeSizeGuideGeometry(input) : null;
+  const sizeGuidePositionBytes = sizeGuide ? writeFloat32(sizeGuide.points) : null;
+  const sizeGuideIndexBytes = sizeGuide ? writeUint16(sizeGuide.triangleIndices) : null;
+  const chunks: Array<readonly [string, Buffer]> = [
     ["positions", positionBytes],
     ["uvs", uvBytes],
     ["indices", indexBytes],
     ["texture", texture]
-  ] as const;
+  ];
   const offsets: Record<string, number> = {};
   const binParts: Buffer[] = [];
   let binLength = 0;
+
+  if (sizeGuidePositionBytes && sizeGuideIndexBytes) {
+    chunks.push(["sizeGuidePositions", sizeGuidePositionBytes], ["sizeGuideIndices", sizeGuideIndexBytes]);
+  }
 
   for (const [name, data] of chunks) {
     const paddedLength = align(binLength);
@@ -113,58 +195,113 @@ export function makeGlbFlatPrint(input: FlatPrintAssetInput) {
   }
 
   const binChunk = padBuffer(Buffer.concat(binParts), 4, 0x00);
+  const asset: Record<string, unknown> = { version: "2.0", generator: input.generator };
+  const bufferViews: Array<{ buffer: number; byteOffset: number; byteLength: number; target?: number }> = [
+    { buffer: 0, byteOffset: offsets.positions, byteLength: positionBytes.length, target: 34962 },
+    { buffer: 0, byteOffset: offsets.uvs, byteLength: uvBytes.length, target: 34962 },
+    { buffer: 0, byteOffset: offsets.indices, byteLength: indexBytes.length, target: 34963 },
+    { buffer: 0, byteOffset: offsets.texture, byteLength: texture.length }
+  ];
+  const accessors: Array<{ bufferView: number; componentType: number; count: number; type: string; min?: number[]; max?: number[] }> = [
+    {
+      bufferView: 0,
+      componentType: 5126,
+      count: 4,
+      type: "VEC3",
+      min: [-halfWidth, -halfHeight, 0],
+      max: [halfWidth, halfHeight, 0]
+    },
+    { bufferView: 1, componentType: 5126, count: 4, type: "VEC2" },
+    { bufferView: 2, componentType: 5123, count: 6, type: "SCALAR" }
+  ];
+  const primitives: Array<Record<string, unknown>> = [
+    {
+      attributes: { POSITION: 0, TEXCOORD_0: 1 },
+      indices: 2,
+      material: 0,
+      mode: 4
+    }
+  ];
+  const materials: Array<Record<string, unknown>> = [
+    {
+      name: "Printed Artwork",
+      alphaMode: "MASK",
+      alphaCutoff: 0.5,
+      doubleSided: true,
+      pbrMetallicRoughness: {
+        baseColorTexture: { index: 0 },
+        metallicFactor: 0,
+        roughnessFactor: 0.74
+      }
+    }
+  ];
+
+  if (sizeGuide && sizeGuidePositionBytes && sizeGuideIndexBytes) {
+    const labels = getSizeGuideLabels(input);
+    const positionBufferView = bufferViews.length;
+    const positionAccessor = accessors.length;
+    const indexBufferView = bufferViews.length + 1;
+    const indexAccessor = accessors.length + 1;
+    const guideMaterial = materials.length;
+
+    asset.extras = {
+      sizeGuide: {
+        widthMeters: input.widthMeters,
+        heightMeters: input.heightMeters,
+        widthLabel: labels.widthLabel,
+        heightLabel: labels.heightLabel,
+        summary: labels.summary
+      }
+    };
+    bufferViews.push(
+      { buffer: 0, byteOffset: offsets.sizeGuidePositions, byteLength: sizeGuidePositionBytes.length, target: 34962 },
+      { buffer: 0, byteOffset: offsets.sizeGuideIndices, byteLength: sizeGuideIndexBytes.length, target: 34963 }
+    );
+    accessors.push(
+      {
+        bufferView: positionBufferView,
+        componentType: 5126,
+        count: sizeGuide.points.length / 3,
+        type: "VEC3",
+        min: sizeGuide.min,
+        max: sizeGuide.max
+      },
+      { bufferView: indexBufferView, componentType: 5123, count: sizeGuide.triangleIndices.length, type: "SCALAR" }
+    );
+    materials.push({
+      name: "Size Guide",
+      doubleSided: true,
+      pbrMetallicRoughness: {
+        baseColorFactor: [0.09, 0.21, 0.23, 1],
+        metallicFactor: 0,
+        roughnessFactor: 0.55
+      }
+    });
+    primitives.push({
+      attributes: { POSITION: positionAccessor },
+      indices: indexAccessor,
+      material: guideMaterial,
+      mode: 4
+    });
+  }
+
   const gltf = {
-    asset: { version: "2.0", generator: input.generator },
+    asset,
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0, name: input.title }],
     meshes: [
       {
-        primitives: [
-          {
-            attributes: { POSITION: 0, TEXCOORD_0: 1 },
-            indices: 2,
-            material: 0,
-            mode: 4
-          }
-        ]
+        primitives
       }
     ],
-    materials: [
-      {
-        name: "Printed Artwork",
-        alphaMode: "MASK",
-        alphaCutoff: 0.5,
-        doubleSided: true,
-        pbrMetallicRoughness: {
-          baseColorTexture: { index: 0 },
-          metallicFactor: 0,
-          roughnessFactor: 0.74
-        }
-      }
-    ],
+    materials,
     textures: [{ source: 0 }],
     images: [{ mimeType: input.textureContentType, bufferView: 3, name: input.textureFileName }],
     samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 33071, wrapT: 33071 }],
     buffers: [{ byteLength: binChunk.length }],
-    bufferViews: [
-      { buffer: 0, byteOffset: offsets.positions, byteLength: positionBytes.length, target: 34962 },
-      { buffer: 0, byteOffset: offsets.uvs, byteLength: uvBytes.length, target: 34962 },
-      { buffer: 0, byteOffset: offsets.indices, byteLength: indexBytes.length, target: 34963 },
-      { buffer: 0, byteOffset: offsets.texture, byteLength: texture.length }
-    ],
-    accessors: [
-      {
-        bufferView: 0,
-        componentType: 5126,
-        count: 4,
-        type: "VEC3",
-        min: [-halfWidth, -halfHeight, 0],
-        max: [halfWidth, halfHeight, 0]
-      },
-      { bufferView: 1, componentType: 5126, count: 4, type: "VEC2" },
-      { bufferView: 2, componentType: 5123, count: 6, type: "SCALAR" }
-    ]
+    bufferViews,
+    accessors
   };
   const jsonChunk = padBuffer(Buffer.from(JSON.stringify(gltf), "utf8"), 4, 0x20);
   const totalLength = 12 + 8 + jsonChunk.length + 8 + binChunk.length;
@@ -182,6 +319,86 @@ export function makeGlbFlatPrint(input: FlatPrintAssetInput) {
   ]);
 }
 
+function formatUsdaNumber(value: number) {
+  return Number(value.toFixed(6)).toString();
+}
+
+function formatUsdaPoints(points: number[]) {
+  const formattedPoints: string[] = [];
+
+  for (let index = 0; index < points.length; index += 3) {
+    formattedPoints.push(`(${formatUsdaNumber(points[index])}, ${formatUsdaNumber(points[index + 1])}, ${formatUsdaNumber(points[index + 2])})`);
+  }
+
+  return formattedPoints.join(", ");
+}
+
+function formatUsdaIndices(indices: number[]) {
+  return indices.join(", ");
+}
+
+function makeUsdaSizeGuideMesh(input: FlatPrintAssetInput) {
+  if (!isSizeGuideEnabled(input)) {
+    return "";
+  }
+
+  const sizeGuide = makeSizeGuideGeometry(input);
+  const faceVertexCounts = Array.from({ length: sizeGuide.quadIndices.length / 4 }, () => "4").join(", ");
+
+  return `
+    def Mesh "SizeGuide"
+    {
+        uniform token subdivisionScheme = "none"
+        point3f[] points = [${formatUsdaPoints(sizeGuide.points)}]
+        int[] faceVertexCounts = [${faceVertexCounts}]
+        int[] faceVertexIndices = [${formatUsdaIndices(sizeGuide.quadIndices)}]
+        normal3f[] normals = [(0, 0, 1)] (
+            interpolation = "constant"
+        )
+        rel material:binding = </Print/Materials/SizeGuideMaterial>
+    }
+`;
+}
+
+function makeUsdaSizeGuideMaterial(input: FlatPrintAssetInput) {
+  if (!isSizeGuideEnabled(input)) {
+    return "";
+  }
+
+  return `
+        def Material "SizeGuideMaterial"
+        {
+            token outputs:surface.connect = </Print/Materials/SizeGuideMaterial/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.09, 0.21, 0.23)
+                float inputs:opacity = 1
+                float inputs:metallic = 0
+                float inputs:roughness = 0.55
+                token outputs:surface
+            }
+        }
+`;
+}
+
+function makeUsdaPrintMetadata(input: FlatPrintAssetInput) {
+  if (!isSizeGuideEnabled(input)) {
+    return "";
+  }
+
+  const labels = getSizeGuideLabels(input);
+
+  return ` (
+    customData = {
+        string sizeGuideHeight = "${labels.heightLabel}"
+        string sizeGuideSummary = "${labels.summary}"
+        string sizeGuideWidth = "${labels.widthLabel}"
+    }
+)`;
+}
+
 export function makeUsdaFlatPrint(input: FlatPrintAssetInput) {
   const halfWidth = input.widthMeters / 2;
   const halfHeight = input.heightMeters / 2;
@@ -193,7 +410,7 @@ export function makeUsdaFlatPrint(input: FlatPrintAssetInput) {
     upAxis = "Y"
 )
 
-def Xform "Print"
+def Xform "Print"${makeUsdaPrintMetadata(input)}
 {
     def Mesh "ArtworkPlane"
     {
@@ -209,6 +426,7 @@ def Xform "Print"
         )
         rel material:binding = </Print/Materials/PrintedArtwork>
     }
+${makeUsdaSizeGuideMesh(input)}
 
     def Scope "Materials"
     {
@@ -244,6 +462,7 @@ def Xform "Print"
                 float2 outputs:result
             }
         }
+${makeUsdaSizeGuideMaterial(input)}
     }
 }
 `;

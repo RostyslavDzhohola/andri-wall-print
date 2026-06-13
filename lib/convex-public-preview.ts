@@ -1,5 +1,6 @@
 import { AR_SAMPLES, type ArSample } from "./ar-sample";
 import { hasReadyArAssetUrls } from "./ar-launcher";
+import { formatPreviewBundlePrintDimensions } from "./preview-bundle-contract";
 import { readConvexRuntimeUrl, readPhase0PreviewLocalFallback } from "./runtime-env";
 
 export type PublicPreviewResult =
@@ -93,12 +94,11 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
   const aspectRatio = readString(print.aspectRatio);
   const widthMeters = readNumber(print.widthMeters);
   const heightMeters = readNumber(print.heightMeters);
-  const label = readString(print.label);
   const poster = readString(assets.poster);
   const glb = readString(assets.glb);
   const usdz = readString(assets.usdz);
 
-  if (!aspectRatio || widthMeters === null || heightMeters === null || !label || !poster || !glb || !usdz) {
+  if (!aspectRatio || widthMeters === null || heightMeters === null || !poster || !glb || !usdz) {
     return null;
   }
 
@@ -110,7 +110,7 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
       aspectRatio,
       widthMeters,
       heightMeters,
-      label
+      label: formatPreviewBundlePrintDimensions({ widthMeters, heightMeters })
     },
     assets: {
       poster,

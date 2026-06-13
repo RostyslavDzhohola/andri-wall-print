@@ -20,10 +20,10 @@ import {
   PREVIEW_GENERATOR_VERSION,
   createPreviewBundlePublicSlug,
   makePreviewBundleIdempotencyKey,
-  normalizeBundleTitle,
-  validatePreviewBundleUpload
+  normalizeBundleTitle
 } from "../lib/preview-bundle-contract";
 import { requireWallPrintProSeller } from "./sellerAuth";
+import { normalizeUploadSourceFingerprint, validateStoredPreviewUpload } from "./uploadValidation";
 import { assertValidPrint, previewBundleCropValidator, printValidator } from "./validators";
 
 const internal = generatedInternal;
@@ -266,6 +266,8 @@ export const createBundleFromSample = mutation({
       throwConvexCode("INVALID_SAMPLE", "Selected saved artwork does not exist.");
     }
 
+    assertValidPrint(sample.print);
+
     const now = Date.now();
     const generationNumber = invite.generatedCount + 1;
     const title = normalizeBundleTitle(sample.title);
@@ -326,20 +328,20 @@ export const createBundleFromUpload = mutation({
     byteLength: v.number(),
     title: v.string(),
     description: v.optional(v.string()),
+    sourceFingerprint: v.optional(v.string()),
     print: printValidator,
     crop: v.optional(previewBundleCropValidator)
   },
   returns: generatedLinkValidator,
   handler: async (ctx, args) => {
     const invite = await requireInviteForGeneration(ctx, args.token);
-    const uploadValidation = validatePreviewBundleUpload({
+    const requestedFingerprint = normalizeUploadSourceFingerprint(args.sourceFingerprint);
+    const storedUpload = await validateStoredPreviewUpload(ctx, {
+      sourceStorageId: args.sourceStorageId,
       contentType: args.contentType,
-      byteLength: args.byteLength
+      byteLength: args.byteLength,
+      sourceFingerprint: requestedFingerprint
     });
-
-    if (!uploadValidation.ok) {
-      throwConvexCode("INVALID_UPLOAD", uploadValidation.reason ?? "Upload is not supported.");
-    }
 
     assertValidPrint(args.print);
 
@@ -353,9 +355,9 @@ export const createBundleFromUpload = mutation({
       sellerSubject: invite.sellerSubject,
       source: {
         kind: "upload",
-        sourceId: `${invite._id}:${args.sourceStorageId}:${generationNumber}:${now}`,
-        contentType: args.contentType,
-        byteLength: args.byteLength,
+        sourceId: `${invite._id}:${storedUpload.sourceFingerprint}:${generationNumber}:${now}`,
+        contentType: storedUpload.contentType,
+        byteLength: storedUpload.byteLength,
         originalFileName: args.originalFileName
       },
       crop,
@@ -374,8 +376,9 @@ export const createBundleFromUpload = mutation({
         kind: "upload" as const,
         storageId: args.sourceStorageId,
         originalFileName: args.originalFileName,
-        contentType: args.contentType,
-        byteLength: args.byteLength
+        contentType: storedUpload.contentType,
+        byteLength: storedUpload.byteLength,
+        sourceFingerprint: storedUpload.sourceFingerprint
       },
       crop,
       print: args.print,

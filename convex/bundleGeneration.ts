@@ -10,7 +10,23 @@ import { AR_ASSET_CONTENT_TYPES } from "../lib/ar-launcher";
 const internal = generatedInternal;
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? "Uploaded artwork could not be prepared." : "This wall preview needs attention.";
+  if (!(error instanceof Error)) {
+    return "This wall preview needs attention.";
+  }
+
+  return error.message;
+}
+
+function isRejectedUploadError(message: string) {
+  return (
+    message.startsWith("Uploaded artwork byte length") ||
+    message.startsWith("Uploaded artwork is not a valid prepared PNG") ||
+    message.startsWith("Prepared upload ") ||
+    message.startsWith("Generated poster exceeds") ||
+    message.startsWith("Generated GLB exceeds") ||
+    message.startsWith("Generated USDZ exceeds") ||
+    message.startsWith("Generated AR bundle exceeds")
+  );
 }
 
 function fileStem(fileName: string) {
@@ -105,11 +121,13 @@ export const generateBundleAssets = internalAction({
         }
       });
     } catch (error) {
+      const reason = errorMessage(error);
+
       await ctx.runMutation(internal.previewBundles.finalizeGenerationFailure, {
         bundleId: args.bundleId,
         attempt: input.attempt,
-        reason: errorMessage(error),
-        rejected: false
+        reason,
+        rejected: isRejectedUploadError(reason)
       });
     }
 

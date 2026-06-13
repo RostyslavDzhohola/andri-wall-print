@@ -8,15 +8,88 @@ import {
   DEFAULT_PREVIEW_BUNDLE_PRINT,
   PREVIEW_GENERATOR_VERSION,
   createPreviewBundlePublicSlug,
+  formatPreviewBundlePrintDimensions,
   makePreviewBundleIdempotencyKey,
+  normalizePreviewBundlePrintDisplay,
   normalizeBundleTitle,
   stableStringify,
-  validatePreviewBundleUpload
+  type PreviewBundlePrint,
+  type PreviewBundleStatus
 } from "../lib/preview-bundle-contract";
+import {
+  DEFAULT_PRICE_PER_SQUARE_FOOT_CENTS,
+  SELLER_PRICING_CURRENCY,
+  estimatePreviewPricing
+} from "../lib/pricing-estimator";
+import {
+  makeInternalEstimate,
+  makePreviewConfirmationAreaBasis,
+  normalizePreviewConfirmationNote,
+  type InternalAreaPricing,
+  type PreviewConfirmationAreaBasis
+} from "../lib/preview-confirmation-contract";
 import { requireWallPrintProSeller } from "./sellerAuth";
-import { assetMetaValidator, assetStorageIdsValidator, assetUrlsValidator, previewBundleCropValidator, printValidator } from "./validators";
+import { readSellerPricingState } from "./sellerPricing";
+import { normalizeUploadSourceFingerprint, validateStoredPreviewUpload } from "./uploadValidation";
+import {
+  assertValidPrint,
+  assetMetaValidator,
+  assetStorageIdsValidator,
+  assetUrlsValidator,
+  previewBundleCropValidator,
+  previewConfirmationAreaBasisValidator,
+  printValidator
+} from "./validators";
 
 const internal = generatedInternal;
+
+export const GENERATION_UPLOADED_STALE_MS = 2 * 60 * 1000;
+export const GENERATION_GENERATING_STALE_MS = 10 * 60 * 1000;
+export const GENERATION_MAX_AUTO_ATTEMPTS = 3;
+
+const GENERATION_AUTO_FAILURE_REASON =
+  "Wall preview generation did not finish after 3 attempts. Please retry or upload the artwork again.";
+
+const internalEstimateValidator = v.object({
+  amount: v.number(),
+  currency: v.string(),
+  label: v.string(),
+  source: v.literal("area_rate")
+});
+
+const sellerPricingEstimateValidator = v.object({
+  currency: v.literal("USD"),
+  areaSquareFeet: v.number(),
+  pricePerSquareFootCents: v.number(),
+  estimateCents: v.number()
+});
+
+const sellerConfirmationValidator = v.object({
+  id: v.string(),
+  publicSlug: v.string(),
+  previewBundleId: v.string(),
+  selectedArtworkTitle: v.string(),
+  selectedPrintLabel: v.string(),
+  selectedWidthMeters: v.number(),
+  selectedHeightMeters: v.number(),
+  areaBasis: previewConfirmationAreaBasisValidator,
+  buyerNote: v.optional(v.string()),
+  internalEstimate: v.optional(internalEstimateValidator),
+  createdAt: v.number()
+});
+
+const publicConfirmationValidator = v.object({
+  id: v.string(),
+  publicSlug: v.string(),
+  previewBundleId: v.string(),
+  selectedArtworkTitle: v.string(),
+  selectedPrintLabel: v.string(),
+  selectedWidthMeters: v.number(),
+  selectedHeightMeters: v.number(),
+  areaBasis: previewConfirmationAreaBasisValidator,
+  buyerNote: v.optional(v.string()),
+  createdAt: v.number()
+});
 
 const sellerBundleValidator = v.object({
   id: v.string(),
@@ -27,12 +100,14 @@ const sellerBundleValidator = v.object({
   description: v.string(),
   status: v.string(),
   print: printValidator,
+  pricing: sellerPricingEstimateValidator,
   sourceKind: v.union(v.literal("upload"), v.literal("sample")),
   publicUrl: v.string(),
   createdAt: v.number(),
   updatedAt: v.number(),
   failureReason: v.optional(v.string()),
-  rejectionReason: v.optional(v.string())
+  rejectionReason: v.optional(v.string()),
+  confirmations: v.array(sellerConfirmationValidator)
 });
 
 const createdPreviewLinkValidator = v.object({
@@ -62,23 +137,6 @@ const generationInputValidator = v.union(
 
 function toPublicUrl(publicSlug: string) {
   return `/preview/${publicSlug}`;
-}
-
-function normalizeUploadSourceFingerprint(value: string | undefined) {
-  const normalized = value?.trim().toLowerCase();
-
-  if (!normalized) {
-    return null;
-  }
-
-  if (!/^[a-f0-9]{64}$/.test(normalized)) {
-    throw new ConvexError({
-      code: "INVALID_UPLOAD",
-      message: "Upload fingerprint could not be verified."
-    });
-  }
-
-  return normalized;
 }
 
 function logicalUploadSourceId(source: {
@@ -127,7 +185,11 @@ function logicalPreviewBundleKey(bundle: {
   return stableStringify({
     source,
     crop: bundle.crop,
-    print: bundle.print,
+    print: {
+      aspectRatio: bundle.print.aspectRatio,
+      widthMeters: bundle.print.widthMeters,
+      heightMeters: bundle.print.heightMeters
+    },
     generatorVersion: bundle.generatorVersion
   });
 }
@@ -158,7 +220,20 @@ async function findReusableSellerBundle(
   return recentBundles.find((bundle: any) => logicalPreviewBundleKey(bundle) === input.logicalKey) ?? null;
 }
 
-function serializeSellerBundle(bundle: {
+type PreviewConfirmationRecord = {
+  _id: string;
+  previewBundleId: string;
+  publicSlug: string;
+  selectedArtworkTitle: string;
+  selectedPrintLabel: string;
+  selectedWidthMeters: number;
+  selectedHeightMeters: number;
+  areaBasis: PreviewConfirmationAreaBasis;
+  buyerNote?: string;
+  createdAt: number;
+};
+
+type SellerBundleRecord = {
   _id: string;
   publicSlug: string;
   builderInviteId?: string;
@@ -172,7 +247,112 @@ function serializeSellerBundle(bundle: {
   updatedAt: number;
   failureReason?: string;
   rejectionReason?: string;
-}) {
+};
+
+type PreviewBundleJobRecord = {
+  attempt: number;
+  scheduledAt: number;
+  scheduledFunctionId?: string;
+  startedAt?: number;
+  completedAt?: number;
+  error?: string;
+};
+
+type PreviewBundleGenerationRecord = {
+  _id: string;
+  publicSlug: string;
+  title: string;
+  status: PreviewBundleStatus | string;
+  source:
+    | {
+        kind: "upload";
+        storageId: string;
+        originalFileName: string;
+        contentType: string;
+        byteLength: number;
+        sourceFingerprint?: string;
+      }
+    | {
+        kind: "sample";
+        sampleId: string;
+      };
+  print: PreviewBundlePrint;
+  generatorVersion: string;
+  job?: PreviewBundleJobRecord;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type StaleGenerationRecoveryDecision =
+  | {
+      action: "ignore";
+    }
+  | {
+      action: "retry";
+      attempt: number;
+    }
+  | {
+      action: "fail";
+      attempt: number;
+      reason: string;
+    };
+
+type SellerPricingForSerialization = {
+  currency?: string;
+  pricePerSquareFootCents: number;
+};
+
+function sellerPricingToInternalAreaPricing(pricing: SellerPricingForSerialization): InternalAreaPricing {
+  return {
+    ratePerSquareFoot: pricing.pricePerSquareFootCents / 100,
+    currency: pricing.currency ?? SELLER_PRICING_CURRENCY
+  };
+}
+
+export function serializePublicConfirmation(confirmation: PreviewConfirmationRecord) {
+  return {
+    id: confirmation._id,
+    publicSlug: confirmation.publicSlug,
+    previewBundleId: confirmation.previewBundleId,
+    selectedArtworkTitle: confirmation.selectedArtworkTitle,
+    selectedPrintLabel: formatPreviewBundlePrintDimensions({
+      widthMeters: confirmation.selectedWidthMeters,
+      heightMeters: confirmation.selectedHeightMeters
+    }),
+    selectedWidthMeters: confirmation.selectedWidthMeters,
+    selectedHeightMeters: confirmation.selectedHeightMeters,
+    areaBasis: confirmation.areaBasis,
+    buyerNote: confirmation.buyerNote,
+    createdAt: confirmation.createdAt
+  };
+}
+
+export function serializeReusablePublicConfirmationForBundle(
+  confirmation: PreviewConfirmationRecord | null | undefined,
+  bundle: Pick<SellerBundleRecord, "_id" | "publicSlug">
+) {
+  if (!confirmation || confirmation.previewBundleId !== bundle._id || confirmation.publicSlug !== bundle.publicSlug) {
+    return undefined;
+  }
+
+  return serializePublicConfirmation(confirmation);
+}
+
+export function serializeSellerConfirmation(confirmation: PreviewConfirmationRecord, pricing: SellerPricingForSerialization) {
+  return {
+    ...serializePublicConfirmation(confirmation),
+    internalEstimate: makeInternalEstimate(confirmation.areaBasis, sellerPricingToInternalAreaPricing(pricing))
+  };
+}
+
+export function serializeSellerBundle(
+  bundle: SellerBundleRecord,
+  confirmations: PreviewConfirmationRecord[] = [],
+  pricing: SellerPricingForSerialization = {
+    currency: SELLER_PRICING_CURRENCY,
+    pricePerSquareFootCents: DEFAULT_PRICE_PER_SQUARE_FOOT_CENTS
+  }
+) {
   return {
     id: bundle._id,
     publicSlug: bundle.publicSlug,
@@ -181,14 +361,25 @@ function serializeSellerBundle(bundle: {
     title: bundle.title,
     description: bundle.description,
     status: bundle.status,
-    print: bundle.print,
+    print: normalizePreviewBundlePrintDisplay(bundle.print),
+    pricing: estimatePreviewPricing(bundle.print, pricing.pricePerSquareFootCents),
     sourceKind: bundle.source.kind,
     publicUrl: toPublicUrl(bundle.publicSlug),
     createdAt: bundle.createdAt,
     updatedAt: bundle.updatedAt,
     failureReason: bundle.failureReason,
-    rejectionReason: bundle.rejectionReason
+    rejectionReason: bundle.rejectionReason,
+    confirmations: confirmations.map((confirmation) => serializeSellerConfirmation(confirmation, pricing))
   };
+}
+
+async function listBundleConfirmations(ctx: any, bundleId: string, limit?: number) {
+  const queryResult = ctx.db
+    .query("previewConfirmations")
+    .withIndex("by_preview_bundle_createdAt", (q: any) => q.eq("previewBundleId", bundleId))
+    .order("desc");
+
+  return limit === undefined ? await queryResult.collect() : await queryResult.take(limit);
 }
 
 async function getSellerOwnedBundle(ctx: any, bundleId: string) {
@@ -205,6 +396,146 @@ async function getSellerOwnedBundle(ctx: any, bundleId: string) {
   return bundle;
 }
 
+function generationAttempt(bundle: Pick<PreviewBundleGenerationRecord, "job">) {
+  return bundle.job?.attempt ?? 1;
+}
+
+function generationUploadedAgeMs(bundle: PreviewBundleGenerationRecord, now: number) {
+  return now - (bundle.job?.scheduledAt ?? bundle.updatedAt ?? bundle.createdAt);
+}
+
+function generationGeneratingAgeMs(bundle: PreviewBundleGenerationRecord, now: number) {
+  return now - (bundle.job?.startedAt ?? bundle.updatedAt ?? bundle.job?.scheduledAt ?? bundle.createdAt);
+}
+
+export function serializeGenerationInput(bundle: PreviewBundleGenerationRecord | null | undefined) {
+  if (!bundle || bundle.source.kind !== "upload" || bundle.status !== "uploaded") {
+    return null;
+  }
+
+  return {
+    bundleId: bundle._id,
+    publicSlug: bundle.publicSlug,
+    title: bundle.title,
+    print: normalizePreviewBundlePrintDisplay(bundle.print),
+    source: {
+      storageId: bundle.source.storageId,
+      originalFileName: bundle.source.originalFileName,
+      contentType: bundle.source.contentType,
+      byteLength: bundle.source.byteLength
+    },
+    generatorVersion: bundle.generatorVersion,
+    attempt: generationAttempt(bundle)
+  };
+}
+
+export function isFreshPreviewGeneration(bundle: PreviewBundleGenerationRecord, now = Date.now()) {
+  if (bundle.source.kind !== "upload") {
+    return false;
+  }
+
+  if (bundle.status === "uploaded") {
+    return generationUploadedAgeMs(bundle, now) < GENERATION_UPLOADED_STALE_MS;
+  }
+
+  if (bundle.status === "generating") {
+    return generationGeneratingAgeMs(bundle, now) < GENERATION_GENERATING_STALE_MS;
+  }
+
+  return false;
+}
+
+export function selectStaleGenerationRecovery(
+  bundle: PreviewBundleGenerationRecord,
+  now = Date.now()
+): StaleGenerationRecoveryDecision {
+  if (bundle.source.kind !== "upload") {
+    return { action: "ignore" };
+  }
+
+  const attempt = generationAttempt(bundle);
+
+  if (bundle.status === "uploaded") {
+    if (generationUploadedAgeMs(bundle, now) < GENERATION_UPLOADED_STALE_MS) {
+      return { action: "ignore" };
+    }
+
+    if (attempt >= GENERATION_MAX_AUTO_ATTEMPTS) {
+      return {
+        action: "fail",
+        attempt,
+        reason: GENERATION_AUTO_FAILURE_REASON
+      };
+    }
+
+    return {
+      action: "retry",
+      attempt: attempt + 1
+    };
+  }
+
+  if (bundle.status === "generating") {
+    if (generationGeneratingAgeMs(bundle, now) < GENERATION_GENERATING_STALE_MS) {
+      return { action: "ignore" };
+    }
+
+    if (attempt >= GENERATION_MAX_AUTO_ATTEMPTS) {
+      return {
+        action: "fail",
+        attempt,
+        reason: GENERATION_AUTO_FAILURE_REASON
+      };
+    }
+
+    return {
+      action: "retry",
+      attempt: attempt + 1
+    };
+  }
+
+  return { action: "ignore" };
+}
+
+export async function scheduleBundleGenerationJob(ctx: any, bundleId: string, attempt: number, scheduledAt = Date.now()) {
+  const scheduledFunctionId = await ctx.scheduler.runAfter(0, internal.bundleGeneration.generateBundleAssets, { bundleId });
+
+  await ctx.db.patch(bundleId as never, {
+    status: "uploaded",
+    failureReason: undefined,
+    rejectionReason: undefined,
+    job: {
+      attempt,
+      scheduledAt,
+      scheduledFunctionId
+    },
+    updatedAt: scheduledAt
+  });
+
+  return scheduledFunctionId;
+}
+
+async function markGenerationPermanentlyFailed(
+  ctx: any,
+  bundle: PreviewBundleGenerationRecord,
+  reason: string,
+  completedAt = Date.now()
+) {
+  await ctx.db.patch(bundle._id as never, {
+    status: "failed",
+    failureReason: reason,
+    rejectionReason: undefined,
+    job: {
+      attempt: generationAttempt(bundle),
+      scheduledAt: bundle.job?.scheduledAt ?? completedAt,
+      scheduledFunctionId: bundle.job?.scheduledFunctionId,
+      startedAt: bundle.job?.startedAt,
+      completedAt,
+      error: reason
+    },
+    updatedAt: completedAt
+  });
+}
+
 export const generateSellerUploadUrl = mutation({
   args: {},
   returns: v.string(),
@@ -214,11 +545,74 @@ export const generateSellerUploadUrl = mutation({
   }
 });
 
+export const submitPublicConfirmation = mutation({
+  args: {
+    publicSlug: v.string(),
+    buyerNote: v.optional(v.string())
+  },
+  returns: publicConfirmationValidator,
+  handler: async (ctx, args) => {
+    const publicSlug = args.publicSlug.trim();
+
+    if (!publicSlug) {
+      throw new ConvexError({
+        code: "INVALID_CONFIRMATION",
+        message: "This preview could not be confirmed."
+      });
+    }
+
+    const bundle = await ctx.db
+      .query("previewBundles")
+      .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
+      .first();
+
+    if (!bundle || bundle.status !== "ready") {
+      throw new ConvexError({
+        code: "PREVIEW_UNAVAILABLE",
+        message: "This preview is not available for confirmation."
+      });
+    }
+
+    const existingConfirmation = await ctx.db
+      .query("previewConfirmations")
+      .withIndex("by_public_slug_createdAt", (q) => q.eq("publicSlug", bundle.publicSlug))
+      .order("desc")
+      .first();
+    const reusableConfirmation = serializeReusablePublicConfirmationForBundle(existingConfirmation, bundle);
+
+    if (reusableConfirmation) {
+      return reusableConfirmation;
+    }
+
+    const now = Date.now();
+    const buyerNote = normalizePreviewConfirmationNote(args.buyerNote);
+    const areaBasis = makePreviewConfirmationAreaBasis(bundle.print);
+    const confirmation = {
+      previewBundleId: bundle._id,
+      publicSlug: bundle.publicSlug,
+      selectedArtworkTitle: bundle.title,
+      selectedPrintLabel: formatPreviewBundlePrintDimensions(bundle.print),
+      selectedWidthMeters: bundle.print.widthMeters,
+      selectedHeightMeters: bundle.print.heightMeters,
+      areaBasis,
+      ...(buyerNote ? { buyerNote } : {}),
+      createdAt: now
+    };
+    const confirmationId = await ctx.db.insert("previewConfirmations", confirmation);
+
+    return serializePublicConfirmation({
+      _id: confirmationId,
+      ...confirmation
+    });
+  }
+});
+
 export const listForSeller = query({
   args: {},
   returns: v.array(sellerBundleValidator),
   handler: async (ctx) => {
     const seller = await requireWallPrintProSeller(ctx);
+    const pricing = await readSellerPricingState(ctx, seller.subject);
     const bundles = await ctx.db
       .query("previewBundles")
       .withIndex("by_seller_createdAt", (q) => q.eq("sellerSubject", seller.subject))
@@ -242,7 +636,13 @@ export const listForSeller = query({
       }
     }
 
-    return uniqueBundles.map(serializeSellerBundle);
+    const serializedBundles = [];
+
+    for (const bundle of uniqueBundles) {
+      serializedBundles.push(serializeSellerBundle(bundle, await listBundleConfirmations(ctx, bundle._id, 1), pricing));
+    }
+
+    return serializedBundles;
   }
 });
 
@@ -259,7 +659,8 @@ export const getForSeller = query({
       return null;
     }
 
-    return serializeSellerBundle(bundle);
+    const pricing = await readSellerPricingState(ctx, seller.subject);
+    return serializeSellerBundle(bundle, await listBundleConfirmations(ctx, bundle._id, 20), pricing);
   }
 });
 
@@ -286,6 +687,7 @@ export const createBundleFromSample = mutation({
     const title = normalizeBundleTitle(args.title ?? sample.title);
     const description = args.description?.trim() || sample.description;
     const print = args.print ?? sample.print ?? DEFAULT_PREVIEW_BUNDLE_PRINT;
+    assertValidPrint(print);
     const idempotencyKey = makePreviewBundleIdempotencyKey({
       sellerSubject: seller.subject,
       source: {
@@ -367,38 +769,34 @@ export const createBundleFromUpload = mutation({
   returns: createdPreviewLinkValidator,
   handler: async (ctx, args) => {
     const seller = await requireWallPrintProSeller(ctx);
-    const uploadValidation = validatePreviewBundleUpload({
+    const requestedFingerprint = normalizeUploadSourceFingerprint(args.sourceFingerprint);
+    const storedUpload = await validateStoredPreviewUpload(ctx, {
+      sourceStorageId: args.sourceStorageId,
       contentType: args.contentType,
-      byteLength: args.byteLength
+      byteLength: args.byteLength,
+      sourceFingerprint: requestedFingerprint
     });
-
-    if (!uploadValidation.ok) {
-      throw new ConvexError({
-        code: "INVALID_UPLOAD",
-        message: uploadValidation.reason
-      });
-    }
+    assertValidPrint(args.print);
 
     const now = Date.now();
     const crop = args.crop ?? DEFAULT_PREVIEW_BUNDLE_CROP;
     const title = normalizeBundleTitle(args.title);
     const description = args.description?.trim() || "Wall Print Pro wall preview demo link.";
-    const sourceFingerprint = normalizeUploadSourceFingerprint(args.sourceFingerprint);
     const source = {
       kind: "upload" as const,
       storageId: args.sourceStorageId,
       originalFileName: args.originalFileName,
-      contentType: args.contentType,
-      byteLength: args.byteLength,
-      ...(sourceFingerprint ? { sourceFingerprint } : {})
+      contentType: storedUpload.contentType,
+      byteLength: storedUpload.byteLength,
+      sourceFingerprint: storedUpload.sourceFingerprint
     };
     const idempotencyKey = makePreviewBundleIdempotencyKey({
       sellerSubject: seller.subject,
       source: {
         kind: "upload",
-        sourceId: sourceFingerprint ? `sha256:${sourceFingerprint}` : logicalUploadSourceId(source),
-        contentType: args.contentType,
-        byteLength: args.byteLength
+        sourceId: `sha256:${storedUpload.sourceFingerprint}`,
+        contentType: storedUpload.contentType,
+        byteLength: storedUpload.byteLength
       },
       crop,
       print: args.print,
@@ -439,15 +837,11 @@ export const createBundleFromUpload = mutation({
       generatorVersion: PREVIEW_GENERATOR_VERSION,
       idempotencyKey,
       status: "uploaded",
-      job: {
-        attempt: 1,
-        scheduledAt: now
-      },
       createdAt: now,
       updatedAt: now
     });
 
-    await ctx.scheduler.runAfter(0, internal.bundleGeneration.generateBundleAssets, { bundleId });
+    await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
 
     return {
       bundleId,
@@ -478,17 +872,7 @@ export const retryBundle = mutation({
     }
 
     const now = Date.now();
-    await ctx.db.patch(args.bundleId, {
-      status: "uploaded",
-      failureReason: undefined,
-      rejectionReason: undefined,
-      job: {
-        attempt: (bundle.job?.attempt ?? 0) + 1,
-        scheduledAt: now
-      },
-      updatedAt: now
-    });
-    await ctx.scheduler.runAfter(0, internal.bundleGeneration.generateBundleAssets, { bundleId: args.bundleId });
+    await scheduleBundleGenerationJob(ctx, args.bundleId, (bundle.job?.attempt ?? 0) + 1, now);
 
     return null;
   }
@@ -543,7 +927,17 @@ export const deleteBundle = mutation({
       storageIds.add(bundle.assetStorageIds.usdz);
     }
 
-    await Promise.all(Array.from(storageIds, (storageId) => ctx.storage.delete(storageId as never).catch(() => null)));
+    const confirmations = await listBundleConfirmations(ctx, args.bundleId);
+    const buyerClaims = await ctx.db
+      .query("buyerPreviewClaims")
+      .withIndex("by_preview_bundle", (q: any) => q.eq("previewBundleId", args.bundleId))
+      .collect();
+
+    await Promise.all([
+      ...Array.from(storageIds, (storageId) => ctx.storage.delete(storageId as never).catch(() => null)),
+      ...confirmations.map((confirmation: { _id: string }) => ctx.db.delete(confirmation._id as never)),
+      ...buyerClaims.map((claim: { _id: string }) => ctx.db.delete(claim._id as never))
+    ]);
     await ctx.db.delete(args.bundleId);
 
     return null;
@@ -558,19 +952,7 @@ export const getGenerationInput = internalQuery({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.source.kind !== "upload" || bundle.status === "revoked") {
-      return null;
-    }
-
-    return {
-      bundleId: bundle._id,
-      publicSlug: bundle.publicSlug,
-      title: bundle.title,
-      print: bundle.print,
-      source: bundle.source,
-      generatorVersion: bundle.generatorVersion,
-      attempt: bundle.job?.attempt ?? 1
-    };
+    return serializeGenerationInput(bundle);
   }
 });
 
@@ -583,18 +965,20 @@ export const markGenerating = internalMutation({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.status === "revoked" || (bundle.job?.attempt ?? 1) !== args.attempt) {
+    if (!bundle || bundle.source.kind !== "upload" || bundle.status !== "uploaded" || (bundle.job?.attempt ?? 1) !== args.attempt) {
       return false;
     }
 
+    const now = Date.now();
     await ctx.db.patch(args.bundleId, {
       status: "generating",
       job: {
         attempt: args.attempt,
-        scheduledAt: bundle.job?.scheduledAt ?? Date.now(),
-        startedAt: Date.now()
+        scheduledAt: bundle.job?.scheduledAt ?? now,
+        scheduledFunctionId: bundle.job?.scheduledFunctionId,
+        startedAt: now
       },
-      updatedAt: Date.now()
+      updatedAt: now
     });
 
     return true;
@@ -612,7 +996,7 @@ export const finalizeBundleReady = internalMutation({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.status === "revoked" || (bundle.job?.attempt ?? 1) !== args.attempt) {
+    if (!bundle || bundle.status !== "generating" || (bundle.job?.attempt ?? 1) !== args.attempt) {
       return false;
     }
 
@@ -628,6 +1012,7 @@ export const finalizeBundleReady = internalMutation({
       job: {
         attempt: args.attempt,
         scheduledAt: bundle.job?.scheduledAt ?? now,
+        scheduledFunctionId: bundle.job?.scheduledFunctionId,
         startedAt: bundle.job?.startedAt,
         completedAt: now
       },
@@ -649,7 +1034,7 @@ export const finalizeGenerationFailure = internalMutation({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.status === "revoked" || (bundle.job?.attempt ?? 1) !== args.attempt) {
+    if (!bundle || !["uploaded", "generating"].includes(bundle.status) || (bundle.job?.attempt ?? 1) !== args.attempt) {
       return null;
     }
 
@@ -661,6 +1046,7 @@ export const finalizeGenerationFailure = internalMutation({
       job: {
         attempt: args.attempt,
         scheduledAt: bundle.job?.scheduledAt ?? now,
+        scheduledFunctionId: bundle.job?.scheduledFunctionId,
         startedAt: bundle.job?.startedAt,
         completedAt: now,
         error: args.reason
@@ -705,7 +1091,7 @@ export const getReadyPublicBundle = internalQuery({
       slug: bundle.publicSlug,
       title: bundle.status === "ready" ? bundle.title : "Wall Print Pro preview",
       description: bundle.status === "ready" ? bundle.description : "Your wall preview is being prepared.",
-      print: bundle.print,
+      print: normalizePreviewBundlePrintDisplay(bundle.print),
       assetStorageIds: bundle.assetStorageIds,
       assetUrls: bundle.assetUrls,
       assetMeta: bundle.assetMeta,

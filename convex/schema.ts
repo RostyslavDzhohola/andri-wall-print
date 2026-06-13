@@ -8,6 +8,7 @@ import {
   previewBundleCropValidator,
   previewBundleSourceValidator,
   previewBundleStatusValidator,
+  previewConfirmationAreaBasisValidator,
   printValidator
 } from "./validators";
 
@@ -38,6 +39,13 @@ export default defineSchema({
   })
     .index("by_token_hash", ["tokenHash"])
     .index("by_seller_createdAt", ["sellerSubject", "createdAt"]),
+  sellerPricingSettings: defineTable({
+    sellerSubject: v.string(),
+    currency: v.literal("USD"),
+    pricePerSquareFootCents: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  }).index("by_seller_subject", ["sellerSubject"]),
   previewBundles: defineTable({
     publicSlug: v.string(),
     sellerSubject: v.string(),
@@ -61,6 +69,7 @@ export default defineSchema({
       v.object({
         attempt: v.number(),
         scheduledAt: v.number(),
+        scheduledFunctionId: v.optional(v.string()),
         startedAt: v.optional(v.number()),
         completedAt: v.optional(v.number()),
         error: v.optional(v.string())
@@ -74,5 +83,37 @@ export default defineSchema({
     .index("by_public_slug", ["publicSlug"])
     .index("by_seller_createdAt", ["sellerSubject", "createdAt"])
     .index("by_status_createdAt", ["status", "createdAt"])
-    .index("by_idempotency_key", ["idempotencyKey"])
+    .index("by_idempotency_key", ["idempotencyKey"]),
+  previewConfirmations: defineTable({
+    previewBundleId: v.id("previewBundles"),
+    publicSlug: v.string(),
+    selectedArtworkTitle: v.string(),
+    selectedPrintLabel: v.string(),
+    selectedWidthMeters: v.number(),
+    selectedHeightMeters: v.number(),
+    areaBasis: previewConfirmationAreaBasisValidator,
+    buyerNote: v.optional(v.string()),
+    createdAt: v.number()
+  })
+    .index("by_preview_bundle_createdAt", ["previewBundleId", "createdAt"])
+    .index("by_public_slug_createdAt", ["publicSlug", "createdAt"]),
+  buyerProfiles: defineTable({
+    buyerSubject: v.string(),
+    buyerEmail: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  }).index("by_buyer_subject", ["buyerSubject"]),
+  buyerPreviewClaims: defineTable({
+    buyerSubject: v.string(),
+    buyerEmail: v.optional(v.string()),
+    previewBundleId: v.id("previewBundles"),
+    publicSlug: v.string(),
+    confirmationId: v.optional(v.id("previewConfirmations")),
+    source: v.union(v.literal("public_preview"), v.literal("confirmation")),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  })
+    .index("by_buyer_createdAt", ["buyerSubject", "createdAt"])
+    .index("by_buyer_public_slug", ["buyerSubject", "publicSlug"])
+    .index("by_preview_bundle", ["previewBundleId"])
 });

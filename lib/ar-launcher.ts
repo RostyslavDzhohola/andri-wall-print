@@ -32,13 +32,15 @@ export type AssetDeliveryFetch = (
   init: { method: "HEAD"; redirect: "follow" }
 ) => Promise<Pick<Response, "headers" | "ok" | "redirected" | "status">>;
 
-export function getFixedScaleQuickLookHref(usdzHref: string) {
+export function getResizableQuickLookHref(usdzHref: string) {
   const [withoutHash, rawHash = ""] = usdzHref.split("#", 2);
   const params = new URLSearchParams(rawHash);
 
-  params.set("allowsContentScaling", "0");
+  params.delete("allowsContentScaling");
 
-  return `${withoutHash}#${params.toString()}`;
+  const nextHash = params.toString();
+
+  return nextHash ? `${withoutHash}#${nextHash}` : withoutHash;
 }
 
 export function getAssetKindFromHref(href: string): ArAssetKind {

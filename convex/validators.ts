@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { PREVIEW_BUNDLE_STATUSES } from "../lib/preview-bundle-contract";
+import { PREVIEW_BUNDLE_STATUSES, validatePreviewBundlePrintSize } from "../lib/preview-bundle-contract";
 
 type PrintPayload = {
   widthMeters: number;
@@ -73,11 +73,11 @@ export const previewBundleSourceValidator = v.union(
   })
 );
 
-function assertPositiveFiniteNumber(fieldName: string, value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`${fieldName} must be a positive finite number.`);
-  }
-}
+export const previewConfirmationAreaBasisValidator = v.object({
+  kind: v.literal("selected_dimensions"),
+  unit: v.union(v.literal("square_foot"), v.literal("square_meter")),
+  value: v.number()
+});
 
 function assertNonNegativeSafeInteger(fieldName: string, value: number) {
   if (!Number.isSafeInteger(value) || value < 0) {
@@ -86,8 +86,11 @@ function assertNonNegativeSafeInteger(fieldName: string, value: number) {
 }
 
 export function assertValidPrint(print: PrintPayload) {
-  assertPositiveFiniteNumber("print.widthMeters", print.widthMeters);
-  assertPositiveFiniteNumber("print.heightMeters", print.heightMeters);
+  const validation = validatePreviewBundlePrintSize(print);
+
+  if (!validation.ok) {
+    throw new Error(validation.reason);
+  }
 }
 
 export function assertValidAssetMeta(assetMeta: AssetMetaPayload) {
