@@ -1,3 +1,5 @@
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { CircleUserRound, LogIn, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
@@ -5,6 +7,8 @@ import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicPreview } from "@/lib/convex-public-preview";
+import { readClerkPublishableKey, readClerkSecretKey } from "@/lib/runtime-env";
+import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +18,72 @@ type PublicPreviewPageProps = {
     slug: string;
   }>;
 };
+
+type ClerkEmailAddress = {
+  id?: string | null;
+  emailAddress?: string | null;
+};
+
+type ClerkUserLike = {
+  primaryEmailAddressId?: string | null;
+  primaryEmailAddress?: ClerkEmailAddress | null;
+  emailAddresses?: ClerkEmailAddress[] | null;
+};
+
+function getClerkUserEmail(user: ClerkUserLike | null) {
+  if (!user) {
+    return null;
+  }
+
+  return (
+    user.primaryEmailAddress?.emailAddress ??
+    user.emailAddresses?.find((emailAddress) => emailAddress.id === user.primaryEmailAddressId)?.emailAddress ??
+    user.emailAddresses?.[0]?.emailAddress ??
+    null
+  );
+}
+
+function previewSignInUrl(publicSlug: string) {
+  return `/sign-in?redirect_url=${encodeURIComponent(`/preview/${publicSlug}`)}`;
+}
+
+function previewAuthRuntimeAvailable() {
+  return Boolean(readClerkPublishableKey() && readClerkSecretKey());
+}
+
+async function PreviewHeaderAction({ publicSlug }: { publicSlug: string }) {
+  if (!previewAuthRuntimeAvailable()) {
+    return null;
+  }
+
+  const { userId } = await auth();
+
+  if (!userId) {
+    return (
+      <Button asChild className="h-9 rounded-full px-4" variant="outline">
+        <Link href={previewSignInUrl(publicSlug)}>
+          <LogIn className="size-4" />
+          Sign in
+        </Link>
+      </Button>
+    );
+  }
+
+  const user = await currentUser();
+  const email = getClerkUserEmail(user);
+  const isAdmin = isWallPrintProSellerIdentity({ subject: userId, email });
+  const dashboardPath = isAdmin ? "/admin" : "/account";
+  const Icon = isAdmin ? ShieldCheck : CircleUserRound;
+
+  return (
+    <Button asChild className="h-9 rounded-full px-4" variant="outline">
+      <Link href={dashboardPath}>
+        <Icon className="size-4" />
+        {isAdmin ? "Admin" : "Account"}
+      </Link>
+    </Button>
+  );
+}
 
 export default async function PublicPreviewPage({ params }: PublicPreviewPageProps) {
   const { slug } = await params;
@@ -25,6 +95,7 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
         brandName="Wall Print Pro"
         samples={[preview.sample]}
         heading="See it on your wall."
+        headerAction={<PreviewHeaderAction publicSlug={slug} />}
         intro={`${preview.sample.title} is ready. Use Place on wall to judge the fit in the real room.`}
       />
     );
