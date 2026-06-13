@@ -1,0 +1,205 @@
+"use client";
+
+import { UserButton } from "@clerk/nextjs";
+import { ArrowLeft, Check, CircleUserRound, Images, LogIn, Ruler, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Script from "next/script";
+import { useRef, useState } from "react";
+
+import { NativeArLauncher, type ArDiagnostics } from "@/components/ar/native-ar-launcher";
+import { BrandMark } from "@/components/brand/brand-mark";
+import { Button } from "@/components/ui/button";
+import { AR_SAMPLES, DEFAULT_AR_SAMPLE, type ArSample } from "@/lib/ar-sample";
+import { formatPreviewBundlePrintArea, formatPreviewBundlePrintDimensions } from "@/lib/preview-bundle-contract";
+import { cn } from "@/lib/utils";
+
+type ArtworkGallerySurfaceProps = {
+  dashboardHref?: "/account" | "/admin" | "/dashboard";
+  dashboardKind?: "account" | "admin" | "signIn";
+  dashboardLabel?: string;
+  samples?: ArSample[];
+  showUserButton?: boolean;
+};
+
+function DashboardIcon({ kind }: { kind: NonNullable<ArtworkGallerySurfaceProps["dashboardKind"]> }) {
+  if (kind === "admin") {
+    return <ShieldCheck className="size-4" aria-hidden="true" />;
+  }
+
+  if (kind === "account") {
+    return <CircleUserRound className="size-4" aria-hidden="true" />;
+  }
+
+  return <LogIn className="size-4" aria-hidden="true" />;
+}
+
+export function ArtworkGallerySurface({
+  dashboardHref = "/dashboard",
+  dashboardKind = "signIn",
+  dashboardLabel = "Sign in",
+  samples = AR_SAMPLES,
+  showUserButton = false
+}: ArtworkGallerySurfaceProps) {
+  const router = useRouter();
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [diagnostics, setDiagnostics] = useState<ArDiagnostics | null>(null);
+  const previewRef = useRef<HTMLElement | null>(null);
+  const selectedSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
+  const selectedPrintSizeLabel = formatPreviewBundlePrintDimensions(selectedSample.print);
+  const selectedPrintAreaLabel = formatPreviewBundlePrintArea(selectedSample.print);
+
+  const selectArtwork = (sampleId: string) => {
+    const nextIndex = samples.findIndex((sample) => sample.id === sampleId);
+
+    if (nextIndex < 0) {
+      return;
+    }
+
+    setSelectedIndex(nextIndex);
+
+    if (!window.matchMedia("(min-width: 1024px)").matches) {
+      window.setTimeout(() => {
+        previewRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      }, 0);
+    }
+  };
+
+  const goBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push(dashboardHref);
+  };
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <Script
+        crossOrigin="anonymous"
+        id="model-viewer"
+        src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.2.0/model-viewer.min.js"
+        strategy="afterInteractive"
+        type="module"
+      />
+      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-4 md:px-6">
+        <header className="flex min-h-14 items-center justify-between gap-4 border-b py-3">
+          <BrandMark ariaLabel="Wall Print Pro homepage" className="min-w-0 text-lg" textClassName="hidden sm:inline" />
+          <div className="flex shrink-0 items-center gap-2">
+            <Button aria-label="Go back" className="h-9 rounded-full px-3" onClick={goBack} type="button" variant="ghost">
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
+            <Button asChild className="h-9 rounded-full px-3 sm:px-4" variant="ghost">
+              <Link aria-label={dashboardLabel} href={dashboardHref}>
+                <DashboardIcon kind={dashboardKind} />
+                <span className="hidden sm:inline">{dashboardLabel}</span>
+                <span className="sm:hidden">{dashboardKind === "admin" ? "Admin" : dashboardKind === "account" ? "Saved" : "Sign in"}</span>
+              </Link>
+            </Button>
+            {showUserButton ? <UserButton /> : null}
+          </div>
+        </header>
+
+        <div className="grid gap-2">
+          <p className="text-sm font-semibold uppercase text-primary">Gallery</p>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="grid max-w-3xl gap-3">
+              <h1 className="text-4xl font-semibold leading-none text-balance md:text-6xl">Choose artwork to see on your wall.</h1>
+              <p className="max-w-2xl text-base leading-7 text-muted-foreground">
+                Pick any Wall Print Pro artwork, then place the selected print in the room where it will hang.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border bg-card px-3 py-2 text-sm font-medium text-muted-foreground">
+              <Images className="size-4 text-primary" aria-hidden="true" />
+              <span>{samples.length} artworks</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)] lg:items-start">
+          <section
+            aria-label="Selected artwork wall view"
+            className="grid gap-4 lg:sticky lg:top-6 lg:order-2"
+            data-testid="gallery-selected-preview"
+            ref={previewRef}
+          >
+            <div className="relative min-h-[430px] overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.16)] md:min-h-[620px]">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[size:46px_46px]" />
+              <img
+                alt={`${selectedSample.title} wall print`}
+                className="wall-print-shadow relative z-10 mx-auto mt-8 h-[min(46vh,380px)] w-auto rounded-sm object-contain md:mt-12 md:h-[min(56vh,520px)]"
+                data-testid="gallery-selected-artwork"
+                draggable={false}
+                src={selectedSample.assets.poster}
+              />
+              <div className="relative z-20 mx-3 mb-3 mt-4 rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur md:absolute md:bottom-4 md:left-4 md:right-4 md:mx-0 md:mb-0 md:mt-0">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold" data-testid="gallery-selected-artwork-title">
+                      {selectedSample.title}
+                    </h2>
+                    <div className="mt-1 grid gap-1 text-sm leading-5 text-muted-foreground">
+                      <span data-testid="gallery-selected-print-size">{selectedPrintSizeLabel}</span>
+                      <span data-testid="gallery-selected-print-area">{selectedPrintAreaLabel}</span>
+                    </div>
+                  </div>
+                  <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section aria-label="Artwork choices" className="grid gap-3 lg:order-1">
+            <div className="grid gap-3 sm:grid-cols-2" data-testid="gallery-artwork-list">
+              {samples.map((sample) => {
+                const isSelected = sample.id === selectedSample.id;
+
+                return (
+                  <button
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "group grid overflow-hidden rounded-lg border bg-card text-left shadow-sm outline-offset-4 transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+                      isSelected ? "border-primary shadow-[0_18px_42px_rgba(28,79,89,0.14)]" : "border-border"
+                    )}
+                    data-artwork-id={sample.id}
+                    data-testid="gallery-artwork-card"
+                    key={sample.id}
+                    onClick={() => selectArtwork(sample.id)}
+                    type="button"
+                  >
+                    <span className="relative block aspect-[4/3] overflow-hidden bg-secondary">
+                      <img
+                        alt=""
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                        draggable={false}
+                        src={sample.assets.poster}
+                      />
+                      {isSelected ? (
+                        <span className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                          <Check className="size-4" aria-hidden="true" />
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="grid gap-3 p-4">
+                      <span className="grid gap-1">
+                        <span className="text-lg font-semibold leading-tight">{sample.title}</span>
+                        <span className="text-sm leading-6 text-muted-foreground">{sample.description}</span>
+                      </span>
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Ruler className="size-4 text-primary" aria-hidden="true" />
+                        {formatPreviewBundlePrintDimensions(sample.print)}
+                      </span>
+                      <span className="text-sm font-semibold text-primary">{isSelected ? "Selected" : "Try this artwork"}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  );
+}

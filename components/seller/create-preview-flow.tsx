@@ -472,7 +472,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
         </Alert>
       ) : null}
 
-      <form className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]" onSubmit={submit}>
+      <form className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)] lg:items-start" onSubmit={submit}>
         <section className="grid content-start gap-4" aria-label="Choose artwork">
           <div className="grid grid-cols-2 gap-2" role="group" aria-label="Artwork source">
             <Button
