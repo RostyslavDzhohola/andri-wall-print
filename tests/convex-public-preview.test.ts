@@ -61,7 +61,7 @@ describe("Convex public preview adapter", () => {
         aspectRatio: "6:5",
         widthMeters: 1.524,
         heightMeters: 1.27,
-        label: "152 x 127 cm"
+        label: "5 ft x 4 ft 2 in"
       },
       assets: {
         poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
@@ -69,6 +69,35 @@ describe("Convex public preview adapter", () => {
         usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
       }
     });
+  });
+
+  it("drops internal price fields from buyer-ready preview values", () => {
+    const parsed = parseConvexPreviewValue({
+      slug: "client-proof-abc",
+      title: "Client Proof",
+      description: "Client proof",
+      print: {
+        aspectRatio: "6:5",
+        widthMeters: 1.524,
+        heightMeters: 1.27,
+        label: "152 x 127 cm"
+      },
+      assets: {
+        poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
+        glb: "https://steady-otter-123.convex.cloud/api/storage/glb",
+        usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
+      },
+      pricing: {
+        areaSquareFeet: 20.83,
+        pricePerSquareFootCents: 4200,
+        estimateCents: 87503
+      },
+      rate: 42,
+      internalEstimateCents: 87503
+    });
+
+    expect(JSON.stringify(parsed)).not.toMatch(/price|pricing|rate|estimate/i);
+    expect(parsed?.print.label).toBe("5 ft x 4 ft 2 in");
   });
 
   it("calls the Convex public HTTP query endpoint", async () => {

@@ -41,6 +41,18 @@ describe("TypeScript AR asset generator", () => {
     expect(gltf.materials[0].alphaCutoff).toBe(0.5);
     expect(gltf.accessors[0].min).toEqual([-0.225, -0.45, 0]);
     expect(gltf.accessors[0].max).toEqual([0.225, 0.45, 0]);
+    expect(gltf.asset.extras).toBeUndefined();
+    expect(gltf.meshes[0].primitives).toHaveLength(1);
+  });
+
+  it("changes generated GLB and USDZ geometry when selected dimensions change", () => {
+    const resizedInput = { ...INPUT, widthMeters: 1.2, heightMeters: 0.5 };
+    const gltf = readGlbJson(makeGlbFlatPrint(resizedInput));
+    const usdzText = Buffer.from(makeUsdzFlatPrint(resizedInput)).toString("utf8");
+
+    expect(gltf.accessors[0].min).toEqual([-0.6, -0.25, 0]);
+    expect(gltf.accessors[0].max).toEqual([0.6, 0.25, 0]);
+    expect(usdzText).toContain("point3f[] points = [(-0.6, -0.25, 0), (0.6, -0.25, 0), (0.6, 0.25, 0), (-0.6, 0.25, 0)]");
   });
 
   it("builds an uncompressed USDZ package with a USDA plane and opacity threshold", () => {
@@ -50,6 +62,49 @@ describe("TypeScript AR asset generator", () => {
     expect(usdz.toString("utf8")).toContain("#usda 1.0");
     expect(usdz.toString("utf8")).toContain("float inputs:opacityThreshold = 0.5");
     expect(usdz.toString("utf8")).toContain("asset inputs:file = @proof.png@");
+    expect(usdz.toString("utf8")).not.toContain("SizeGuide");
+  });
+
+  it("can add optional GLB size-guide geometry and metadata", () => {
+    const gltf = readGlbJson(makeGlbFlatPrint({ ...INPUT, sizeGuide: { enabled: true } }));
+
+    expect(gltf.asset.extras.sizeGuide).toEqual({
+      widthMeters: 0.45,
+      heightMeters: 0.9,
+      widthLabel: "1 ft 6 in wide",
+      heightLabel: "2 ft 11 in tall",
+      summary: "1 ft 6 in wide x 2 ft 11 in tall"
+    });
+    expect(gltf.meshes[0].primitives).toHaveLength(2);
+    expect(gltf.meshes[0].primitives[1]).toMatchObject({
+      attributes: { POSITION: 3 },
+      indices: 4,
+      material: 1,
+      mode: 4
+    });
+    expect(gltf.materials[1].name).toBe("Size Guide");
+    expect(gltf.accessors[3]).toMatchObject({
+      componentType: 5126,
+      count: 24,
+      type: "VEC3"
+    });
+    expect(gltf.accessors[4]).toMatchObject({
+      componentType: 5123,
+      count: 36,
+      type: "SCALAR"
+    });
+  });
+
+  it("can add optional USDZ size-guide geometry without dropping the artwork texture", () => {
+    const usdz = Buffer.from(makeUsdzFlatPrint({ ...INPUT, sizeGuide: { enabled: true } }));
+    const text = usdz.toString("utf8");
+
+    expect(text).toContain("#usda 1.0");
+    expect(text).toContain('def Mesh "ArtworkPlane"');
+    expect(text).toContain('def Mesh "SizeGuide"');
+    expect(text).toContain('def Material "SizeGuideMaterial"');
+    expect(text).toContain('string sizeGuideSummary = "1 ft 6 in wide x 2 ft 11 in tall"');
+    expect(text).toContain("asset inputs:file = @proof.png@");
   });
 
   it("returns asset metadata under mobile budgets", () => {
@@ -63,7 +118,7 @@ describe("TypeScript AR asset generator", () => {
 
   it("rejects forged upload metadata before generating public AR assets", () => {
     expect(() => assertPngTextureBytes(ONE_BY_ONE_PNG, ONE_BY_ONE_PNG.byteLength - 1)).toThrow(
-      "Uploaded artwork byte length does not match the stored file."
+      "Uploaded artwork byte length does not match the stored file. Choose the file again."
     );
   });
 
@@ -73,6 +128,6 @@ describe("TypeScript AR asset generator", () => {
         ...INPUT,
         textureBytes: Uint8Array.from([0x47, 0x49, 0x46, 0x38])
       })
-    ).toThrow("Uploaded artwork is not a valid PNG image.");
+    ).toThrow("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
   });
 });
