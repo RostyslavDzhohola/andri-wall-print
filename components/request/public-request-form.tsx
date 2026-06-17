@@ -233,7 +233,7 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
             <span className="text-xs text-muted-foreground">JPEG, PNG, or WebP</span>
           </span>
         </label>
-        <Input
+        <input
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"
           id="lead-upload"
