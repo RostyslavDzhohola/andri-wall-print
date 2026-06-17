@@ -1,5 +1,6 @@
 "use client";
 
+import { Smartphone } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -7,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getResizableQuickLookHref } from "@/lib/ar-launcher";
+import { getFixedScaleQuickLookHref } from "@/lib/ar-launcher";
 import type { ArSample } from "@/lib/ar-sample";
 import { cn } from "@/lib/utils";
 
@@ -138,10 +139,9 @@ function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | 
 }
 
 export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: NativeArLauncherProps) {
-  const quickLookUrl = getResizableQuickLookHref(sample.assets.usdz);
+  const quickLookUrl = getFixedScaleQuickLookHref(sample.assets.usdz);
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
   const [arError, setArError] = useState<string | null>(null);
-  const [preLaunchDialogOpen, setPreLaunchDialogOpen] = useState(false);
   const [dialogNotice, setDialogNotice] = useState<ArAccessNotice | null>(null);
   const accessNotice = getArAccessNotice(diagnostics);
 
@@ -154,7 +154,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     modelViewer.setAttribute("alt", `${sample.title} wall print`);
     modelViewer.setAttribute("ar-placement", "wall");
-    modelViewer.setAttribute("ar-scale", "auto");
+    modelViewer.setAttribute("ar-scale", "fixed");
     modelViewer.setAttribute("ios-src", sample.assets.usdz);
     modelViewer.setAttribute("poster", sample.assets.poster);
     modelViewer.setAttribute("src", sample.assets.glb);
@@ -189,14 +189,6 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       return;
     }
 
-    if (currentDiagnostics.isIPhone && currentDiagnostics.isSafari) {
-      event.preventDefault();
-      setArError(null);
-      setDialogNotice(null);
-      setPreLaunchDialogOpen(true);
-      return;
-    }
-
     if (currentDiagnostics.quickLookRel || !modelViewer?.activateAR) {
       return;
     }
@@ -217,7 +209,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
         ar
         ar-modes="quick-look scene-viewer"
         ar-placement="wall"
-        ar-scale="auto"
+        ar-scale="fixed"
         aria-hidden="true"
         data-testid="ar-launcher-model"
         ios-src={sample.assets.usdz}
@@ -241,7 +233,8 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
             rel="ar"
             title={accessNotice?.message ?? "Place this print on a wall"}
           >
-            <img className="sr-only" src={sample.assets.poster} alt="" aria-hidden="true" />
+            <img className="size-5 rounded-sm object-cover" src={sample.assets.poster} alt="" aria-hidden="true" />
+            <Smartphone className="size-5" />
             Place on wall
           </a>
         </TooltipTrigger>
@@ -254,33 +247,6 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
           {accessNotice?.message ?? "Place this print on a wall."}
         </TooltipContent>
       </Tooltip>
-      <Dialog open={preLaunchDialogOpen} onOpenChange={setPreLaunchDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Before you place it</DialogTitle>
-            <DialogDescription>
-              If the print disappears or drifts, tap <strong>Object</strong>, then <strong>AR</strong> to reset the placement view.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button className="h-11 rounded-full px-5" type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <a
-              className={cn(buttonVariants(), "h-11 rounded-full px-5")}
-              data-testid="continue-to-ar-link"
-              href={quickLookUrl}
-              onClick={() => setPreLaunchDialogOpen(false)}
-              rel="ar"
-            >
-              <img className="sr-only" src={sample.assets.poster} alt="" aria-hidden="true" />
-              Continue to AR
-            </a>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={Boolean(dialogNotice)} onOpenChange={(open) => !open && setDialogNotice(null)}>
         <DialogContent>
           <DialogHeader>

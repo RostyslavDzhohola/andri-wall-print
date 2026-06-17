@@ -28,8 +28,8 @@ const buyerDashboardPreviewValidator = v.object({
   description: v.string(),
   status: v.string(),
   print: printValidator,
-  sourceKind: v.union(v.literal("upload"), v.literal("sample")),
-  createdVia: v.union(v.literal("seller"), v.literal("builder")),
+  sourceKind: v.union(v.literal("upload"), v.literal("sample"), v.literal("ai_concept")),
+  createdVia: v.union(v.literal("seller"), v.literal("builder"), v.literal("lead")),
   sourceLabel: v.string(),
   publicUrl: v.string(),
   posterUrl: v.optional(v.string()),
@@ -87,9 +87,9 @@ type PreviewBundleRecord = {
     label: string;
   };
   source: {
-    kind: "upload" | "sample";
+    kind: "upload" | "sample" | "ai_concept";
   };
-  createdVia?: "seller" | "builder";
+  createdVia?: "seller" | "builder" | "lead";
 };
 
 type PreviewConfirmationRecord = {
@@ -174,6 +174,10 @@ function sourceLabel(bundle: PreviewBundleRecord) {
 
   if (bundle.source.kind === "upload") {
     return "Uploaded artwork";
+  }
+
+  if (bundle.source.kind === "ai_concept") {
+    return "Concept draft";
   }
 
   return "Shared by Wall Print Pro";

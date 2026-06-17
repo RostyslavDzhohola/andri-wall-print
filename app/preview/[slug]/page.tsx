@@ -5,8 +5,11 @@ import Link from "next/link";
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicPreviewConfirmation } from "@/components/preview/public-preview-confirmation";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getClerkUserEmail } from "@/lib/account-routing";
 import { getPublicPreview } from "@/lib/convex-public-preview";
 import { readClerkPublishableKey, readClerkSecretKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
 import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
@@ -19,30 +22,6 @@ type PublicPreviewPageProps = {
     slug: string;
   }>;
 };
-
-type ClerkEmailAddress = {
-  id?: string | null;
-  emailAddress?: string | null;
-};
-
-type ClerkUserLike = {
-  primaryEmailAddressId?: string | null;
-  primaryEmailAddress?: ClerkEmailAddress | null;
-  emailAddresses?: ClerkEmailAddress[] | null;
-};
-
-function getClerkUserEmail(user: ClerkUserLike | null) {
-  if (!user) {
-    return null;
-  }
-
-  return (
-    user.primaryEmailAddress?.emailAddress ??
-    user.emailAddresses?.find((emailAddress) => emailAddress.id === user.primaryEmailAddressId)?.emailAddress ??
-    user.emailAddresses?.[0]?.emailAddress ??
-    null
-  );
-}
 
 function previewSignInUrl(publicSlug: string) {
   return `/sign-in?redirect_url=${encodeURIComponent(`/preview/${publicSlug}`)}`;
@@ -86,12 +65,29 @@ async function PreviewHeaderAction({ publicSlug }: { publicSlug: string }) {
   );
 }
 
+function ConceptDraftNotice() {
+  return (
+    <Alert className="bg-background/80">
+      <AlertDescription className="grid gap-3">
+        <span className="flex flex-wrap gap-2">
+          <Badge variant="outline">Concept draft</Badge>
+          <Badge variant="outline">Not final artwork</Badge>
+          <Badge variant="outline">Seller review required</Badge>
+        </span>
+        <span>This preview is an AI concept for review. Wall Print Pro must confirm artwork, size, and print readiness before production.</span>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 export default async function PublicPreviewPage({ params }: PublicPreviewPageProps) {
   const { slug } = await params;
   const preview = await getPublicPreview(slug);
   const buyerAccountsEnabled = Boolean(readClerkPublishableKey() && readConvexRuntimeUrl());
 
   if (preview.status === "ready") {
+    const isConceptDraft = preview.sourceKind === "ai_concept";
+
     return (
       <ArPreviewSurface
         brandName="Wall Print Pro"
@@ -101,12 +97,15 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
         intro="To see the wall preview, open this same link in Safari on an iPhone."
         headerAction={<PreviewHeaderAction publicSlug={slug} />}
         sideContent={
-          <PublicPreviewConfirmation
-            buyerAccountsEnabled={buyerAccountsEnabled}
-            sample={preview.sample}
-            publicSlug={preview.sample.id}
-            canSubmit={preview.source === "convex"}
-          />
+          <div className="grid gap-3">
+            {isConceptDraft ? <ConceptDraftNotice /> : null}
+            <PublicPreviewConfirmation
+              buyerAccountsEnabled={buyerAccountsEnabled}
+              sample={preview.sample}
+              publicSlug={preview.sample.id}
+              canSubmit={preview.source === "convex" && !isConceptDraft}
+            />
+          </div>
         }
         showPrintSizeGuide
       />

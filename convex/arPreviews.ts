@@ -2,6 +2,7 @@ import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 
 import { normalizePreviewBundlePrintDisplay } from "../lib/preview-bundle-contract";
+import { isFreshPreviewGeneration } from "./previewBundles";
 import {
   assertValidAssetMeta,
   assertValidPrint,
@@ -22,6 +23,7 @@ const readyPublicPreviewValidator = v.object({
     usdz: v.union(v.string(), v.null())
   }),
   assetMeta: assetMetaValidator,
+  sourceKind: v.optional(v.union(v.literal("upload"), v.literal("sample"), v.literal("ai_concept"))),
   status: v.literal("ready")
 });
 
@@ -149,6 +151,7 @@ export const getPublicPreview = queryGeneric({
             print: normalizePreviewBundlePrintDisplay(bundle.print),
             assets,
             assetMeta: bundle.assetMeta,
+            sourceKind: bundle.source.kind,
             status: "ready" as const
           };
         }
@@ -166,6 +169,7 @@ export const getPublicPreview = queryGeneric({
               glb: { fileName: "sample.glb", contentType: "model/gltf-binary", byteLength: 0 },
               usdz: { fileName: "sample.usdz", contentType: "model/vnd.usdz+zip", byteLength: 0 }
             },
+            sourceKind: bundle.source.kind,
             status: "ready" as const
           };
         }
@@ -178,7 +182,7 @@ export const getPublicPreview = queryGeneric({
         };
       }
 
-      if (["uploaded", "validating", "generating"].includes(bundle.status)) {
+      if ((bundle.status === "uploaded" || bundle.status === "generating") && isFreshPreviewGeneration(bundle)) {
         return {
           id: bundle.publicSlug,
           slug: bundle.publicSlug,
@@ -222,6 +226,7 @@ export const getPublicPreview = queryGeneric({
         usdz
       },
       assetMeta: preview.assetMeta,
+      sourceKind: "sample" as const,
       status: "ready" as const
     };
   }

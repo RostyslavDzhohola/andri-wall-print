@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wall Print Pro - Editorial</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --paper: #f5f2ed;
+      --ink: #1a1a1a;
+      --ink-light: #4a4a4a;
+      --warm-gray: #8b8680;
+      --accent: #c45c26;
+      --accent-light: #d9784a;
+      --border: #d4cfc7;
+      --highlight: #e8e4de;
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2rem 4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.125rem;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    .logo img {
+      height: 28px;
+      width: auto;
+    }
+
+    .nav {
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--ink-light);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: color 0.2s;
+    }
+
+    .nav a:hover {
+      color: var(--accent);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      min-height: calc(100vh - 81px);
+    }
+
+    .text-panel {
+      padding: 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+
+    .issue-marker {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--warm-gray);
+      margin-bottom: 2rem;
+    }
+
+    .headline {
+      font-size: 4rem;
+      line-height: 1.05;
+      font-weight: 400;
+      margin-bottom: 2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .headline em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .lede {
+      font-size: 1.125rem;
+      color: var(--ink-light);
+      line-height: 1.7;
+      max-width: 440px;
+      margin-bottom: 3rem;
+    }
+
+    .spec-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .spec-label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--warm-gray);
+    }
+
+    .spec-value {
+      font-size: 1rem;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .spec-value.large {
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .visual-panel {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .carousel-viewport {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+    }
+
+    .carousel-track {
+      display: flex;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .carousel-slide img {
+      max-height: 65vh;
+      width: auto;
+      max-width: 100%;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+    }
+
+    .carousel-controls {
+      position: absolute;
+      bottom: 3rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: var(--paper);
+      padding: 1rem 2rem;
+      border: 1px solid var(--border);
+    }
+
+    .carousel-btn {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .carousel-btn:hover {
+      background: var(--highlight);
+      border-color: var(--accent);
+    }
+
+    .carousel-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .carousel-dots {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dot.active {
+      background: var(--accent);
+    }
+
+    .ar-cta {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.5rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .ar-cta:hover {
+      background: var(--accent-light);
+    }
+
+    .ar-cta svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    @media (max-width: 1024px) {
+      .stage {
+        grid-template-columns: 1fr;
+      }
+
+      .text-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 2rem;
+      }
+
+      .headline {
+        font-size: 2.5rem;
+      }
+
+      .masthead {
+        padding: 1.5rem 2rem;
+      }
+
+      .nav a {
+        display: none;
+      }
+
+      .carousel-slide img {
+        max-height: 50vh;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .headline {
+        font-size: 1.875rem;
+      }
+
+      .carousel-controls {
+        bottom: 1.5rem;
+        padding: 0.75rem 1.25rem;
+      }
+
+      .ar-cta {
+        top: auto;
+        bottom: 1.5rem;
+        left: 1.5rem;
+        right: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="logo">
+      <img src="../../../public/brand/wallprint-pro-mark.png" alt="Wall Print Pro">
+      <span>Wall Print Pro</span>
+    </div>
+    <nav class="nav">
+      <a href="#collection">Collection</a>
+      <a href="#process">Process</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main class="stage">
+    <section class="text-panel">
+      <div class="issue-marker">Collection 2024 / No. 01</div>
+      <h1 class="headline">See it <em>true</em> to size before you commit.</h1>
+      <p class="lede">
+        Preview museum-quality canvas prints at exact scale in your own space.
+        Select a piece, launch AR, and walk around it before the first nail goes in.
+      </p>
+      <div class="spec-block">
+        <div class="spec-row">
+          <span class="spec-label">Selected Work</span>
+          <span class="spec-value large" id="spec-title">Chicago Final 1</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-label">Dimensions</span>
+          <span class="spec-value" id="spec-dims">60 x 50 inches</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-label">Format</span>
+          <span class="spec-value">Archival Canvas</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="visual-panel">
+      <button class="ar-cta" id="ar-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        View in Your Space
+      </button>
+
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="carousel-track">
+          <div class="carousel-slide"><img src="../../../public/artworks/chicago-final-1.png" alt="Chicago Final 1"></div>
+          <div class="carousel-slide"><img src="../../../public/artworks/chicago-final-2.png" alt="Chicago Final 2"></div>
+          <div class="carousel-slide"><img src="../../../public/artworks/chicago-final-3.png" alt="Chicago Final 3"></div>
+          <div class="carousel-slide"><img src="../../../public/artworks/dragon-wall-print.png" alt="Dragon Wall Print"></div>
+          <div class="carousel-slide"><img src="../../../public/artworks/elven-wall-print.png" alt="Elven Portrait"></div>
+        </div>
+      </div>
+
+      <div class="carousel-controls">
+        <button class="carousel-btn" id="prev-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="carousel-dots" id="carousel-dots"></div>
+        <button class="carousel-btn" id="next-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const artworks = [
+      { title: "Chicago Final 1", dims: "60 x 50 inches" },
+      { title: "Chicago Final 2", dims: "36 x 60 inches" },
+      { title: "Chicago Final 3", dims: "48 x 60 inches" },
+      { title: "Dragon Wall Print", dims: "45 x 90 cm" },
+      { title: "Elven Portrait", dims: "45 x 90 cm" }
+    ];
+
+    let currentSlide = 0;
+    const track = document.getElementById('carousel-track');
+    const dotsContainer = document.getElementById('carousel-dots');
+    const specTitle = document.getElementById('spec-title');
+    const specDims = document.getElementById('spec-dims');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const arButton = document.getElementById('ar-button');
+
+    function createDots() {
+      dotsContainer.innerHTML = artworks.map((_, i) =>
+        `<div class="dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`
+      ).join('');
+    }
+
+    function updateSlide(index) {
+      currentSlide = index;
+      track.style.transform = `translateX(-${index * 100}%)`;
+
+      document.querySelectorAll('.dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+
+      specTitle.textContent = artworks[index].title;
+      specDims.textContent = artworks[index].dims;
+    }
+
+    function nextSlide() {
+      updateSlide((currentSlide + 1) % artworks.length);
+    }
+
+    function prevSlide() {
+      updateSlide((currentSlide - 1 + artworks.length) % artworks.length);
+    }
+
+    createDots();
+
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    dotsContainer.querySelectorAll('.dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        updateSlide(parseInt(dot.dataset.index));
+      });
+    });
+
+    arButton.addEventListener('click', () => {
+      const artwork = artworks[currentSlide];
+      alert(`Launching AR preview for: ${artwork.title}\nDimensions: ${artwork.dims}\n\nOn iOS: Opens USDZ in Quick Look\nOn Android: Opens Scene Viewer`);
+    });
+  </script>
+</body>
+</html>

@@ -43,6 +43,10 @@ export function previewSourceLabel(sourceKind: string) {
     return "Uploaded artwork";
   }
 
+  if (sourceKind === "ai_concept") {
+    return "Concept draft";
+  }
+
   return "Artwork";
 }
 

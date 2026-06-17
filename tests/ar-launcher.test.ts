@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { getAssetContentType, getResizableQuickLookHref, hasReadyArAssetUrls } from "@/lib/ar-launcher";
+import { getAssetContentType, getFixedScaleQuickLookHref, hasReadyArAssetUrls } from "@/lib/ar-launcher";
 import { DEFAULT_AR_SAMPLE } from "@/lib/ar-sample";
 
 describe("AR launcher helpers", () => {
-  it("keeps local USDZ Quick Look links resizable by default", () => {
-    expect(getResizableQuickLookHref("/ar/chicago-final-1.usdz")).toBe("/ar/chicago-final-1.usdz");
+  it("builds fixed-scale Quick Look links for local USDZ assets", () => {
+    expect(getFixedScaleQuickLookHref("/ar/chicago-final-1.usdz")).toBe("/ar/chicago-final-1.usdz#allowsContentScaling=0");
   });
 
-  it("keeps absolute Convex USDZ Quick Look links resizable by default", () => {
-    expect(getResizableQuickLookHref("https://steady-otter-123.convex.cloud/api/storage/abc.usdz?token=phase0")).toBe(
-      "https://steady-otter-123.convex.cloud/api/storage/abc.usdz?token=phase0"
+  it("builds fixed-scale Quick Look links for absolute Convex USDZ URLs", () => {
+    expect(getFixedScaleQuickLookHref("https://steady-otter-123.convex.cloud/api/storage/abc.usdz?token=phase0")).toBe(
+      "https://steady-otter-123.convex.cloud/api/storage/abc.usdz?token=phase0#allowsContentScaling=0"
     );
   });
 
-  it("removes stale fixed-scale Quick Look fragments without dropping other parameters", () => {
-    expect(getResizableQuickLookHref("/ar/chicago-final-1.usdz#allowsContentScaling=0&canonicalWebPageURL=https%3A%2F%2Fexample.com")).toBe(
-      "/ar/chicago-final-1.usdz#canonicalWebPageURL=https%3A%2F%2Fexample.com"
+  it("overrides stale Quick Look scaling fragments", () => {
+    expect(getFixedScaleQuickLookHref("/ar/chicago-final-1.usdz#allowsContentScaling=1&canonicalWebPageURL=https%3A%2F%2Fexample.com")).toBe(
+      "/ar/chicago-final-1.usdz#allowsContentScaling=0&canonicalWebPageURL=https%3A%2F%2Fexample.com"
     );
   });
 

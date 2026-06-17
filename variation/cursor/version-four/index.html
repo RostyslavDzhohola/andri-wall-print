@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wall Print Pro | Print Studio Proofing Table</title>
+  <style>
+    /* === RESET & BASE === */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Warm workshop palette - not beige dominated */
+      --paper-cream: #f5f0e8;
+      --paper-warm: #ebe5db;
+      --wood-dark: #3d2914;
+      --wood-medium: #5c3d1e;
+      --wood-light: #8b5a2b;
+      --ink-black: #1a1a1a;
+      --ink-charcoal: #2d2d2d;
+      --accent-rust: #b7410e;
+      --accent-terracotta: #c65d28;
+      --accent-amber: #d4a574;
+      --ruler-metal: #4a5568;
+      --ruler-tick: #718096;
+      --crop-red: #c53030;
+      --shadow-soft: rgba(61, 41, 20, 0.15);
+      --shadow-medium: rgba(61, 41, 20, 0.25);
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background-color: var(--wood-dark);
+      background-image:
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,0.03) 2px,
+          rgba(0,0,0,0.03) 4px
+        ),
+        linear-gradient(180deg, var(--wood-dark) 0%, var(--wood-medium) 100%);
+      min-height: 100vh;
+      color: var(--ink-black);
+      line-height: 1.6;
+    }
+
+    /* === UTILITY === */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* === HEADER === */
+    .studio-header {
+      background: var(--wood-dark);
+      border-bottom: 3px solid var(--wood-light);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-mark img {
+      height: 40px;
+      width: auto;
+      filter: brightness(0) invert(0.9);
+    }
+
+    .brand-text {
+      color: var(--paper-cream);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .studio-badge {
+      background: var(--accent-rust);
+      color: white;
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2px;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* === MAIN WORKSPACE === */
+    .workspace {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* === PROOFING TABLE SURFACE === */
+    .proofing-table {
+      background:
+        linear-gradient(135deg, var(--paper-cream) 0%, var(--paper-warm) 100%);
+      border-radius: 4px;
+      box-shadow:
+        0 20px 60px var(--shadow-medium),
+        0 4px 12px var(--shadow-soft),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+      padding: 2rem;
+      position: relative;
+    }
+
+    /* Craft paper texture overlay */
+    .proofing-table::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      border-radius: 4px;
+    }
+
+    /* === JOB TICKET === */
+    .job-ticket {
+      background: white;
+      border: 1px solid #d4c4b0;
+      border-left: 4px solid var(--accent-rust);
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px var(--shadow-soft);
+    }
+
+    .job-info {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .job-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .job-label {
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8b7355;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .job-value {
+      font-size: 0.9375rem;
+      color: var(--ink-charcoal);
+      font-weight: 500;
+    }
+
+    .job-status {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 0.5rem 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .job-status.proofing {
+      background: #fef3c7;
+      border-color: var(--accent-amber);
+      color: var(--wood-dark);
+    }
+
+    /* === PROOF SHEET === */
+    .proof-sheet {
+      background: white;
+      border: 1px solid #c9b8a2;
+      box-shadow: 0 8px 24px var(--shadow-soft);
+      padding: 3rem 2rem 2rem;
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    /* Crop marks - corner registration */
+    .crop-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+    }
+
+    .crop-corner::before,
+    .crop-corner::after {
+      content: '';
+      position: absolute;
+      background: var(--crop-red);
+    }
+
+    .crop-corner.top-left {
+      top: 8px;
+      left: 8px;
+    }
+
+    .crop-corner.top-left::before {
+      width: 16px;
+      height: 1px;
+      top: 0;
+      left: 0;
+    }
+
+    .crop-corner.top-left::after {
+      width: 1px;
+      height: 16px;
+      top: 0;
+      left: 0;
+    }
+
+    .crop-corner.top-right {
+      top: 8px;
+      right: 8px;
+    }
+
+    .crop-corner.top-right::before {
+      width: 16px;
+      height: 1px;
+      top: 0;
+      right: 0;
+    }
+
+    .crop-corner.top-right::after {
+      width: 1px;
+      height: 16px;
+      top: 0;
+      right: 0;
+    }
+
+    .crop-corner.bottom-left {
+      bottom: 8px;
+      left: 8px;
+    }
+
+    .crop-corner.bottom-left::before {
+      width: 16px;
+      height: 1px;
+      bottom: 0;
+      left: 0;
+    }
+
+    .crop-corner.bottom-left::after {
+      width: 1px;
+      height: 16px;
+      bottom: 0;
+      left: 0;
+    }
+
+    .crop-corner.bottom-right {
+      bottom: 8px;
+      right: 8px;
+    }
+
+    .crop-corner.bottom-right::before {
+      width: 16px;
+      height: 1px;
+      bottom: 0;
+      right: 0;
+    }
+
+    .crop-corner.bottom-right::after {
+      width: 1px;
+      height: 16px;
+      bottom: 0;
+      right: 0;
+    }
+
+    /* === MEASUREMENT STRIP === */
+    .measurement-strip {
+      background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e0 100%);
+      border: 1px solid #a0aec0;
+      border-radius: 2px;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: 'Courier New', monospace;
+    }
+
+    .ruler-label {
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ruler-metal);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .ruler-scale {
+      flex: 1;
+      height: 24px;
+      background:
+        linear-gradient(90deg,
+          transparent 0%, transparent calc(100% - 1px),
+          var(--ruler-tick) calc(100% - 1px), var(--ruler-tick) 100%
+        ),
+        repeating-linear-gradient(90deg,
+          var(--ruler-tick) 0px,
+          var(--ruler-tick) 1px,
+          transparent 1px,
+          transparent 10px
+        );
+      background-size: 100% 8px, 100% 100%;
+      background-repeat: repeat-x;
+      background-position: bottom;
+      position: relative;
+    }
+
+    .ruler-scale::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: repeating-linear-gradient(90deg,
+        var(--ruler-tick) 0px,
+        var(--ruler-tick) 1px,
+        transparent 1px,
+        transparent 50px
+      );
+    }
+
+    .ruler-value {
+      font-size: 0.875rem;
+      color: var(--ink-charcoal);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* === ARTWORK PREVIEW === */
+    .artwork-stage {
+      border: 2px dashed #c9b8a2;
+      background: #fafafa;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 320px;
+      position: relative;
+    }
+
+    .artwork-container {
+      position: relative;
+      box-shadow: 0 12px 40px var(--shadow-medium);
+    }
+
+    .artwork-container img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Dimension callouts */
+    .dimension-h {
+      position: absolute;
+      bottom: -32px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: var(--ruler-metal);
+    }
+
+    .dimension-h::before,
+    .dimension-h::after {
+      content: '|';
+      margin: 0 0.5rem;
+      color: var(--ruler-tick);
+    }
+
+    /* === ARTWORK THUMBNAILS === */
+    .thumbnail-strip {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e2d5c5;
+    }
+
+    .strip-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .strip-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8b7355;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .strip-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #d4c4b0 0%, transparent 100%);
+    }
+
+    .thumbnails {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .thumbnail {
+      width: 100px;
+      height: 100px;
+      border: 2px solid #d4c4b0;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumbnail:hover {
+      border-color: var(--accent-terracotta);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--shadow-soft);
+    }
+
+    .thumbnail.active {
+      border-color: var(--accent-rust);
+      box-shadow: 0 0 0 2px rgba(183, 65, 14, 0.2);
+    }
+
+    .thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .thumbnail-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(26, 26, 26, 0.8);
+      color: white;
+      font-size: 0.625rem;
+      padding: 0.25rem;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* === ACTION BAR === */
+    .action-bar {
+      background: white;
+      border-top: 1px solid #e2d5c5;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .action-note {
+      font-size: 0.875rem;
+      color: #6b5b4f;
+      font-style: italic;
+    }
+
+    .action-note strong {
+      color: var(--ink-charcoal);
+      font-style: normal;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      border: none;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-secondary {
+      background: white;
+      border: 2px solid var(--wood-medium);
+      color: var(--wood-dark);
+    }
+
+    .btn-secondary:hover {
+      background: var(--paper-warm);
+      border-color: var(--wood-dark);
+    }
+
+    .btn-primary {
+      background: var(--accent-rust);
+      color: white;
+      border: 2px solid var(--accent-rust);
+      box-shadow: 0 4px 12px rgba(183, 65, 14, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-terracotta);
+      border-color: var(--accent-terracotta);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(183, 65, 14, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(183, 65, 14, 0.3);
+    }
+
+    /* === FOOTER NOTES === */
+    .footer-notes {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #d4c4b0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      font-size: 0.75rem;
+      color: #6b5b4f;
+    }
+
+    .footer-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .note-marker {
+      width: 16px;
+      height: 16px;
+      background: var(--accent-amber);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: var(--wood-dark);
+      flex-shrink: 0;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 768px) {
+      .workspace {
+        padding: 1rem;
+      }
+
+      .proofing-table {
+        padding: 1rem;
+      }
+
+      .job-ticket {
+        padding: 0.75rem;
+        gap: 1rem;
+      }
+
+      .job-info {
+        gap: 1rem;
+      }
+
+      .proof-sheet {
+        padding: 2rem 1rem 1.5rem;
+      }
+
+      .artwork-stage {
+        padding: 1rem;
+        min-height: 240px;
+      }
+
+      .thumbnails {
+        gap: 0.75rem;
+      }
+
+      .thumbnail {
+        width: 80px;
+        height: 80px;
+      }
+
+      .action-bar {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .action-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+
+      .measurement-strip {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .ruler-scale {
+        width: 100%;
+        order: 3;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand-mark img {
+        height: 32px;
+      }
+
+      .brand-text {
+        font-size: 1rem;
+      }
+
+      .studio-header {
+        padding: 0.75rem 1rem;
+      }
+
+      .proof-sheet {
+        padding-top: 1.5rem;
+      }
+
+      .crop-corner {
+        width: 16px;
+        height: 16px;
+      }
+
+      .crop-corner.top-left::before { width: 12px; }
+      .crop-corner.top-left::after { height: 12px; }
+      .crop-corner.top-right::before { width: 12px; }
+      .crop-corner.top-right::after { height: 12px; }
+      .crop-corner.bottom-left::before { width: 12px; }
+      .crop-corner.bottom-left::after { height: 12px; }
+      .crop-corner.bottom-right::before { width: 12px; }
+      .crop-corner.bottom-right::after { height: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="studio-header">
+    <div class="brand-mark">
+      <img src="../../../public/brand/wallprint-pro-mark.png" alt="Wall Print Pro">
+      <span class="brand-text">Wall Print Pro</span>
+    </div>
+    <span class="studio-badge">Print Studio</span>
+  </header>
+
+  <main class="workspace">
+    <div class="proofing-table">
+      <!-- Job Ticket -->
+      <div class="job-ticket">
+        <div class="job-info">
+          <div class="job-field">
+            <span class="job-label">Job Number</span>
+            <span class="job-value">WP-2024-0892</span>
+          </div>
+          <div class="job-field">
+            <span class="job-label">Client</span>
+            <span class="job-value">Sarah Chen</span>
+          </div>
+          <div class="job-field">
+            <span class="job-label">Project</span>
+            <span class="job-value">Dragon Wall Print - Living Room</span>
+          </div>
+          <div class="job-field">
+            <span class="job-label">Scale</span>
+            <span class="job-value">1:12 (model) / 96" x 54" (final)</span>
+          </div>
+        </div>
+        <span class="job-status proofing">Proofing</span>
+      </div>
+
+      <!-- Proof Sheet -->
+      <div class="proof-sheet">
+        <!-- Crop Marks -->
+        <span class="crop-corner top-left" aria-hidden="true"></span>
+        <span class="crop-corner top-right" aria-hidden="true"></span>
+        <span class="crop-corner bottom-left" aria-hidden="true"></span>
+        <span class="crop-corner bottom-right" aria-hidden="true"></span>
+
+        <!-- Measurement Strip -->
+        <div class="measurement-strip">
+          <span class="ruler-label">Scale Reference</span>
+          <div class="ruler-scale" aria-hidden="true"></div>
+          <span class="ruler-value">1 inch = 12 inches</span>
+        </div>
+
+        <!-- Artwork Preview -->
+        <div class="artwork-stage">
+          <figure class="artwork-container">
+            <img
+              src="../../../public/artworks/dragon-wall-print.png"
+              alt="Dragon Wall Print - Oriental dragon artwork in ink wash style"
+              width="600"
+              height="338"
+            >
+            <figcaption class="dimension-h">
+              Final print: 96 inches wide x 54 inches tall
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- Artwork Thumbnails -->
+        <div class="thumbnail-strip">
+          <div class="strip-header">
+            <span class="strip-title">Alternative Views</span>
+            <span class="strip-line"></span>
+          </div>
+          <div class="thumbnails">
+            <button class="thumbnail active" aria-label="View main artwork" aria-pressed="true">
+              <img src="../../../public/artworks/dragon-wall-print.png" alt="">
+              <span class="thumbnail-label">Front</span>
+            </button>
+            <button class="thumbnail" aria-label="View detail crop" aria-pressed="false">
+              <img src="../../../public/artworks/dragon-wall-print.png" alt="">
+              <span class="thumbnail-label">Detail</span>
+            </button>
+            <button class="thumbnail" aria-label="View color check" aria-pressed="false">
+              <img src="../../../public/artworks/dragon-wall-print.png" alt="">
+              <span class="thumbnail-label">Color</span>
+            </button>
+            <button class="thumbnail" aria-label="View texture map" aria-pressed="false">
+              <img src="../../../public/artworks/dragon-wall-print.png" alt="">
+              <span class="thumbnail-label">Texture</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="action-bar">
+        <p class="action-note">
+          <strong>Review your proof carefully.</strong> Once approved, this exact scale and placement will be used for production.
+        </p>
+        <div class="action-group">
+          <button class="btn btn-secondary">Request Changes</button>
+          <button class="btn btn-primary">Place on Wall</button>
+        </div>
+      </div>
+
+      <!-- Footer Notes -->
+      <footer class="footer-notes">
+        <div class="footer-note">
+          <span class="note-marker">1</span>
+          <span>Colors may vary slightly from screen to final print. Request a physical swatch for critical color matching.</span>
+        </div>
+        <div class="footer-note">
+          <span class="note-marker">2</span>
+          <span>Final print will include 0.5 inch bleed on all edges for seamless wall application.</span>
+        </div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

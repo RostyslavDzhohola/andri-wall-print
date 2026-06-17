@@ -1,4 +1,3 @@
-import { internal as generatedInternal } from "./_generated/api";
 import { ConvexError, v } from "convex/values";
 import { mutationGeneric as mutation, queryGeneric as query } from "convex/server";
 
@@ -22,11 +21,10 @@ import {
   makePreviewBundleIdempotencyKey,
   normalizeBundleTitle
 } from "../lib/preview-bundle-contract";
+import { scheduleBundleGenerationJob } from "./previewBundles";
 import { requireWallPrintProSeller } from "./sellerAuth";
 import { normalizeUploadSourceFingerprint, validateStoredPreviewUpload } from "./uploadValidation";
 import { assertValidPrint, previewBundleCropValidator, printValidator } from "./validators";
-
-const internal = generatedInternal;
 
 const inviteStatusValidator = v.union(v.literal("valid"), v.literal("expired"), v.literal("revoked"), v.literal("not_found"));
 
@@ -385,10 +383,6 @@ export const createBundleFromUpload = mutation({
       generatorVersion: PREVIEW_GENERATOR_VERSION,
       idempotencyKey,
       status: "uploaded" as const,
-      job: {
-        attempt: 1,
-        scheduledAt: now
-      },
       createdAt: now,
       updatedAt: now
     });
@@ -397,7 +391,7 @@ export const createBundleFromUpload = mutation({
       generatedCount: generationNumber,
       updatedAt: now
     });
-    await ctx.scheduler.runAfter(0, internal.bundleGeneration.generateBundleAssets, { bundleId });
+    await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
 
     return {
       bundleId,

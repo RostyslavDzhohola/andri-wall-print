@@ -28,12 +28,13 @@ describe("product UI copy helpers", () => {
     expect(previewStatusGroup("revoked")).toBe("disabled");
   });
 
-  it("maps source and creation values to product labels", () => {
-    expect(previewSourceLabel("sample")).toBe("Saved artwork");
-    expect(previewSourceLabel("upload")).toBe("Uploaded artwork");
-    expect(previewCreationLabel("builder")).toBe("Invite page");
-    expect(previewCreationLabel("seller")).toBe("Admin workspace");
-  });
+	  it("maps source and creation values to product labels", () => {
+	    expect(previewSourceLabel("sample")).toBe("Saved artwork");
+	    expect(previewSourceLabel("upload")).toBe("Uploaded artwork");
+	    expect(previewSourceLabel("ai_concept")).toBe("Concept draft");
+	    expect(previewCreationLabel("builder")).toBe("Invite page");
+	    expect(previewCreationLabel("seller")).toBe("Admin workspace");
+	  });
 
   it("maps invite link statuses and issue copy", () => {
     expect(inviteLinkStatusLabel("valid")).toBe("Ready");

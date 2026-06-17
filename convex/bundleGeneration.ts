@@ -2,6 +2,7 @@
 
 import { internalActionGeneric as internalAction } from "convex/server";
 import { internal as generatedInternal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 import { generateFlatPrintAssets } from "../lib/ar-asset-generator";
@@ -44,26 +45,42 @@ function toArrayBuffer(bytes: Uint8Array) {
 
 export const generateBundleAssets = internalAction({
   args: {
-    bundleId: v.id("previewBundles")
+    bundleId: v.id("previewBundles"),
+    attempt: v.optional(v.number())
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const input = await ctx.runQuery(internal.previewBundles.getGenerationInput, args);
-
-    if (!input) {
-      return null;
-    }
-
-    const claimed = await ctx.runMutation(internal.previewBundles.markGenerating, {
-      bundleId: args.bundleId,
-      attempt: input.attempt
-    });
-
-    if (!claimed) {
-      return null;
-    }
+    let input: {
+      attempt: number;
+      title: string;
+      print: { widthMeters: number; heightMeters: number };
+      source: {
+        storageId: Id<"_storage">;
+        originalFileName: string;
+        byteLength: number;
+      };
+      generatorVersion: string;
+    } | null = null;
 
     try {
+      input = await ctx.runQuery(internal.previewBundles.getGenerationInput, {
+        bundleId: args.bundleId,
+        attempt: args.attempt
+      });
+
+      if (!input) {
+        return null;
+      }
+
+      const claimed = await ctx.runMutation(internal.previewBundles.markGenerating, {
+        bundleId: args.bundleId,
+        attempt: input.attempt
+      });
+
+      if (!claimed) {
+        return null;
+      }
+
       const sourceUrl = await ctx.storage.getUrl(input.source.storageId);
 
       if (!sourceUrl) {
@@ -123,12 +140,19 @@ export const generateBundleAssets = internalAction({
     } catch (error) {
       const reason = errorMessage(error);
 
-      await ctx.runMutation(internal.previewBundles.finalizeGenerationFailure, {
-        bundleId: args.bundleId,
-        attempt: input.attempt,
-        reason,
-        rejected: isRejectedUploadError(reason)
-      });
+      if (input) {
+        await ctx.runMutation(internal.previewBundles.finalizeGenerationFailure, {
+          bundleId: args.bundleId,
+          attempt: input.attempt,
+          reason,
+          rejected: isRejectedUploadError(reason)
+        });
+      } else {
+        await ctx.runMutation(internal.previewBundles.recordGenerationCrash, {
+          bundleId: args.bundleId,
+          reason
+        });
+      }
     }
 
     return null;

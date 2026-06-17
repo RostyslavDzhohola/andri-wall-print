@@ -11,16 +11,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  PrintSizeFields,
+  printSizeFieldsValueFromPrint,
+  resolvePrintSizeFieldsValue,
+  type PrintSizeFieldsValue
+} from "@/components/preview/print-size-fields";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { AR_SAMPLES, type ArSample } from "@/lib/ar-sample";
-import { normalizeBuilderUploadToPng, validateBuilderSourceUpload, type NormalizedBuilderUpload } from "@/lib/builder-upload-normalization";
+import {
+  fingerprintBuilderUpload,
+  normalizeBuilderUploadToPng,
+  validateBuilderSourceUpload,
+  type NormalizedBuilderUpload
+} from "@/lib/builder-upload-normalization";
 import {
   getInitialClientPreviewUrl,
   resolveClientPreviewUrl,
   type ClientPreviewUrlSource
 } from "@/lib/client-preview-url";
-import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
+import {
+  DEFAULT_PREVIEW_BUNDLE_PRINT,
+  formatPreviewBundlePrintArea,
+  formatPreviewBundlePrintDimensions
+} from "@/lib/preview-bundle-contract";
 import { previewStatusGroup } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +61,8 @@ type CreatedSellerBundle = {
   id?: string;
   publicUrl: string;
   status: string;
+  failureReason?: string;
+  rejectionReason?: string;
 };
 
 const DEFAULT_UPLOADED_ARTWORK_DESCRIPTION = "Wall Print Pro client preview link.";
@@ -55,12 +72,6 @@ function titleFromFileName(fileName: string) {
   const normalized = withoutExtension.replace(/[-_]+/g, " ").trim();
 
   return normalized || "Uploaded artwork";
-}
-
-async function fingerprintUpload(file: File) {
-  const hash = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-
-  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function normalizeCreatedPreviewLink(value: unknown): CreatedPreviewLink {
@@ -177,6 +188,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
   const [file, setFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [normalizedUpload, setNormalizedUpload] = useState<NormalizedBuilderUpload | null>(null);
+  const [printSize, setPrintSize] = useState<PrintSizeFieldsValue>(() => printSizeFieldsValueFromPrint(DEFAULT_PREVIEW_BUNDLE_PRINT));
   const [result, setResult] = useState<CreatedPreviewLink | null>(null);
   const activeBundleId = result?.bundleId ?? routeBundleId;
   const createdBundle = useQuery(previewBundlesApi.getForSeller, activeBundleId ? { bundleId: activeBundleId } : "skip") as
@@ -194,12 +206,16 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
     () => samples.find((sample) => sample.id === selectedSampleId) ?? samples[0] ?? null,
     [samples, selectedSampleId]
   );
+  const uploadPrintValidation = useMemo(() => resolvePrintSizeFieldsValue(printSize), [printSize]);
+  const previewPrint = sourceMode === "sample" ? selectedSample?.print ?? null : uploadPrintValidation.ok ? uploadPrintValidation.print : null;
   const activeArtwork = sourceMode === "sample" ? selectedSample : file;
   const clientPreviewPath = result?.publicUrl ?? createdBundle?.publicUrl ?? null;
   const clientPreviewStatus = createdBundle?.status ?? result?.status ?? "created";
   const hasClientPreviewUrl = Boolean(clientPreviewPath);
   const isReadyToShare = hasClientPreviewUrl && previewStatusGroup(clientPreviewStatus) === "ready";
   const isPreparingPreview = hasClientPreviewUrl && previewStatusGroup(clientPreviewStatus) === "preparing";
+  const isPreviewNeedsAttention = hasClientPreviewUrl && previewStatusGroup(clientPreviewStatus) === "needsAttention";
+  const clientPreviewIssueReason = createdBundle?.rejectionReason ?? createdBundle?.failureReason ?? null;
   const isLoadingCreatedPreviewDetails = Boolean(activeBundleId && !clientPreviewPath && createdBundle === undefined);
   const canPreview = Boolean(activeArtwork);
   const canShare = Boolean(activeBundleId);
@@ -382,6 +398,11 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
       return;
     }
 
+    if (!uploadPrintValidation.ok) {
+      setError(uploadPrintValidation.reason);
+      return;
+    }
+
     setBusy("upload");
     setError(null);
     setNotice(null);
@@ -390,7 +411,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
     try {
       const normalized = await normalizeBuilderUploadToPng(file);
       setNormalizedUpload(normalized);
-      const sourceFingerprint = await fingerprintUpload(normalized.file);
+      const sourceFingerprint = await fingerprintBuilderUpload(normalized.file);
 
       const uploadUrl = await generateUploadUrl();
       const upload = await fetch(uploadUrl, {
@@ -412,7 +433,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
         sourceFingerprint,
         title: titleFromFileName(file.name),
         description: DEFAULT_UPLOADED_ARTWORK_DESCRIPTION,
-        print: DEFAULT_PREVIEW_BUNDLE_PRINT
+        print: uploadPrintValidation.print
       }));
 
       setResult(created);
@@ -495,6 +516,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
               disabled={busy !== null}
               onClick={() => {
                 setSourceMode("upload");
+                setPrintSize(printSizeFieldsValueFromPrint(DEFAULT_PREVIEW_BUNDLE_PRINT));
                 clearResultForArtworkChange();
                 setError(null);
                 goToStep("choose", { source: "upload", bundleId: null });
@@ -539,7 +561,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
                       <img alt="" className="size-12 rounded-md object-cover" src={sample.assets.poster} />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-semibold text-foreground">{sample.title}</span>
-                        <span className="block text-xs text-muted-foreground">Saved artwork metadata will be used.</span>
+                        <span className="block text-xs text-muted-foreground">{formatPreviewBundlePrintDimensions(sample.print)}</span>
                       </span>
                       {sample.id === selectedSampleId ? <CheckCircle2 className="size-4 text-primary" /> : <span className="size-4" />}
                     </Button>
@@ -551,7 +573,7 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
             <Card size="sm">
               <CardHeader className="border-b">
                 <CardTitle>Upload artwork</CardTitle>
-                <CardDescription>JPEG, PNG, or WebP. The current default print size is applied.</CardDescription>
+                <CardDescription>JPEG, PNG, or WebP. Set the real print size before creating the client preview.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
                 <div className="grid gap-2">
@@ -564,9 +586,13 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
                     type="file"
                   />
                 </div>
-                <Alert>
-                  <AlertDescription>Advanced physical-size overrides are deferred until real phone QA proves they are needed.</AlertDescription>
-                </Alert>
+                <PrintSizeFields
+                  disabled={busy !== null}
+                  onChange={setPrintSize}
+                  testIdPrefix="admin-upload-print-size"
+                  validation={uploadPrintValidation}
+                  value={printSize}
+                />
               </CardContent>
             </Card>
           )}
@@ -654,6 +680,18 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
                 )
               ) : null}
 
+              {previewPrint ? (
+                <dl
+                  className="grid gap-2 rounded-lg border bg-muted/40 p-3 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4"
+                  data-testid="create-preview-print-summary"
+                >
+                  <dt className="font-semibold">Print size</dt>
+                  <dd className="text-muted-foreground">{formatPreviewBundlePrintDimensions(previewPrint)}</dd>
+                  <dt className="font-semibold">Area</dt>
+                  <dd className="text-muted-foreground">{formatPreviewBundlePrintArea(previewPrint)}</dd>
+                </dl>
+              ) : null}
+
               {normalizedUpload ? (
                 <Alert className="border-status-ready-border bg-status-ready text-status-ready-foreground">
                   <AlertDescription>
@@ -685,6 +723,8 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
                 <CardDescription>
                   {isLoadingCreatedPreviewDetails
                     ? "Getting the shareable URL for this preview."
+                    : isPreviewNeedsAttention
+                      ? "The artwork needs attention before this client preview can be shared."
                     : isPreparingPreview
                       ? "The link is available now. The artwork is still preparing."
                       : "Copy this link and send it to the client."}
@@ -715,6 +755,11 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 ) : null}
+                {clientPreviewIssueReason ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>{clientPreviewIssueReason}</AlertDescription>
+                  </Alert>
+                ) : null}
 
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -727,9 +772,9 @@ export function CreatePreviewFlow({ mode = "page", samples = AR_SAMPLES, onCreat
                     <Copy className="size-4" />
                     Copy client preview link
                   </Button>
-                  {clientPreviewUrl ? (
+                  {clientPreviewPath ? (
                     <Button asChild className="min-h-11" size="lg" variant="outline">
-                      <a href={clientPreviewUrl} rel="noreferrer" target="_blank">
+                      <a href={clientPreviewPath} rel="noreferrer" target="_blank">
                         <ExternalLink className="size-4" />
                         Open client preview
                       </a>

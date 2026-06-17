@@ -1,5 +1,6 @@
 import { internalMutationGeneric as internalMutation, internalQueryGeneric as internalQuery, mutationGeneric as mutation, queryGeneric as query } from "convex/server";
 import { internal as generatedInternal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { ConvexError, v } from "convex/values";
 
 import { AR_SAMPLES } from "../lib/ar-sample";
@@ -14,6 +15,7 @@ import {
   normalizeBundleTitle,
   stableStringify,
   type PreviewBundlePrint,
+  type PreviewBundleSourceKind,
   type PreviewBundleStatus
 } from "../lib/preview-bundle-contract";
 import {
@@ -95,13 +97,13 @@ const sellerBundleValidator = v.object({
   id: v.string(),
   publicSlug: v.string(),
   builderInviteId: v.optional(v.string()),
-  createdVia: v.union(v.literal("seller"), v.literal("builder")),
+  createdVia: v.union(v.literal("seller"), v.literal("builder"), v.literal("lead")),
   title: v.string(),
   description: v.string(),
   status: v.string(),
   print: printValidator,
   pricing: sellerPricingEstimateValidator,
-  sourceKind: v.union(v.literal("upload"), v.literal("sample")),
+  sourceKind: v.union(v.literal("upload"), v.literal("sample"), v.literal("ai_concept")),
   publicUrl: v.string(),
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -152,6 +154,14 @@ function logicalUploadSourceId(source: {
   return `file:${source.originalFileName}:${source.contentType}:${source.byteLength}`;
 }
 
+function logicalAiConceptSourceId(source: {
+  aiConceptDraftId: Id<"aiConceptDrafts">;
+  leadRequestId: Id<"leadRequests">;
+  byteLength: number;
+}) {
+  return `ai:${source.leadRequestId}:${source.aiConceptDraftId}:${source.byteLength}`;
+}
+
 function logicalPreviewBundleKey(bundle: {
   source:
     | {
@@ -164,23 +174,50 @@ function logicalPreviewBundleKey(bundle: {
     | {
         kind: "sample";
         sampleId: string;
+      }
+    | {
+        kind: "ai_concept";
+        aiConceptDraftId: Id<"aiConceptDrafts">;
+        leadRequestId: Id<"leadRequests">;
+        contentType: string;
+        byteLength: number;
       };
   crop: { mode: "contain" | "cover" };
   print: { aspectRatio: string; widthMeters: number; heightMeters: number; label: string };
   generatorVersion: string;
 }) {
-  const source =
-    bundle.source.kind === "sample"
-      ? {
-          kind: "sample",
-          sourceId: bundle.source.sampleId
-        }
-      : {
-          kind: "upload",
-          sourceId: logicalUploadSourceId(bundle.source),
-          contentType: bundle.source.contentType,
-          byteLength: bundle.source.byteLength
-        };
+  let source:
+    | {
+        kind: "sample";
+        sourceId: string;
+      }
+    | {
+        kind: "upload" | "ai_concept";
+        sourceId: string;
+        contentType: string;
+        byteLength: number;
+      };
+
+  if (bundle.source.kind === "sample") {
+    source = {
+      kind: "sample",
+      sourceId: bundle.source.sampleId
+    };
+  } else if (bundle.source.kind === "ai_concept") {
+    source = {
+      kind: "ai_concept",
+      sourceId: logicalAiConceptSourceId(bundle.source),
+      contentType: bundle.source.contentType,
+      byteLength: bundle.source.byteLength
+    };
+  } else {
+    source = {
+      kind: "upload",
+      sourceId: logicalUploadSourceId(bundle.source),
+      contentType: bundle.source.contentType,
+      byteLength: bundle.source.byteLength
+    };
+  }
 
   return stableStringify({
     source,
@@ -237,12 +274,12 @@ type SellerBundleRecord = {
   _id: string;
   publicSlug: string;
   builderInviteId?: string;
-  createdVia?: "seller" | "builder";
+  createdVia?: "seller" | "builder" | "lead";
   title: string;
   description: string;
   status: string;
   print: { aspectRatio: string; widthMeters: number; heightMeters: number; label: string };
-  source: { kind: "upload" | "sample" };
+  source: { kind: PreviewBundleSourceKind };
   createdAt: number;
   updatedAt: number;
   failureReason?: string;
@@ -259,14 +296,14 @@ type PreviewBundleJobRecord = {
 };
 
 type PreviewBundleGenerationRecord = {
-  _id: string;
+  _id: Id<"previewBundles">;
   publicSlug: string;
   title: string;
   status: PreviewBundleStatus | string;
   source:
     | {
         kind: "upload";
-        storageId: string;
+        storageId: Id<"_storage">;
         originalFileName: string;
         contentType: string;
         byteLength: number;
@@ -275,6 +312,16 @@ type PreviewBundleGenerationRecord = {
     | {
         kind: "sample";
         sampleId: string;
+      }
+    | {
+        kind: "ai_concept";
+        storageId: Id<"_storage">;
+        originalFileName: string;
+        contentType: string;
+        byteLength: number;
+        leadRequestId: Id<"leadRequests">;
+        aiConceptDraftId: Id<"aiConceptDrafts">;
+        prompt: string;
       };
   print: PreviewBundlePrint;
   generatorVersion: string;
@@ -408,8 +455,18 @@ function generationGeneratingAgeMs(bundle: PreviewBundleGenerationRecord, now: n
   return now - (bundle.job?.startedAt ?? bundle.updatedAt ?? bundle.job?.scheduledAt ?? bundle.createdAt);
 }
 
-export function serializeGenerationInput(bundle: PreviewBundleGenerationRecord | null | undefined) {
-  if (!bundle || bundle.source.kind !== "upload" || bundle.status !== "uploaded") {
+export function serializeGenerationInput(bundle: PreviewBundleGenerationRecord | null | undefined, requestedAttempt?: number) {
+  if (!bundle || bundle.source.kind === "sample" || bundle.status !== "uploaded") {
+    return null;
+  }
+
+  const attempt = generationAttempt(bundle);
+
+  if (requestedAttempt !== undefined && attempt !== requestedAttempt) {
+    return null;
+  }
+
+  if (requestedAttempt === undefined && bundle.job?.scheduledFunctionId) {
     return null;
   }
 
@@ -425,12 +482,12 @@ export function serializeGenerationInput(bundle: PreviewBundleGenerationRecord |
       byteLength: bundle.source.byteLength
     },
     generatorVersion: bundle.generatorVersion,
-    attempt: generationAttempt(bundle)
+    attempt
   };
 }
 
 export function isFreshPreviewGeneration(bundle: PreviewBundleGenerationRecord, now = Date.now()) {
-  if (bundle.source.kind !== "upload") {
+  if (bundle.source.kind === "sample") {
     return false;
   }
 
@@ -449,7 +506,7 @@ export function selectStaleGenerationRecovery(
   bundle: PreviewBundleGenerationRecord,
   now = Date.now()
 ): StaleGenerationRecoveryDecision {
-  if (bundle.source.kind !== "upload") {
+  if (bundle.source.kind === "sample") {
     return { action: "ignore" };
   }
 
@@ -497,7 +554,7 @@ export function selectStaleGenerationRecovery(
 }
 
 export async function scheduleBundleGenerationJob(ctx: any, bundleId: string, attempt: number, scheduledAt = Date.now()) {
-  const scheduledFunctionId = await ctx.scheduler.runAfter(0, internal.bundleGeneration.generateBundleAssets, { bundleId });
+  const scheduledFunctionId = await ctx.scheduler.runAfter(0, internal.bundleGeneration.generateBundleAssets, { bundleId, attempt });
 
   await ctx.db.patch(bundleId as never, {
     status: "uploaded",
@@ -852,6 +909,80 @@ export const createBundleFromUpload = mutation({
   }
 });
 
+export const createBundleFromAiConcept = internalMutation({
+  args: {
+    leadRequestId: v.id("leadRequests"),
+    aiConceptDraftId: v.id("aiConceptDrafts"),
+    sourceStorageId: v.id("_storage"),
+    originalFileName: v.string(),
+    contentType: v.literal("image/png"),
+    byteLength: v.number(),
+    title: v.string(),
+    description: v.optional(v.string()),
+    prompt: v.string(),
+    print: v.optional(printValidator)
+  },
+  returns: createdPreviewLinkValidator,
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const crop = DEFAULT_PREVIEW_BUNDLE_CROP;
+    const title = normalizeBundleTitle(args.title);
+    const description = args.description?.trim() || "Wall Print Pro AI concept draft for seller review.";
+    const print = args.print ?? DEFAULT_PREVIEW_BUNDLE_PRINT;
+    assertValidPrint(print);
+
+    const source = {
+      kind: "ai_concept" as const,
+      storageId: args.sourceStorageId,
+      originalFileName: args.originalFileName,
+      contentType: args.contentType,
+      byteLength: args.byteLength,
+      leadRequestId: args.leadRequestId,
+      aiConceptDraftId: args.aiConceptDraftId,
+      prompt: args.prompt
+    };
+    const idempotencyKey = makePreviewBundleIdempotencyKey({
+      sellerSubject: "public-leads",
+      source: {
+        kind: "ai_concept",
+        sourceId: logicalAiConceptSourceId(source),
+        contentType: args.contentType,
+        byteLength: args.byteLength
+      },
+      crop,
+      print,
+      generatorVersion: PREVIEW_GENERATOR_VERSION
+    });
+    const publicSlug = createPreviewBundlePublicSlug();
+    const bundleId = await ctx.db.insert("previewBundles", {
+      publicSlug,
+      sellerSubject: "public-leads",
+      createdVia: "lead",
+      leadRequestId: args.leadRequestId,
+      aiConceptDraftId: args.aiConceptDraftId,
+      title,
+      description,
+      source,
+      crop,
+      print,
+      generatorVersion: PREVIEW_GENERATOR_VERSION,
+      idempotencyKey,
+      status: "uploaded",
+      createdAt: now,
+      updatedAt: now
+    });
+
+    await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
+
+    return {
+      bundleId,
+      publicSlug,
+      publicUrl: toPublicUrl(publicSlug),
+      status: "uploaded"
+    };
+  }
+});
+
 export const retryBundle = mutation({
   args: {
     bundleId: v.id("previewBundles")
@@ -860,10 +991,10 @@ export const retryBundle = mutation({
   handler: async (ctx, args) => {
     const bundle = await getSellerOwnedBundle(ctx, args.bundleId);
 
-    if (bundle.source.kind !== "upload") {
+    if (bundle.source.kind === "sample") {
       throw new ConvexError({
         code: "UNSUPPORTED_RETRY",
-        message: "Only uploaded artwork can be prepared again."
+        message: "Only generated or uploaded artwork can be prepared again."
       });
     }
 
@@ -917,7 +1048,7 @@ export const deleteBundle = mutation({
     const bundle = await getSellerOwnedBundle(ctx, args.bundleId);
     const storageIds = new Set<string>();
 
-    if (bundle.source.kind === "upload") {
+    if (bundle.source.kind === "upload" || bundle.source.kind === "ai_concept") {
       storageIds.add(bundle.source.storageId);
     }
 
@@ -946,13 +1077,14 @@ export const deleteBundle = mutation({
 
 export const getGenerationInput = internalQuery({
   args: {
-    bundleId: v.id("previewBundles")
+    bundleId: v.id("previewBundles"),
+    attempt: v.optional(v.number())
   },
   returns: generationInputValidator,
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    return serializeGenerationInput(bundle);
+    return serializeGenerationInput(bundle, args.attempt);
   }
 });
 
@@ -965,7 +1097,7 @@ export const markGenerating = internalMutation({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.source.kind !== "upload" || bundle.status !== "uploaded" || (bundle.job?.attempt ?? 1) !== args.attempt) {
+    if (!bundle || bundle.source.kind === "sample" || bundle.status !== "uploaded" || (bundle.job?.attempt ?? 1) !== args.attempt) {
       return false;
     }
 
@@ -1058,6 +1190,76 @@ export const finalizeGenerationFailure = internalMutation({
   }
 });
 
+export const recordGenerationCrash = internalMutation({
+  args: {
+    bundleId: v.id("previewBundles"),
+    reason: v.string()
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const bundle = await ctx.db.get(args.bundleId);
+
+    if (!bundle || bundle.source.kind === "sample" || !["uploaded", "generating"].includes(bundle.status)) {
+      return null;
+    }
+
+    await markGenerationPermanentlyFailed(ctx, bundle, args.reason);
+
+    return null;
+  }
+});
+
+export const recoverStaleGenerationJobs = internalMutation({
+  args: {},
+  returns: v.object({
+    retried: v.number(),
+    failed: v.number(),
+    ignored: v.number()
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const [uploadedBundles, generatingBundles] = await Promise.all([
+      ctx.db
+        .query("previewBundles")
+        .withIndex("by_status_createdAt", (q: any) => q.eq("status", "uploaded"))
+        .order("asc")
+        .take(200),
+      ctx.db
+        .query("previewBundles")
+        .withIndex("by_status_createdAt", (q: any) => q.eq("status", "generating"))
+        .order("asc")
+        .take(200)
+    ]);
+    let retried = 0;
+    let failed = 0;
+    let ignored = 0;
+
+    for (const bundle of [...uploadedBundles, ...generatingBundles]) {
+      const decision = selectStaleGenerationRecovery(bundle, now);
+
+      if (decision.action === "retry") {
+        await scheduleBundleGenerationJob(ctx, bundle._id, decision.attempt, now);
+        retried += 1;
+        continue;
+      }
+
+      if (decision.action === "fail") {
+        await markGenerationPermanentlyFailed(ctx, bundle, decision.reason, now);
+        failed += 1;
+        continue;
+      }
+
+      ignored += 1;
+    }
+
+    return {
+      retried,
+      failed,
+      ignored
+    };
+  }
+});
+
 export const getReadyPublicBundle = internalQuery({
   args: {
     publicSlug: v.string()
@@ -1070,11 +1272,12 @@ export const getReadyPublicBundle = internalQuery({
       title: v.string(),
       description: v.string(),
       print: printValidator,
-      assetStorageIds: v.optional(assetStorageIdsValidator),
-      assetUrls: v.optional(assetUrlsValidator),
-      assetMeta: v.optional(assetMetaValidator),
-      status: v.string()
-    })
+	      assetStorageIds: v.optional(assetStorageIdsValidator),
+	      assetUrls: v.optional(assetUrlsValidator),
+	      assetMeta: v.optional(assetMetaValidator),
+	      sourceKind: v.union(v.literal("upload"), v.literal("sample"), v.literal("ai_concept")),
+	      status: v.string()
+	    })
   ),
   handler: async (ctx, args) => {
     const bundle = await ctx.db
@@ -1092,10 +1295,11 @@ export const getReadyPublicBundle = internalQuery({
       title: bundle.status === "ready" ? bundle.title : "Wall Print Pro preview",
       description: bundle.status === "ready" ? bundle.description : "Your wall preview is being prepared.",
       print: normalizePreviewBundlePrintDisplay(bundle.print),
-      assetStorageIds: bundle.assetStorageIds,
-      assetUrls: bundle.assetUrls,
-      assetMeta: bundle.assetMeta,
-      status: bundle.status
-    };
+	      assetStorageIds: bundle.assetStorageIds,
+	      assetUrls: bundle.assetUrls,
+	      assetMeta: bundle.assetMeta,
+	      sourceKind: bundle.source.kind,
+	      status: bundle.status
+	    };
   }
 });

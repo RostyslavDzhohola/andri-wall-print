@@ -9,35 +9,12 @@ import { AdminNav } from "@/components/seller/admin-nav";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getClerkUserEmail } from "@/lib/account-routing";
 import { readClerkPublishableKey, readClerkSecretKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
 import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
 
-type ClerkEmailAddress = {
-  id?: string | null;
-  emailAddress?: string | null;
-};
-
-type ClerkUserLike = {
-  primaryEmailAddressId?: string | null;
-  primaryEmailAddress?: ClerkEmailAddress | null;
-  emailAddresses?: ClerkEmailAddress[] | null;
-};
-
 function hasAdminRuntime() {
   return Boolean(readClerkPublishableKey() && readClerkSecretKey() && readConvexRuntimeUrl());
-}
-
-function getClerkUserEmail(user: ClerkUserLike | null) {
-  if (!user) {
-    return null;
-  }
-
-  return (
-    user.primaryEmailAddress?.emailAddress ??
-    user.emailAddresses?.find((emailAddress) => emailAddress.id === user.primaryEmailAddressId)?.emailAddress ??
-    user.emailAddresses?.[0]?.emailAddress ??
-    null
-  );
 }
 
 function AdminSetupMissing() {
@@ -55,7 +32,7 @@ function AdminSetupMissing() {
               Ask the admin to refresh the workspace setup before creating preview links.
             </p>
             <Button asChild className="w-fit" size="lg">
-              <Link href="/">Open sample gallery</Link>
+              <Link href="/gallery">Open gallery</Link>
             </Button>
           </CardContent>
         </Card>
@@ -85,7 +62,7 @@ function AdminAccessDenied({ email, userId }: { email: string | null; userId: st
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Button asChild className="w-fit" size="lg">
-                <Link href="/">Open sample gallery</Link>
+                <Link href="/gallery">Open gallery</Link>
               </Button>
               <UserButton />
             </div>

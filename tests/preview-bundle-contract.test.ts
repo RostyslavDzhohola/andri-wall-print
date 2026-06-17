@@ -19,7 +19,7 @@ import {
 } from "@/lib/preview-bundle-contract";
 
 describe("preview bundle contract", () => {
-  it("keeps idempotency keys stable for equivalent bundle inputs", () => {
+	  it("keeps idempotency keys stable for equivalent bundle inputs", () => {
     const input = {
       sellerSubject: "user_123",
       source: {
@@ -31,8 +31,48 @@ describe("preview bundle contract", () => {
       generatorVersion: PREVIEW_GENERATOR_VERSION
     };
 
-    expect(makePreviewBundleIdempotencyKey(input)).toBe(makePreviewBundleIdempotencyKey({ ...input }));
-  });
+	    expect(makePreviewBundleIdempotencyKey(input)).toBe(makePreviewBundleIdempotencyKey({ ...input }));
+	  });
+
+	  it("keeps AI concept source keys distinct from uploads and samples", () => {
+	    const base = {
+	      sellerSubject: "public-leads",
+	      crop: DEFAULT_PREVIEW_BUNDLE_CROP,
+	      print: DEFAULT_PREVIEW_BUNDLE_PRINT,
+	      generatorVersion: PREVIEW_GENERATOR_VERSION
+	    };
+
+	    const aiKey = makePreviewBundleIdempotencyKey({
+	      ...base,
+	      source: {
+	        kind: "ai_concept" as const,
+	        sourceId: "ai:lead_123:draft_123:1200",
+	        contentType: "image/png",
+	        byteLength: 1200
+	      }
+	    });
+
+	    expect(aiKey).not.toBe(
+	      makePreviewBundleIdempotencyKey({
+	        ...base,
+	        source: {
+	          kind: "upload" as const,
+	          sourceId: "sha256:abc",
+	          contentType: "image/png",
+	          byteLength: 1200
+	        }
+	      })
+	    );
+	    expect(aiKey).not.toBe(
+	      makePreviewBundleIdempotencyKey({
+	        ...base,
+	        source: {
+	          kind: "sample" as const,
+	          sourceId: "chicago-final-1"
+	        }
+	      })
+	    );
+	  });
 
   it("accepts JPEG, PNG, and WebP as source uploads", () => {
     for (const contentType of ["image/jpeg", "image/png", "image/webp"]) {

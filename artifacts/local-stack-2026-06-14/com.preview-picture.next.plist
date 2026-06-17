@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.preview-picture.next</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/Rostyslav/.nvm/versions/node/v22.14.0/bin/pnpm</string>
+    <string>exec</string>
+    <string>next</string>
+    <string>start</string>
+    <string>-H</string>
+    <string>0.0.0.0</string>
+    <string>-p</string>
+    <string>3000</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/Rostyslav/Projects/preview-picture</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>/Users/Rostyslav</string>
+    <key>PATH</key>
+    <string>/Users/Rostyslav/.nvm/versions/node/v22.14.0/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/Rostyslav/Projects/preview-picture/artifacts/local-stack-2026-06-14/next-prod.launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/Rostyslav/Projects/preview-picture/artifacts/local-stack-2026-06-14/next-prod.launchd.err.log</string>
+</dict>
+</plist>

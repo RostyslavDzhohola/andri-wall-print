@@ -70,6 +70,16 @@ export const previewBundleSourceValidator = v.union(
   v.object({
     kind: v.literal("sample"),
     sampleId: v.string()
+  }),
+  v.object({
+    kind: v.literal("ai_concept"),
+    storageId: v.id("_storage"),
+    originalFileName: v.string(),
+    contentType: v.string(),
+    byteLength: v.number(),
+    leadRequestId: v.id("leadRequests"),
+    aiConceptDraftId: v.id("aiConceptDrafts"),
+    prompt: v.string()
   })
 );
 

@@ -1,0 +1,14 @@
+HTTP/1.1 200 OK
+x-clerk-auth-reason: dev-browser-missing
+x-clerk-auth-status: signed-out
+x-middleware-rewrite: /preview/chicago-final-1
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+link: </_next/static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/chunks/0j52mdbh-y0m5.css>; rel=preload; as="style"
+X-Powered-By: Next.js
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/html; charset=utf-8
+Date: Sun, 14 Jun 2026 19:54:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+

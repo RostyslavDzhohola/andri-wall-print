@@ -51,7 +51,9 @@ export default defineSchema({
     sellerSubject: v.string(),
     sellerEmail: v.optional(v.string()),
     builderInviteId: v.optional(v.id("builderInvites")),
-    createdVia: v.optional(v.union(v.literal("seller"), v.literal("builder"))),
+    leadRequestId: v.optional(v.id("leadRequests")),
+    aiConceptDraftId: v.optional(v.id("aiConceptDrafts")),
+    createdVia: v.optional(v.union(v.literal("seller"), v.literal("builder"), v.literal("lead"))),
     title: v.string(),
     description: v.string(),
     source: previewBundleSourceValidator,
@@ -115,5 +117,77 @@ export default defineSchema({
   })
     .index("by_buyer_createdAt", ["buyerSubject", "createdAt"])
     .index("by_buyer_public_slug", ["buyerSubject", "publicSlug"])
-    .index("by_preview_bundle", ["previewBundleId"])
+    .index("by_preview_bundle", ["previewBundleId"]),
+  leadRequests: defineTable({
+    contactName: v.string(),
+    contactEmail: v.string(),
+    contactPhone: v.optional(v.string()),
+    normalizedContactEmail: v.string(),
+    normalizedContactPhone: v.optional(v.string()),
+    businessName: v.optional(v.string()),
+    wallDescription: v.optional(v.string()),
+    conceptPrompt: v.optional(v.string()),
+    intent: v.union(v.literal("contact"), v.literal("concept"), v.literal("reserve")),
+    reserveInterest: v.boolean(),
+    upload: v.optional(
+      v.object({
+        storageId: v.id("_storage"),
+        originalFileName: v.string(),
+        contentType: v.string(),
+        byteLength: v.number(),
+        sourceFingerprint: v.optional(v.string())
+      })
+    ),
+    print: v.optional(printValidator),
+    status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("contacted"), v.literal("won"), v.literal("lost"), v.literal("archived")),
+    aiConceptDraftId: v.optional(v.id("aiConceptDrafts")),
+    previewBundleId: v.optional(v.id("previewBundles")),
+    publicPreviewSlug: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  })
+    .index("by_status_createdAt", ["status", "createdAt"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_normalized_email_createdAt", ["normalizedContactEmail", "createdAt"]),
+  aiConceptDrafts: defineTable({
+    leadRequestId: v.id("leadRequests"),
+    prompt: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("generating"),
+      v.literal("ready"),
+      v.literal("failed"),
+      v.literal("rejected"),
+      v.literal("rate_limited"),
+      v.literal("disabled")
+    ),
+    model: v.optional(v.string()),
+    provider: v.literal("openai"),
+    generatedImageStorageId: v.optional(v.id("_storage")),
+    generatedImageMeta: v.optional(
+      v.object({
+        fileName: v.string(),
+        contentType: v.string(),
+        byteLength: v.number()
+      })
+    ),
+    previewBundleId: v.optional(v.id("previewBundles")),
+    publicPreviewSlug: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    refusalReason: v.optional(v.string()),
+    providerMetadata: v.optional(v.string()),
+    requestedAt: v.number(),
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    updatedAt: v.number()
+  })
+    .index("by_lead_request", ["leadRequestId"])
+    .index("by_status_requestedAt", ["status", "requestedAt"]),
+  leadRateLimits: defineTable({
+    contactKey: v.string(),
+    bucket: v.string(),
+    count: v.number(),
+    firstRequestAt: v.number(),
+    updatedAt: v.number()
+  }).index("by_contact_bucket", ["contactKey", "bucket"])
 });

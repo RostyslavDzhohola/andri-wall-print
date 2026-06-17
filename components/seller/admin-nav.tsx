@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/admin", label: "Admin workspace" },
-  { href: "/admin/new", label: "Create preview" }
+  { href: "/admin", label: "Admin workspace", shortLabel: "Admin" },
+  { href: "/admin/leads", label: "Lead inbox", shortLabel: "Leads" },
+  { href: "/admin/new", label: "Create preview", shortLabel: "Create" },
+  { href: "/gallery", label: "Gallery" }
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
@@ -38,12 +40,21 @@ export function AdminNav() {
           <Button
             aria-current={isActive ? "page" : undefined}
             asChild
-            className={cn("h-9 min-w-0 px-3 sm:min-w-32", item.href === "/admin/new" && "sm:min-w-40")}
+            className={cn("h-9 min-w-0 px-2 text-xs sm:min-w-32 sm:px-3 sm:text-sm", item.href === "/admin/new" && "sm:min-w-40")}
             key={item.href}
             size="lg"
             variant={isActive ? "default" : "ghost"}
           >
-            <Link href={item.href}>{item.label}</Link>
+            <Link aria-label={item.label} href={item.href}>
+              {"shortLabel" in item ? (
+                <>
+                  <span className="hidden sm:inline">{item.label}</span>
+                  <span className="sm:hidden">{item.shortLabel}</span>
+                </>
+              ) : (
+                item.label
+              )}
+            </Link>
           </Button>
         );
       })}

@@ -174,6 +174,43 @@ describe("Convex public preview adapter", () => {
     });
   });
 
+  it("preserves AI concept source kind for public warning labels", async () => {
+    const fetcher: PublicPreviewOptions["fetcher"] = async () =>
+      jsonResponse({
+        status: "success",
+        value: {
+          slug: "client-proof-abc",
+          title: "Concept Draft",
+          description: "Client proof",
+          sourceKind: "ai_concept",
+          print: {
+            aspectRatio: "1:1",
+            widthMeters: 1,
+            heightMeters: 1,
+            label: "100 x 100 cm"
+          },
+          assets: {
+            poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
+            glb: "https://steady-otter-123.convex.cloud/api/storage/glb",
+            usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
+          }
+        }
+      });
+
+    await expect(
+      getPublicPreview("client-proof-abc", {
+        convexUrl: "https://steady-otter-123.convex.cloud",
+        fetcher
+      })
+    ).resolves.toMatchObject({
+      status: "ready",
+      sourceKind: "ai_concept",
+      sample: {
+        id: "client-proof-abc"
+      }
+    });
+  });
+
   it("parses unavailable bundle responses without exposing artwork", async () => {
     const fetcher: PublicPreviewOptions["fetcher"] = async () =>
       jsonResponse({

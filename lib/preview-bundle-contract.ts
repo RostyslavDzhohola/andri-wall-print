@@ -23,6 +23,10 @@ export type PreviewBundlePrint = {
   label: string;
 };
 
+export const PREVIEW_BUNDLE_SOURCE_KINDS = ["upload", "sample", "ai_concept"] as const;
+
+export type PreviewBundleSourceKind = (typeof PREVIEW_BUNDLE_SOURCE_KINDS)[number];
+
 export const PREVIEW_BUNDLE_PRINT_UNITS = ["cm", "in"] as const;
 
 export type PreviewBundlePrintUnit = (typeof PREVIEW_BUNDLE_PRINT_UNITS)[number];
@@ -53,7 +57,7 @@ export type PreviewBundlePrintValidationResult =
     };
 
 export type PreviewBundleSourceForKey = {
-  kind: "upload" | "sample";
+  kind: PreviewBundleSourceKind;
   sourceId: string;
   contentType?: string;
   byteLength?: number;
