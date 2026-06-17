@@ -25,6 +25,8 @@ export type PrintSizeFieldsValue = {
   height: string;
 };
 
+export const PRINT_SIZE_FIELD_STEP = "any";
+
 type PrintSizeFieldsProps = {
   value: PrintSizeFieldsValue;
   onChange: (value: PrintSizeFieldsValue) => void;
@@ -77,7 +79,6 @@ export function PrintSizeFields({
   const currentValidation = validation ?? resolvePrintSizeFieldsValue(value);
   const min = value.unit === "cm" ? PREVIEW_BUNDLE_PRINT_SIZE_LIMITS.minCentimeters : PREVIEW_BUNDLE_PRINT_SIZE_LIMITS.minInches;
   const max = value.unit === "cm" ? PREVIEW_BUNDLE_PRINT_SIZE_LIMITS.maxCentimeters : PREVIEW_BUNDLE_PRINT_SIZE_LIMITS.maxInches;
-  const step = value.unit === "cm" ? 1 : 0.5;
   const unitLabel = value.unit === "cm" ? "centimeters" : "inches";
 
   const changeUnit = (unit: PreviewBundlePrintUnit) => {
@@ -133,7 +134,7 @@ export function PrintSizeFields({
             max={max}
             min={min}
             onChange={(event) => onChange({ ...value, width: event.target.value })}
-            step={step}
+            step={PRINT_SIZE_FIELD_STEP}
             type="number"
             value={value.width}
           />
@@ -149,7 +150,7 @@ export function PrintSizeFields({
             max={max}
             min={min}
             onChange={(event) => onChange({ ...value, height: event.target.value })}
-            step={step}
+            step={PRINT_SIZE_FIELD_STEP}
             type="number"
             value={value.height}
           />
