@@ -2,23 +2,23 @@
 
 import { useRef, useState } from "react";
 
-const blobBaseUrl = "https://tu8dyrkppxcttpj1.public.blob.vercel-storage.com";
+const workVideoBaseUrl = "https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev";
 
 const workVideos = [
   {
     id: "wall-print-1",
-    poster: `${blobBaseUrl}/work-videos/wall-print-1-poster.jpg`,
-    src: `${blobBaseUrl}/work-videos/wall-print-1.mp4`
+    poster: "/work-videos/wall-print-1-poster.jpg",
+    src: `${workVideoBaseUrl}/work-videos/wall-print-1.mp4`
   },
   {
     id: "wall-print-2",
-    poster: `${blobBaseUrl}/work-videos/wall-print-2-poster.jpg`,
-    src: `${blobBaseUrl}/work-videos/wall-print-2.mp4`
+    poster: "/work-videos/wall-print-2-poster.jpg",
+    src: `${workVideoBaseUrl}/work-videos/wall-print-2.mp4`
   },
   {
     id: "wall-print-3",
-    poster: `${blobBaseUrl}/work-videos/wall-print-3-poster.jpg`,
-    src: `${blobBaseUrl}/work-videos/wall-print-3.mp4`
+    poster: "/work-videos/wall-print-3-poster.jpg",
+    src: `${workVideoBaseUrl}/work-videos/wall-print-3.mp4`
   }
 ] as const;
 

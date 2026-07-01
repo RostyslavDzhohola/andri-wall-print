@@ -22,8 +22,17 @@ import {
   normalizeBuilderUploadToPng,
   validateBuilderSourceUpload
 } from "@/lib/builder-upload-normalization";
-import { isValidLeadEmail, normalizeLeadEmail, normalizeLeadPhone, type LeadContactMethod, type LeadRequestIntent } from "@/lib/lead-request-contract";
+import {
+  LEAD_CONCEPT_PROMPT_MAX_LENGTH,
+  isValidLeadEmail,
+  normalizeLeadEmail,
+  normalizeLeadPhone,
+  type LeadContactMethod,
+  type LeadRequestIntent
+} from "@/lib/lead-request-contract";
+import { formatLeadRequestResultMessage } from "@/lib/lead-request-presentation";
 import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
+import type { RequestDesignContext } from "@/lib/request-page-defaults";
 import { cn } from "@/lib/utils";
 
 const leadRequestsApi = api.leadRequests as any;
@@ -31,6 +40,8 @@ const leadRequestsApi = api.leadRequests as any;
 type PublicRequestFormProps = {
   aiEnabled: boolean;
   defaultIntent: LeadRequestIntent;
+  defaultConceptPrompt?: string;
+  defaultDesignContext?: RequestDesignContext;
   publicPhone?: string;
   publicContactUrl?: string;
 };
@@ -50,7 +61,14 @@ const contactMethodOptions: Array<{ value: LeadContactMethod; label: string }> =
 const projectTypeOptions = ["Home wall", "Business wall", "Event or pop-up", "Not sure yet"] as const;
 const preferredContactGroupId = "preferred-contact-method";
 
-export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publicContactUrl }: PublicRequestFormProps) {
+export function PublicRequestForm({
+  aiEnabled,
+  defaultIntent,
+  defaultConceptPrompt,
+  defaultDesignContext,
+  publicPhone,
+  publicContactUrl
+}: PublicRequestFormProps) {
   const generateLeadUploadUrl = useMutation(leadRequestsApi.generateLeadUploadUrl);
   const submitLeadRequest = useMutation(leadRequestsApi.submitLeadRequest);
   const intent = defaultIntent;
@@ -61,7 +79,7 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
   const [projectType, setProjectType] = useState<(typeof projectTypeOptions)[number]>("Home wall");
   const [businessName, setBusinessName] = useState("");
   const [wallDescription, setWallDescription] = useState("");
-  const [conceptPrompt, setConceptPrompt] = useState("");
+  const [conceptPrompt, setConceptPrompt] = useState(defaultConceptPrompt ?? "");
   const [reserveInterest, setReserveInterest] = useState(defaultIntent === "reserve");
   const [file, setFile] = useState<File | null>(null);
   const [printSize, setPrintSize] = useState<PrintSizeFieldsValue>(() => printSizeFieldsValueFromPrint(DEFAULT_PREVIEW_BUNDLE_PRINT));
@@ -232,8 +250,14 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
 
       <div className="grid gap-2">
         <Label htmlFor="lead-concept">Concept idea</Label>
+        {defaultDesignContext ? (
+          <p className="text-sm text-muted-foreground" data-testid="request-selected-design-context">
+            Starting design: <span className="font-medium text-foreground">{defaultDesignContext.title}</span>
+          </p>
+        ) : null}
         <Textarea
           id="lead-concept"
+          maxLength={LEAD_CONCEPT_PROMPT_MAX_LENGTH}
           onChange={(event) => setConceptPrompt(event.target.value)}
           placeholder="Logo wall, city skyline, kids area mural, seasonal promotion..."
           rows={4}
@@ -250,7 +274,7 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
         onChange={setPrintSize}
       />
 
-      <div className="grid gap-2">
+      <div className="grid gap-2" id="lead-upload-section">
         <Label htmlFor="lead-upload">Optional image</Label>
         <label
           className={cn(
@@ -301,7 +325,7 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
         <Alert>
           <CheckCircle2 className="size-4" />
           <AlertDescription className="grid gap-2">
-            <span>{result.message}</span>
+            <span>{formatLeadRequestResultMessage(result)}</span>
             {result.publicPreviewUrl ? (
               <Button asChild className="w-fit rounded-full" size="sm">
                 <Link href={result.publicPreviewUrl}>Open draft preview</Link>

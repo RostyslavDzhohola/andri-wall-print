@@ -47,11 +47,16 @@ async function expectNoBannedRenderedTerms(page: Page) {
 test("homepage renders a static artwork presentation with native AR assets", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "See the final result before you put down your credit card." })).toBeVisible();
-  await expect(page.getByText("You do not have to imagine it. Put your art on your wall right now")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose artwork, upload yours, or describe the wall you want." })).toBeVisible();
+  await expect(page.getByText("Start with real Wall Print Pro proof, then send the idea")).toBeVisible();
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
   await expect(page.getByRole("link", { name: "Request", exact: true })).toHaveAttribute("href", "/request");
-  await expect(page.getByRole("link", { name: "Request a demo" })).toHaveAttribute("href", "/request");
+  await expect(page.getByRole("link", { name: "Choose design" })).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-1");
+  await expect(page.getByRole("link", { name: "Upload art/logo" })).toHaveAttribute("href", "/request?intent=concept#lead-upload-section");
+  await expect(page.getByRole("link", { name: "Describe idea" })).toHaveAttribute("href", "/request?intent=concept#lead-concept");
+  await page.getByLabel("Describe idea").fill("Gold leaf logo wall");
+  await expect(page.getByTestId("homepage-concept-handoff")).toHaveAttribute("href", /\/request\?intent=concept&conceptPrompt=Gold\+leaf\+logo\+wall$/);
+  await expect(page.getByTestId("homepage-proof-note")).toContainText("Pathways to Success");
   await expect(page.getByRole("link", { name: "Request wall preview" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Try artwork" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Reserve interest" })).toHaveCount(0);
@@ -62,6 +67,12 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText("Seller-reviewed visuals")).toHaveCount(0);
   await expect(page.getByText("Human follow-up before quote")).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toBeVisible();
+  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
+  await page.getByTestId("next-artwork").click();
+  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
+  await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
+  await expect(page.getByTestId("homepage-proof-note")).toContainText("Lakefront Day");
+  await page.getByTestId("previous-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
   await expect(page.getByTestId("artwork-width-guide")).toHaveCount(0);
   await expect(page.getByTestId("artwork-height-guide")).toHaveCount(0);
@@ -87,8 +98,8 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText("Short clips from finished walls help leads connect the preview with the finished space.")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Turn the artwork into a wall demo before the estimate." })).toBeVisible();
   await expect(page.getByText("Bring the art")).toBeVisible();
-  await expect(page.getByText("Demo it on your wall")).toBeVisible();
-  await expect(page.getByText("Book an estimate")).toBeVisible();
+  await expect(page.getByText("Send the request")).toBeVisible();
+  await expect(page.getByText("Review the draft")).toBeVisible();
   await expect(page.getByTestId("sales-pilot-process")).toBeVisible();
   await expect(page.getByTestId("work-video")).toHaveCount(3);
   await expect(page.getByTestId("work-video").first()).not.toHaveAttribute("controls", "");
@@ -515,7 +526,7 @@ test("public preview route renders a ready seeded artwork", async ({ page }) => 
 
   await page.getByRole("link", { name: "Wall Print Pro" }).click();
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { name: "See the final result before you put down your credit card." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose artwork, upload yours, or describe the wall you want." })).toBeVisible();
 });
 
 test("public preview route renders an unavailable state for missing Convex assets", async ({ page }) => {

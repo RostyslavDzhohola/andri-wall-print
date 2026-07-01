@@ -5,25 +5,19 @@ import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicRequestForm } from "@/components/request/public-request-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { LeadRequestIntent } from "@/lib/lead-request-contract";
 import {
   readConvexRuntimeUrl,
   readWallPrintProAiConceptsConfigured,
   readWallPrintProPublicContactUrl,
   readWallPrintProPublicPhone
 } from "@/lib/runtime-env";
+import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
 
 type RequestPageProps = {
-  searchParams?: Promise<{
-    intent?: string;
-  }>;
+  searchParams?: Promise<RequestSearchParamsInput>;
 };
-
-function readIntent(value: string | undefined): LeadRequestIntent {
-  return value === "reserve" || value === "contact" || value === "concept" ? value : "concept";
-}
 
 function RequestSetupMissing() {
   return (
@@ -53,7 +47,7 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const defaultIntent = readIntent(resolvedSearchParams?.intent);
+  const requestDefaults = resolveRequestPageDefaults(resolvedSearchParams);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -98,7 +92,9 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
               <CardContent>
                 <PublicRequestForm
                   aiEnabled={readWallPrintProAiConceptsConfigured()}
-                  defaultIntent={defaultIntent}
+                  defaultConceptPrompt={requestDefaults.defaultConceptPrompt}
+                  defaultDesignContext={requestDefaults.defaultDesignContext}
+                  defaultIntent={requestDefaults.defaultIntent}
                   publicContactUrl={readWallPrintProPublicContactUrl()}
                   publicPhone={readWallPrintProPublicPhone()}
                 />

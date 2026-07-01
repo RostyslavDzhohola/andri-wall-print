@@ -1,22 +1,23 @@
 import Link from "next/link";
-import { ArrowRight, GalleryHorizontal, LogIn, MessageCircle } from "lucide-react";
+import { GalleryHorizontal, LogIn, MessageCircle } from "lucide-react";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
+import { HomepageDemoActions } from "@/components/promotion/homepage-demo-actions";
 import { WorkVideosSection } from "@/components/promotion/work-videos-section";
 import { Button } from "@/components/ui/button";
 
 const processSteps = [
   {
     title: "Bring the art",
-    body: "Use your artwork, work with one of our artists, or describe what you want and create a polished concept here for free."
+    body: "Choose a starting design, upload a logo or artwork file, or describe a custom wall-print concept."
   },
   {
-    title: "Demo it on your wall",
-    body: "Open it on your phone and place the artwork at wall scale so the look and placement are easy to judge."
+    title: "Send the request",
+    body: "Wall Print Pro receives the contact details, wall context, print size, and concept direction in one lead request."
   },
   {
-    title: "Book an estimate",
-    body: "When the direction feels right, Wall Print Pro reviews the artwork, checks production details, and prices the project."
+    title: "Review the draft",
+    body: "AI concept drafts stay behind the request flow so the seller can review the visual before the next client conversation."
   }
 ] as const;
 
@@ -57,9 +58,9 @@ export default function Home() {
   return (
     <ArPreviewSurface
       brandName="Wall Print Pro"
-      heading="See the final result before you put down your credit card."
+      heading="Choose artwork, upload yours, or describe the wall you want."
       headingClassName="max-w-3xl sm:max-w-3xl md:max-w-4xl lg:max-w-[14ch]"
-      intro="You do not have to imagine it. Put your art on your wall right now and see how the final result could feel before the estimate."
+      intro="Start with real Wall Print Pro proof, then send the idea through a contact-gated request so the draft stays tied to a real follow-up."
       headerAction={
         <>
           <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" size="lg" variant="ghost">
@@ -82,18 +83,7 @@ export default function Home() {
           </Button>
         </>
       }
-      sideContent={
-        <div className="grid gap-5">
-          <div className="flex flex-wrap gap-3">
-            <Button asChild className="min-h-11 rounded-full px-5" size="lg">
-              <Link href="/request">
-                <ArrowRight className="size-4" />
-                Request a demo
-              </Link>
-            </Button>
-          </div>
-        </div>
-      }
+      sideContent={<HomepageDemoActions />}
       afterContent={<SalesPilotSections />}
     />
   );

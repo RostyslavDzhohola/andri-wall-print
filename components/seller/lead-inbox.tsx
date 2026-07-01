@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { LEAD_REQUEST_STATUSES, type LeadContactMethod, type LeadRequestStatus } from "@/lib/lead-request-contract";
+import { formatAiConceptDraftStatus } from "@/lib/lead-request-presentation";
 import { resolveClientPreviewUrl } from "@/lib/client-preview-url";
 import { cn } from "@/lib/utils";
 
@@ -228,7 +229,7 @@ export function LeadInbox() {
                       <div className="grid gap-2">
                         <Badge className={cn("w-fit", draftTone(lead.aiDraftStatus))} variant="outline">
                           <Sparkles className="size-3" />
-                          {lead.aiDraftStatus ?? "No draft"}
+                          {formatAiConceptDraftStatus(lead.aiDraftStatus)}
                         </Badge>
                         {lead.aiFailureReason ? <div className="max-w-48 text-xs text-muted-foreground">{lead.aiFailureReason}</div> : null}
                         {lead.publicPreviewUrl ? (
