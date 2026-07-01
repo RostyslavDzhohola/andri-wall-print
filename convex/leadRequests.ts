@@ -5,6 +5,7 @@ import { ConvexError, v } from "convex/values";
 
 import {
   AI_CONCEPT_DRAFT_STATUSES,
+  LEAD_CONTACT_METHODS,
   LEAD_AI_RATE_LIMIT_PER_DAY,
   LEAD_REQUEST_STATUSES,
   isLeadRequestStatus,
@@ -50,8 +51,10 @@ const aiDraftGenerationValidator = v.union(
 const sellerLeadValidator = v.object({
   id: v.string(),
   contactName: v.string(),
-  contactEmail: v.string(),
+  contactEmail: v.optional(v.string()),
   contactPhone: v.optional(v.string()),
+  preferredContactMethod: v.optional(v.string()),
+  projectType: v.optional(v.string()),
   businessName: v.optional(v.string()),
   wallDescription: v.optional(v.string()),
   conceptPrompt: v.optional(v.string()),
@@ -113,6 +116,8 @@ async function serializeSellerLead(ctx: any, lead: any) {
     contactName: lead.contactName,
     contactEmail: lead.contactEmail,
     contactPhone: lead.contactPhone,
+    preferredContactMethod: lead.preferredContactMethod,
+    projectType: lead.projectType,
     businessName: lead.businessName,
     wallDescription: lead.wallDescription,
     conceptPrompt: lead.conceptPrompt,
@@ -139,8 +144,10 @@ export const generateLeadUploadUrl = mutation({
 export const submitLeadRequest = mutation({
   args: {
     contactName: v.string(),
-    contactEmail: v.string(),
+    contactEmail: v.optional(v.string()),
     contactPhone: v.optional(v.string()),
+    preferredContactMethod: v.optional(v.union(...LEAD_CONTACT_METHODS.map((method) => v.literal(method)))),
+    projectType: v.optional(v.string()),
     businessName: v.optional(v.string()),
     wallDescription: v.optional(v.string()),
     conceptPrompt: v.optional(v.string()),
@@ -187,7 +194,7 @@ export const submitLeadRequest = mutation({
         });
         await ctx.db.patch(leadRequestId, { aiConceptDraftId, updatedAt: now });
         draftStatus = "disabled";
-      } else if (!(await reserveAiRateLimit(ctx, normalized.normalizedContactEmail, now))) {
+      } else if (!(await reserveAiRateLimit(ctx, normalized.normalizedContactEmail || normalized.normalizedContactPhone || normalized.contactName, now))) {
         const aiConceptDraftId = await ctx.db.insert("aiConceptDrafts", {
           leadRequestId,
           prompt: normalized.conceptPrompt,

@@ -98,11 +98,11 @@ describe("buyer account contracts", () => {
       createdVia: "builder",
       sourceLabel: "Uploaded through invite",
       confirmation: {
-        selectedPrintLabel: "5 ft x 4 ft 2 in",
+        selectedPrintLabel: "5 ft x 4.2 ft",
         buyerNote: "Looks good"
       },
       print: {
-        label: "5 ft x 4 ft 2 in"
+        label: "5 ft x 4.2 ft"
       }
     });
     expect(JSON.stringify(serialized)).not.toMatch(/price|pricing|rate|estimate|\$/i);

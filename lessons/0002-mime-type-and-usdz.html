@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lesson 0002: MIME Type and USDZ</title>
+    <style>
+      :root {
+        --ink: #17212b;
+        --muted: #64717e;
+        --paper: #fbfaf7;
+        --panel: #fff;
+        --line: #d9dee4;
+        --accent: #176b63;
+        --accent-dark: #0f4f49;
+        --soft: #eef6f3;
+        --ok: #e8f6ed;
+        --bad: #fff0ed;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.58;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 42px 22px 60px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 24px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        font-size: 36px;
+      }
+
+      h2 {
+        margin-top: 34px;
+        font-size: 23px;
+      }
+
+      h3 {
+        font-size: 16px;
+      }
+
+      p {
+        margin: 10px 0 0;
+      }
+
+      a {
+        color: var(--accent-dark);
+      }
+
+      code {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: #f5f7f8;
+        padding: 1px 5px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .kicker {
+        display: inline-flex;
+        margin-bottom: 12px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--accent-dark);
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .diagram {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .box {
+        position: relative;
+        min-height: 140px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 16px;
+      }
+
+      .box:not(:last-child)::after {
+        content: ">";
+        position: absolute;
+        right: -16px;
+        top: 43%;
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .box strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--accent-dark);
+      }
+
+      .panel {
+        margin-top: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 18px;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .practice {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .choice {
+        display: block;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px 14px;
+        color: var(--ink);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .choice:hover,
+      .choice:focus {
+        border-color: var(--accent);
+        outline: 2px solid transparent;
+      }
+
+      .result {
+        min-height: 48px;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-weight: 700;
+      }
+
+      .result.good {
+        background: var(--ok);
+        color: #135c2c;
+      }
+
+      .result.bad {
+        background: var(--bad);
+        color: #8f2d1f;
+      }
+
+      ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 760px) {
+        .diagram,
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .box::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="kicker">Lesson 0002</span>
+        <h1>MIME type is the label. USDZ is the package.</h1>
+        <p class="lede">
+          Your win for this lesson: you will know why a bad <code>Content-Type</code> can stop Safari AR before any AR rendering happens.
+        </p>
+      </header>
+
+      <section>
+        <h2>The package-label picture</h2>
+        <div class="diagram" aria-label="Package label analogy">
+          <div class="box">
+            <strong>USDZ file</strong>
+            <span>The package: a 3D scene that Apple AR Quick Look can open.</span>
+          </div>
+          <div class="box">
+            <strong>MIME type</strong>
+            <span>The shipping label: <code>model/vnd.usdz+zip</code>.</span>
+          </div>
+          <div class="box">
+            <strong>AR Quick Look</strong>
+            <span>The native Apple viewer that handles the AR placement.</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>MIME type</h2>
+        <div class="panel">
+          <p>
+            A MIME type is a label sent by the server in an HTTP response. It tells the browser what kind of thing it just received.
+          </p>
+          <p>Examples:</p>
+          <ul>
+            <li><code>image/png</code> means PNG image.</li>
+            <li><code>text/html</code> means HTML page.</li>
+            <li><code>model/vnd.usdz+zip</code> means USDZ 3D model package.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>USDZ</h2>
+        <div class="panel">
+          <p>
+            USDZ is the Apple-friendly 3D package format used by AR Quick Look. In this project, the USDZ is not the poster image. It is the real AR object: a flat 3D wall-print plane with the artwork texture and physical dimensions.
+          </p>
+          <p>
+            So if the selected print is 1.524 meters wide and 1.27 meters tall, the USDZ should describe a 3D plane at that size.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>How it relates to rendering</h2>
+        <div class="split">
+          <article class="panel">
+            <h3>MIME type does not render AR</h3>
+            <p>
+              It helps Safari choose the right handler. If the label is wrong, Safari may treat the file like a generic download instead of AR content.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>USDZ is what gets rendered</h3>
+            <p>
+              AR Quick Look opens the USDZ, reads the model and texture inside, then uses ARKit underneath to place it on a wall or other surface.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>Preview Picture code map</h2>
+        <div class="panel">
+          <p>In this repo, the expected labels live in <code>lib/ar-launcher.ts</code>:</p>
+          <p><code>usdz: "model/vnd.usdz+zip"</code></p>
+          <p>The checked-in asset headers are configured in <code>next.config.ts</code>, so <code>/ar/*.usdz</code> is served with that label.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Practice</h2>
+        <p>A customer taps <code>Place on wall</code>. The URL points to <code>client-proof.usdz</code>, but the server labels it as <code>text/plain</code>. What is wrong?</p>
+        <div class="practice">
+          <button class="choice" data-correct="false">The package only</button>
+          <button class="choice" data-correct="true">The label only</button>
+          <button class="choice" data-correct="false">The wall only</button>
+          <button class="choice" data-correct="false">The button only</button>
+          <div id="result" class="result" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Read next</h2>
+        <p>
+          Use the reference sheet: <a href="../reference/ar-file-types-and-mime.html">AR File Types and MIME Types</a>.
+        </p>
+        <p>
+          Primary source: <a href="https://webkit.org/blog/8421/viewing-augmented-reality-assets-in-safari-for-ios/">WebKit's Safari USDZ guide</a>.
+        </p>
+      </section>
+
+      <footer>
+        <p class="small">
+          Ask Codex follow-up questions when anything feels fuzzy. A useful next question is: "Show me how to inspect the Content-Type for a real Preview Picture USDZ URL."
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      const result = document.getElementById("result");
+      document.querySelectorAll(".choice").forEach((button) => {
+        button.addEventListener("click", () => {
+          const correct = button.dataset.correct === "true";
+          result.className = correct ? "result good" : "result bad";
+          result.textContent = correct
+            ? "Correct. The file may be a USDZ, but the server label is wrong, so Safari may not hand it to AR Quick Look."
+            : "Not quite. The filename says USDZ, but the broken piece in this example is the server's Content-Type label.";
+        });
+      });
+    </script>
+  </body>
+</html>

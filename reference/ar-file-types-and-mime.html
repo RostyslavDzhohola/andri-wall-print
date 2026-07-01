@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AR File Types and MIME Types</title>
+    <style>
+      :root {
+        --ink: #18232e;
+        --muted: #637180;
+        --paper: #fbfaf7;
+        --panel: #fff;
+        --line: #d9dee4;
+        --accent: #176b63;
+        --soft: #eef6f3;
+        --warm: #fff4df;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 40px 22px 56px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        margin-top: 34px;
+        font-size: 22px;
+      }
+
+      h3 {
+        font-size: 16px;
+      }
+
+      p {
+        margin: 10px 0 0;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      code {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: #f5f7f8;
+        padding: 1px 5px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .lede {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .diagram {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .box {
+        position: relative;
+        min-height: 128px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .box:not(:last-child)::after {
+        content: ">";
+        position: absolute;
+        right: -16px;
+        top: 43%;
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .box strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--accent);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 16px;
+      }
+
+      table {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        overflow: hidden;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      th {
+        background: #f4f2ec;
+      }
+
+      .callout {
+        margin-top: 16px;
+        border-left: 5px solid #8a4b08;
+        border-radius: 8px;
+        background: var(--warm);
+        padding: 14px 16px;
+      }
+
+      @media (max-width: 780px) {
+        .diagram,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .box::after {
+          display: none;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        main {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>AR File Types and MIME Types</h1>
+      <p class="lede">MIME type is the label. USDZ is the file package. AR Quick Look is the native viewer that opens that package.</p>
+
+      <section class="diagram" aria-label="USDZ and MIME handoff">
+        <div class="box">
+          <strong>1. Link</strong>
+          <span><code>&lt;a rel="ar" href="print.usdz"&gt;</code></span>
+        </div>
+        <div class="box">
+          <strong>2. File</strong>
+          <span><code>print.usdz</code> contains the 3D wall-print scene.</span>
+        </div>
+        <div class="box">
+          <strong>3. Label</strong>
+          <span><code>Content-Type: model/vnd.usdz+zip</code></span>
+        </div>
+        <div class="box">
+          <strong>4. Viewer</strong>
+          <span>Safari sends the file to AR Quick Look.</span>
+        </div>
+      </section>
+
+      <h2>Definitions</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>MIME type</h3>
+          <p>A short label in an HTTP response that tells the browser what kind of file came back. It does not render AR by itself.</p>
+          <p>Example: <code>model/vnd.usdz+zip</code> means "this response is a USDZ model package."</p>
+        </article>
+        <article class="card">
+          <h3>USDZ</h3>
+          <p>A single Apple-friendly package for a 3D scene and its assets. In Preview Picture, the USDZ represents the wall print as a real-size flat 3D plane with the artwork image on it.</p>
+        </article>
+      </div>
+
+      <h2>Why MIME Type Affects AR</h2>
+      <p>Safari has to decide what to do with a URL. The same URL could be an image, PDF, video, download, or 3D AR model. The MIME type is one of the signals Safari uses to pick the correct handler.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>If Safari sees...</th>
+            <th>It can infer...</th>
+            <th>Likely outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>rel="ar"</code> + <code>.usdz</code> URL + <code>model/vnd.usdz+zip</code></td>
+            <td>This is AR Quick Look content.</td>
+            <td>Open native AR viewer.</td>
+          </tr>
+          <tr>
+            <td><code>.usdz</code> file served as <code>application/octet-stream</code></td>
+            <td>This might be unknown binary data.</td>
+            <td>Download or fail to launch AR.</td>
+          </tr>
+          <tr>
+            <td>Correct MIME type but broken/empty file</td>
+            <td>The label says USDZ, but the package is invalid.</td>
+            <td>Quick Look may open blank, error, or fail.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Preview Picture Mapping</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Project piece</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>sample.assets.usdz</code></td>
+            <td>The actual iPhone AR package URL.</td>
+          </tr>
+          <tr>
+            <td><code>sample.assets.poster</code></td>
+            <td>The regular image preview shown on the page and inside the AR launch link.</td>
+          </tr>
+          <tr>
+            <td><code>sample.assets.glb</code></td>
+            <td>The web/Android-friendly 3D model file.</td>
+          </tr>
+          <tr>
+            <td><code>AR_ASSET_CONTENT_TYPES.usdz</code></td>
+            <td>The expected label: <code>model/vnd.usdz+zip</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <p><strong>Shortcut:</strong> If AR does not launch, ask two separate questions: Is the package valid? Is the label correct?</p>
+        <p>The package is the USDZ file. The label is the MIME type.</p>
+      </div>
+
+      <h2>Sources</h2>
+      <p><a href="https://webkit.org/blog/8421/viewing-augmented-reality-assets-in-safari-for-ios/">WebKit: Viewing Augmented Reality Assets in Safari for iOS</a></p>
+      <p><a href="https://developer.apple.com/augmented-reality/quick-look/">Apple: Quick Look Gallery</a></p>
+      <p><a href="https://developer.apple.com/videos/play/wwdc2019/612/">Apple WWDC19: Advances in AR Quick Look</a></p>
+    </main>
+  </body>
+</html>

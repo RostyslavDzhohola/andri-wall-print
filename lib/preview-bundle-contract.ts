@@ -80,7 +80,7 @@ export const DEFAULT_PREVIEW_BUNDLE_PRINT: PreviewBundlePrint = {
   aspectRatio: "1:2",
   widthMeters: 0.45,
   heightMeters: 0.9,
-  label: "1 ft 6 in x 2 ft 11 in"
+  label: "1.5 ft x 3 ft"
 };
 
 export const PREVIEW_BUNDLE_SOURCE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -159,6 +159,7 @@ export function normalizeBundleTitle(title: string) {
 }
 
 const CM_PER_INCH = 2.54;
+const METERS_PER_FOOT = 0.3048;
 const SQ_FT_PER_SQ_METER = 10.76391041671;
 
 function roundTo(value: number, decimals: number) {
@@ -219,8 +220,14 @@ export function formatFeetInchesFromMeters(valueMeters: number) {
   return `${feet} ft ${inches} in`;
 }
 
+export function formatDecimalFeetFromMeters(valueMeters: number) {
+  const feet = Math.max(0.1, valueMeters / METERS_PER_FOOT);
+
+  return `${formatDecimal(feet, 1)} ft`;
+}
+
 export function formatPreviewBundlePrintDimensions(print: Pick<PreviewBundlePrint, "widthMeters" | "heightMeters">) {
-  return `${formatFeetInchesFromMeters(print.widthMeters)} x ${formatFeetInchesFromMeters(print.heightMeters)}`;
+  return `${formatDecimalFeetFromMeters(print.widthMeters)} x ${formatDecimalFeetFromMeters(print.heightMeters)}`;
 }
 
 export function getPreviewBundlePrintArea(print: Pick<PreviewBundlePrint, "widthMeters" | "heightMeters">) {

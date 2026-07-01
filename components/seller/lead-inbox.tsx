@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { LEAD_REQUEST_STATUSES, type LeadRequestStatus } from "@/lib/lead-request-contract";
+import { LEAD_REQUEST_STATUSES, type LeadContactMethod, type LeadRequestStatus } from "@/lib/lead-request-contract";
 import { resolveClientPreviewUrl } from "@/lib/client-preview-url";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +23,10 @@ const leadRequestsApi = api.leadRequests as any;
 type SellerLead = {
   id: Id<"leadRequests">;
   contactName: string;
-  contactEmail: string;
+  contactEmail?: string;
   contactPhone?: string;
+  preferredContactMethod?: LeadContactMethod;
+  projectType?: string;
   businessName?: string;
   wallDescription?: string;
   conceptPrompt?: string;
@@ -95,7 +97,7 @@ export function LeadInbox() {
   const copyContact = async (lead: SellerLead) => {
     try {
       await navigator.clipboard.writeText(
-        [lead.contactName, lead.contactEmail, lead.contactPhone, lead.businessName].filter(Boolean).join("\n")
+        [lead.contactName, lead.contactEmail, lead.contactPhone, lead.preferredContactMethod, lead.projectType, lead.businessName].filter(Boolean).join("\n")
       );
       setNotice("Contact copied.");
       setError(null);
@@ -195,10 +197,12 @@ export function LeadInbox() {
                     <TableCell className="align-top">
                       <div className="grid gap-1">
                         <div className="font-semibold">{lead.contactName}</div>
-                        <a className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" href={`mailto:${lead.contactEmail}`}>
-                          <Mail className="size-3" />
-                          {lead.contactEmail}
-                        </a>
+                        {lead.contactEmail ? (
+                          <a className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" href={`mailto:${lead.contactEmail}`}>
+                            <Mail className="size-3" />
+                            {lead.contactEmail}
+                          </a>
+                        ) : null}
                         {lead.contactPhone ? (
                           <a className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" href={`tel:${lead.contactPhone.replace(/\D/g, "")}`}>
                             <Phone className="size-3" />
@@ -211,8 +215,10 @@ export function LeadInbox() {
                       <div className="grid gap-1">
                         <div className="flex flex-wrap gap-2">
                           <Badge variant="outline">{lead.intent}</Badge>
+                          {lead.preferredContactMethod ? <Badge variant="outline">{lead.preferredContactMethod}</Badge> : null}
                           {lead.reserveInterest ? <Badge variant="secondary">Reserve interest</Badge> : null}
                         </div>
+                        {lead.projectType ? <div className="text-sm text-muted-foreground">{lead.projectType}</div> : null}
                         <div className="text-sm text-muted-foreground">{lead.businessName ?? "No business name"}</div>
                         {lead.conceptPrompt ? <div className="line-clamp-2 text-sm">{lead.conceptPrompt}</div> : null}
                         {lead.printLabel ? <div className="text-xs text-muted-foreground">{lead.printLabel}</div> : null}

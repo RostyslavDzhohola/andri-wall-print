@@ -11,19 +11,19 @@ describe("preview confirmation contract", () => {
     const summary = buildBuyerPreviewShareText({
       brandName: "Wall Print Pro",
       artworkTitle: "Client Proof",
-      dimensionsLabel: "5 ft x 4 ft 2 in",
+      dimensionsLabel: "5 ft x 4.2 ft",
       posterUrl: "https://example.com/poster.png",
       previewUrl: "https://example.com/preview/p-client-proof"
     });
 
     expect(summary).toContain("Image: https://example.com/poster.png");
-    expect(summary).toContain("Dimensions: 5 ft x 4 ft 2 in");
+    expect(summary).toContain("Dimensions: 5 ft x 4.2 ft");
     expect(summary).not.toMatch(/price|pricing|rate|estimate|\$/i);
   });
 
   it("normalizes notes and stores the selected-dimensions area basis", () => {
     expect(normalizePreviewConfirmationNote("  Looks   good  ")).toBe("Looks good");
-    expect(makePreviewConfirmationAreaBasis({ widthMeters: 1.524, heightMeters: 1.27, label: "5 ft x 4 ft 2 in" })).toEqual({
+    expect(makePreviewConfirmationAreaBasis({ widthMeters: 1.524, heightMeters: 1.27, label: "5 ft x 4.2 ft" })).toEqual({
       kind: "selected_dimensions",
       unit: "square_foot",
       value: 20.83

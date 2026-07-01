@@ -1,6 +1,6 @@
 "use client";
 
-import { Smartphone } from "lucide-react";
+import { Share2, Smartphone } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,6 +10,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getFixedScaleQuickLookHref } from "@/lib/ar-launcher";
 import type { ArSample } from "@/lib/ar-sample";
+import { resolveClientPreviewUrl } from "@/lib/client-preview-url";
 import { cn } from "@/lib/utils";
 
 export type ArDiagnostics = {
@@ -55,7 +56,10 @@ function getBrowserDeviceDiagnostics(modelViewer: ModelViewerElement | null): Ar
   const isIPhone = /iPhone/.test(userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(userAgent) || isIPadOSDesktopMode;
   const isAndroid = /Android/.test(userAgent);
-  const isKnownIOSNonSafari = /CriOS\/|FxiOS\/|EdgiOS\/|OPiOS\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\//.test(userAgent);
+  const isKnownIOSNonSafari =
+    /CriOS\/|FxiOS\/|EdgiOS\/|OPiOS\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\/|Telegram|MicroMessenger|WhatsApp|GSA\/|LinkedInApp|Pinterest|TikTok/i.test(
+      userAgent
+    );
   const isChrome = /Chrome\/|CriOS\//.test(userAgent) && !/Edg\/|EdgiOS\/|OPR\//.test(userAgent);
   const isSafari = /Version\/[\d.]+.*Safari\//.test(userAgent) && !isKnownIOSNonSafari && !/Chrome\/|Chromium\/|Edg\//.test(userAgent);
   const isTouchCapable = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
@@ -92,9 +96,10 @@ function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | 
 
   if (!diagnostics.isLikelyPhoneOrTablet) {
     return {
-      message: "Requires iPhone Safari.",
-      title: "Open this on iPhone Safari",
-      description: "This wall placement only works on iPhone in Safari. Desktop browsers can preview the artwork, but they cannot launch the wall placement viewer.",
+      message: "Open on iPhone.",
+      title: "Open this on your iPhone",
+      description:
+        "Desktop browsers can preview the artwork, but wall placement starts on iPhone Safari. Share this page to your phone, then tap Place on wall there.",
       blockLaunch: true
     };
   }
@@ -107,16 +112,17 @@ function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | 
     return {
       message: "Use Safari on iPhone.",
       title: "Use Safari on this iPhone",
-      description: "This wall placement only works on iPhone in Safari. Open this same link in Safari, then tap Place on wall again.",
+      description:
+        "This browser is not Safari, so wall placement will not start here. Open this same link in Safari on your iPhone, then tap Place on wall again.",
       blockLaunch: true
     };
   }
 
   if (diagnostics.isAndroid) {
     return {
-      message: "Requires iPhone Safari.",
-      title: "Open this on iPhone Safari",
-      description: "This wall placement only works on iPhone in Safari. This device can preview the artwork, but it cannot launch the iPhone wall placement viewer.",
+      message: "Open on iPhone.",
+      title: "Open this on your iPhone",
+      description: "This device can preview the artwork, but the wall-placement viewer starts on iPhone Safari.",
       blockLaunch: true
     };
   }
@@ -131,19 +137,90 @@ function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | 
   }
 
   return {
-    message: "Requires iPhone Safari.",
-    title: "Open this on iPhone Safari",
+    message: "Open on iPhone.",
+    title: "Open this on your iPhone",
     description: "This wall placement only works on iPhone in Safari.",
     blockLaunch: true
   };
 }
 
+function getArActionLabel(diagnostics: ArDiagnostics | null, accessNotice: ArAccessNotice | null) {
+  if (!diagnostics) {
+    return "Checking";
+  }
+
+  if (!accessNotice) {
+    return "Place on wall";
+  }
+
+  if (diagnostics.isIPhone) {
+    return "Open in Safari";
+  }
+
+  return "Open on iPhone";
+}
+
 export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: NativeArLauncherProps) {
   const quickLookUrl = getFixedScaleQuickLookHref(sample.assets.usdz);
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
+  const launchFallbackTimerRef = useRef<number | null>(null);
+  const launchFallbackCleanupRef = useRef<(() => void) | null>(null);
   const [arError, setArError] = useState<string | null>(null);
   const [dialogNotice, setDialogNotice] = useState<ArAccessNotice | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const accessNotice = getArAccessNotice(diagnostics);
+  const actionLabel = getArActionLabel(diagnostics, accessNotice);
+  const showSendToIPhone = diagnostics ? !diagnostics.isIPhone : false;
+
+  const clearPendingLaunchFallback = () => {
+    if (launchFallbackTimerRef.current !== null) {
+      window.clearTimeout(launchFallbackTimerRef.current);
+      launchFallbackTimerRef.current = null;
+    }
+
+    launchFallbackCleanupRef.current?.();
+    launchFallbackCleanupRef.current = null;
+  };
+
+  const scheduleLaunchFailureFallback = () => {
+    clearPendingLaunchFallback();
+
+    let launchLeftPage = false;
+    const markLaunchStarted = () => {
+      launchLeftPage = true;
+      clearPendingLaunchFallback();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        markLaunchStarted();
+      }
+    };
+    const cleanup = () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", markLaunchStarted);
+      window.removeEventListener("blur", markLaunchStarted);
+    };
+
+    launchFallbackCleanupRef.current = cleanup;
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", markLaunchStarted);
+    window.addEventListener("blur", markLaunchStarted);
+    launchFallbackTimerRef.current = window.setTimeout(() => {
+      cleanup();
+      launchFallbackCleanupRef.current = null;
+      launchFallbackTimerRef.current = null;
+
+      if (!launchLeftPage && document.visibilityState === "visible") {
+        setDialogNotice({
+          message: "Open in iPhone Safari.",
+          title: "Open in Safari to place on wall",
+          description:
+            "Wall placement did not start from this browser. Open this same preview link in Safari on your iPhone, then tap Place on wall again.",
+          blockLaunch: true
+        });
+      }
+    }, 1400);
+  };
 
   useEffect(() => {
     const modelViewer = modelViewerRef.current;
@@ -175,11 +252,14 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     };
   }, [onDiagnosticsChange, sample.id]);
 
+  useEffect(() => clearPendingLaunchFallback, []);
+
   const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
     const modelViewer = modelViewerRef.current;
     const currentDiagnostics = getBrowserDeviceDiagnostics(modelViewer);
     const currentAccessNotice = getArAccessNotice(currentDiagnostics);
 
+    clearPendingLaunchFallback();
     onDiagnosticsChange(currentDiagnostics);
 
     if (currentAccessNotice?.blockLaunch) {
@@ -190,6 +270,10 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     }
 
     if (currentDiagnostics.quickLookRel || !modelViewer?.activateAR) {
+      if (currentDiagnostics.isIOS) {
+        scheduleLaunchFailureFallback();
+      }
+
       return;
     }
 
@@ -200,6 +284,48 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       console.error("Failed to activate native AR.", error);
       setArError("Wall preview could not start from this browser. Open this client preview page in Safari on iPhone.");
     });
+  };
+
+  const getCurrentSharePath = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  const shareToPhone = async () => {
+    let shareUrlResult: Awaited<ReturnType<typeof resolveClientPreviewUrl>>;
+
+    try {
+      shareUrlResult = await resolveClientPreviewUrl(getCurrentSharePath());
+    } catch (error) {
+      console.error("Failed to resolve preview URL for sharing.", error);
+      setShareStatus("Could not prepare a shareable link. Try again.");
+      return;
+    }
+
+    const shareData = {
+      title: `${sample.title} wall preview`,
+      text: "Open this Wall Print Pro preview on your iPhone.",
+      url: shareUrlResult.url
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareStatus(shareUrlResult.warning ?? "Share sheet opened.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrlResult.url);
+      setShareStatus(shareUrlResult.warning ?? "Phone-ready link copied.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(shareUrlResult.url);
+        setShareStatus(shareUrlResult.warning ?? "Phone-ready link copied.");
+      } catch {
+        setShareStatus("Copy this page link and open it on your iPhone.");
+      }
+    }
   };
 
   return (
@@ -220,33 +346,58 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
         tabIndex={-1}
         className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
       />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            className={cn(
-              buttonVariants(),
-              "h-12 rounded-full px-5 py-3 text-base shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
-            )}
-            data-testid="quick-look-link"
-            href={quickLookUrl}
-            onClick={placeInAr}
-            rel="ar"
-            title={accessNotice?.message ?? "Place this print on a wall"}
-          >
-            <img className="size-5 rounded-sm object-cover" src={sample.assets.poster} alt="" aria-hidden="true" />
-            <Smartphone className="size-5" />
-            Place on wall
-          </a>
-        </TooltipTrigger>
-        <TooltipContent
-          className="max-w-64 text-center text-xs leading-5"
-          data-testid="ar-access-warning"
-          side="top"
-          sideOffset={8}
-        >
-          {accessNotice?.message ?? "Place this print on a wall."}
-        </TooltipContent>
-      </Tooltip>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        {showSendToIPhone ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Send this preview to your iPhone"
+                className="h-12 rounded-full px-5 text-base shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
+                data-testid="share-to-phone"
+                onClick={shareToPhone}
+                type="button"
+              >
+                <Share2 className="size-4" />
+                Send to iPhone
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-64 text-center text-xs leading-5" side="top" sideOffset={8}>
+              Send this page to your iPhone.
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                className={cn(
+                  buttonVariants(),
+                  "h-12 rounded-full px-5 py-3 text-base shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
+                )}
+                data-testid="quick-look-link"
+                href={quickLookUrl}
+                onClick={placeInAr}
+                rel="ar"
+                title={accessNotice?.message ?? "Place this print on a wall"}
+              >
+                <img className="sr-only" src={sample.assets.poster} alt="" aria-hidden="true" />
+                <Smartphone className="size-5" />
+                {actionLabel}
+              </a>
+            </TooltipTrigger>
+            <TooltipContent
+              className="max-w-64 text-center text-xs leading-5"
+              data-testid="ar-access-warning"
+              side="top"
+              sideOffset={8}
+            >
+              {accessNotice?.message ?? "Place this print on a wall."}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <span className="sr-only" aria-live="polite">
+        {shareStatus}
+      </span>
       <Dialog open={Boolean(dialogNotice)} onOpenChange={(open) => !open && setDialogNotice(null)}>
         <DialogContent>
           <DialogHeader>

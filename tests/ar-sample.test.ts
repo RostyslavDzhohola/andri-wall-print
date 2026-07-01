@@ -20,7 +20,7 @@ describe("AR_SAMPLES", () => {
     ]);
 
     expect(AR_SAMPLES.slice(0, 3).map((sample) => sample.print.label)).toEqual([
-      "5 ft x 4 ft 2 in",
+      "5 ft x 4.2 ft",
       "3 ft x 5 ft",
       "4 ft x 5 ft"
     ]);
@@ -29,7 +29,7 @@ describe("AR_SAMPLES", () => {
       expect(sample.print.aspectRatio).toBe("45:90");
       expect(sample.print.widthMeters).toBe(0.45);
       expect(sample.print.heightMeters).toBe(0.9);
-      expect(sample.print.label).toBe("1 ft 6 in x 2 ft 11 in");
+      expect(sample.print.label).toBe("1.5 ft x 3 ft");
     }
   });
 
@@ -49,7 +49,7 @@ describe("AR_SAMPLES", () => {
 
   it("formats meters for user-facing fixed-size copy", () => {
     expect(formatMeters(DEFAULT_AR_SAMPLE.print.widthMeters)).toBe("5 ft");
-    expect(formatMeters(DEFAULT_AR_SAMPLE.print.heightMeters)).toBe("4 ft 2 in");
-    expect(formatPrintSize(DEFAULT_AR_SAMPLE.print)).toBe("5 ft wide x 4 ft 2 in tall");
+    expect(formatMeters(DEFAULT_AR_SAMPLE.print.heightMeters)).toBe("4.2 ft");
+    expect(formatPrintSize(DEFAULT_AR_SAMPLE.print)).toBe("5 ft wide x 4.2 ft tall");
   });
 });

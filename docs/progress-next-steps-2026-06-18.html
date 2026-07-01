@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wall Print Pro Plan Coverage - 2026-06-18</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f3ed;
+        --panel: #ffffff;
+        --ink: #211f1b;
+        --muted: #625d54;
+        --line: #d8d0c4;
+        --teal: #0f6b67;
+        --blue: #205f8a;
+        --green: #2d6b4f;
+        --amber: #8a641f;
+        --red: #9a3f33;
+        --violet: #5d4c8a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      a {
+        color: var(--blue);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+
+      code {
+        display: inline-block;
+        max-width: 100%;
+        border: 1px solid rgba(216, 208, 196, 0.9);
+        border-radius: 6px;
+        background: #fbfaf7;
+        padding: 0.06rem 0.28rem;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.92em;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      main {
+        width: min(1120px, 100%);
+        margin: 0 auto;
+        padding: 28px clamp(16px, 4vw, 34px) 56px;
+      }
+
+      header {
+        display: grid;
+        gap: 14px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 22px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 840px;
+        font-size: clamp(2rem, 5vw, 4rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: clamp(1.35rem, 3vw, 2.1rem);
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+        line-height: 1.25;
+      }
+
+      section {
+        padding-top: 30px;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      li + li {
+        margin-top: 0.36rem;
+      }
+
+      .eyebrow {
+        color: var(--teal);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 820px;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .artifact-bar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .artifact {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 12px;
+      }
+
+      .artifact strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .artifact code {
+        display: block;
+        width: 100%;
+        line-height: 1.45;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 16px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 18px;
+      }
+
+      .panel h3 {
+        margin-bottom: 10px;
+      }
+
+      .decision-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+      }
+
+      .decision-list li {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfaf7;
+        padding: 10px;
+      }
+
+      .status-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .status-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .status-card strong {
+        display: block;
+        font-size: 1.7rem;
+        line-height: 1;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 26px;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 0.74rem;
+        font-weight: 850;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .tag.done {
+        background: #e5f2eb;
+        color: var(--green);
+      }
+
+      .tag.partial {
+        background: #fff0d0;
+        color: var(--amber);
+      }
+
+      .tag.missing {
+        background: #f8e3dd;
+        color: var(--red);
+      }
+
+      .tag.deferred {
+        background: #eee9f8;
+        color: var(--violet);
+      }
+
+      .tag.verify {
+        background: #e7eef7;
+        color: var(--blue);
+      }
+
+      .matrix {
+        display: grid;
+        gap: 10px;
+      }
+
+      .matrix-row {
+        display: grid;
+        grid-template-columns: minmax(170px, 0.65fr) minmax(0, 1.25fr) minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .matrix-row h3 {
+        margin-bottom: 6px;
+      }
+
+      .matrix-row p {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .matrix-label {
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .next-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .next-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .next-item h3 {
+        margin-bottom: 6px;
+      }
+
+      .do-not {
+        border-left: 4px solid var(--violet);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.68);
+        padding: 14px 16px;
+      }
+
+      .verification {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .verification .panel {
+        padding: 16px;
+      }
+
+      footer {
+        margin-top: 34px;
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 900px) {
+        .artifact-bar,
+        .summary-grid,
+        .status-strip,
+        .verification {
+          grid-template-columns: 1fr;
+        }
+
+        .matrix-row {
+          grid-template-columns: 1fr;
+        }
+
+        .matrix-row .tag {
+          justify-self: start;
+        }
+      }
+
+      @media (max-width: 620px) {
+        main {
+          padding-top: 20px;
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+
+        header {
+          gap: 12px;
+        }
+
+        section {
+          padding-top: 24px;
+        }
+
+        .decision-list,
+        .next-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .panel,
+        .artifact,
+        .status-card,
+        .matrix-row,
+        .next-item {
+          padding: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">GStack plan coverage</p>
+        <h1>Wall Print Pro sales pilot: built vs not built</h1>
+        <p class="lede">
+          This page is intentionally narrow. It uses the agreed GStack CEO plan as the source of truth,
+          then maps the current repo against that plan.
+        </p>
+        <div class="artifact-bar" aria-label="Primary GStack artifacts">
+          <div class="artifact">
+            <strong>Agreed plan</strong>
+            <code>/Users/Rostyslav/.gstack/projects/preview-picture/ceo-plans/2026-06-17-wall-print-pro-sales-pilot-ai-draft-previews.md</code>
+          </div>
+          <div class="artifact">
+            <strong>Engineering test plan</strong>
+            <code>/Users/Rostyslav/.gstack/projects/preview-picture/Rostyslav-main-eng-review-test-plan-20260616-213842.md</code>
+          </div>
+          <div class="artifact">
+            <strong>Latest QA outcome</strong>
+            <code>/Users/Rostyslav/.gstack/projects/preview-picture/Rostyslav-codex-qa-wall-print-prototype-20260617-test-outcome-20260617-133046.md</code>
+          </div>
+        </div>
+      </header>
+
+      <section>
+        <div class="summary-grid">
+          <div class="panel">
+            <h2>What We Agreed To Build</h2>
+            <p class="muted">
+              A client-facing sales pilot for Wall Print Pro. Prospects can see wall-print ideas,
+              submit request/reserve interest, optionally generate a concept draft, and give the seller
+              enough context to follow up. Final quote, measurement, scheduling, and payment stay seller-managed.
+            </p>
+          </div>
+          <div class="panel">
+            <h3>Do not confuse this with</h3>
+            <ul>
+              <li>A full measurement/payment platform.</li>
+              <li>A public quote calculator.</li>
+              <li>A generic SaaS dashboard.</li>
+              <li>A final-print guarantee for AI concepts.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Plan Decisions</h2>
+        <ul class="decision-list" style="margin-top: 12px">
+          <li><strong>Direction:</strong> sales pilot, not full platform.</li>
+          <li><strong>Lead intake:</strong> add public no-auth request flow.</li>
+          <li><strong>AI:</strong> add contact-gated concept drafts now.</li>
+          <li><strong>Admin:</strong> add simple seller lead inbox.</li>
+          <li><strong>Accounts:</strong> optional for prospects, not a blocker.</li>
+          <li><strong>Payments:</strong> real booking and deposits deferred.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Coverage Snapshot</h2>
+        <div class="status-strip" style="margin-top: 12px">
+          <div class="status-card">
+            <span class="tag done">Built</span>
+            <strong>2</strong>
+            <p class="muted">Plan areas are implemented strongly enough in code.</p>
+          </div>
+          <div class="status-card">
+            <span class="tag partial">Partial</span>
+            <strong>4</strong>
+            <p class="muted">Important code exists, but plan details or live proof are missing.</p>
+          </div>
+          <div class="status-card">
+            <span class="tag missing">Missing</span>
+            <strong>1</strong>
+            <p class="muted">The full sales landing page still needs real build-out.</p>
+          </div>
+          <div class="status-card">
+            <span class="tag deferred">Deferred</span>
+            <strong>5</strong>
+            <p class="muted">These are intentionally not part of this pilot slice.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Implementation Matrix</h2>
+        <div class="matrix" style="margin-top: 12px">
+          <article class="matrix-row">
+            <div>
+              <h3>Public sales site</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Rebuild <code>/</code> into a Wall Print Pro sales pilot page with proof, work videos, use cases, process, contact cues, gallery/request/reserve/call CTAs.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p><code>app/page.tsx</code> still uses the AR demo surface with Gallery, Reserve, Sign in, and work videos.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Not yet a full sales landing page. Missing richer proof, process, use cases, contact copy, and configured phone CTA.</p>
+            </div>
+            <span class="tag missing">Missing</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>Public lead request</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Add no-auth <code>/request</code> with contact info, project type, context, notes, optional wall photo/artwork/prompt/timing, and reserve intent.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p><code>/request</code> exists. It captures name, email, phone, business/space, wall context, concept idea, upload, print size, intent, and reserve interest.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Still missing preferred contact method, project type, desired timing, and true email-or-phone submission. Current submit path effectively requires email.</p>
+            </div>
+            <span class="tag partial">Partial</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>AI concept draft previews</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Use OpenAI server-side, require contact first, rate-limit abuse, store <code>aiConceptDrafts</code>, create draft AR previews, and label them concept-only.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p>Provider wrapper, env gate, <code>aiConceptDrafts</code>, contact-based rate limits, <code>ai_concept</code> bundle source, and concept warning labels exist.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Not live-validated with real provider config. Rate limiting is contact/email based, not full IP/session protection. Quality and seller review flow are unproven.</p>
+            </div>
+            <span class="tag partial">Partial</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>Seller lead inbox</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Add admin inbox showing intent, contact info, uploaded files, AI draft previews, links, notes, created time, status, and follow-up actions.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p><code>components/seller/lead-inbox.tsx</code> lists leads, contact info, reserve interest, concept prompt, AI status, public preview link, status select, copy, and open actions.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Uploaded-file visibility and create seller-approved preview-from-draft actions are not clearly present in the inbox. Needs authenticated seller QA.</p>
+            </div>
+            <span class="tag partial">Partial</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>Public preview privacy</h3>
+              <span class="matrix-label">Plan</span>
+              <p><code>/preview/[slug]</code> should show ready/preparing/unavailable states, concept-only warnings for AI drafts, confirmations, and no public pricing.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p>Public preview route, concept-draft notice, confirmation notes, buyer-safe share text, and pricing privacy tests exist.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Needs real-device validation for saved, uploaded, and AI draft previews before client review.</p>
+            </div>
+            <span class="tag done">Built</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>Buyer/prospect accounts</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Accounts are optional. They can save preview history, but must not block request submission, public preview viewing, confirmation notes, or contact-gated AI drafts.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p><code>buyerProfiles</code>, <code>buyerPreviewClaims</code>, <code>/account</code>, buyer dashboard, and seller-vs-buyer routing exist.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Needs authenticated live pass. Clerk runtime setup remains a practical validation blocker.</p>
+            </div>
+            <span class="tag partial">Partial</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>Existing AR and asset pipeline</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Reuse the current preview-bundle and AR asset generation pipeline. Do not restart from scratch.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p><code>previewBundles</code>, storage assets, GLB/USDZ generation, stale-job recovery, retry/failure state, and upload validation tests exist.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>Automated tests pass, but real iPhone Safari and Android Chrome wall placement still need to be recorded for this slice.</p>
+            </div>
+            <span class="tag done">Built</span>
+          </article>
+
+          <article class="matrix-row">
+            <div>
+              <h3>Seller-managed launch boundaries</h3>
+              <span class="matrix-label">Plan</span>
+              <p>Do not build public pricing, real payment, full measurement, scheduling, CRM automation, or a generic SaaS positioning layer for this pilot.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Current repo</span>
+              <p>These areas are not implemented as public product flows. Internal pricing remains seller/admin-only.</p>
+            </div>
+            <div>
+              <span class="matrix-label">Gap</span>
+              <p>No gap. This is intentionally out of scope unless the plan changes.</p>
+            </div>
+            <span class="tag deferred">Deferred</span>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>What To Work On Next</h2>
+        <div class="next-grid" style="margin-top: 12px">
+          <div class="next-item">
+            <h3>1. Convert homepage into the sales pilot</h3>
+            <p class="muted">This is the biggest visible mismatch with the CEO plan. Add proof, use cases, process, request/reserve/call CTAs, and keep the AR demo as evidence, not the whole page.</p>
+          </div>
+          <div class="next-item">
+            <h3>2. Finish the missing request fields</h3>
+            <p class="muted">Add preferred contact method, project type, desired timing, and true email-or-phone validation. The CEO plan explicitly allowed email or phone.</p>
+          </div>
+          <div class="next-item">
+            <h3>3. Prove the runtime path</h3>
+            <p class="muted">Use real Clerk/Convex/OpenAI/contact config, submit a lead, generate or fail an AI draft safely, and confirm the seller sees the right inbox state.</p>
+          </div>
+          <div class="next-item">
+            <h3>4. Close the inbox workflow gap</h3>
+            <p class="muted">Show uploaded files/draft context and add the action to create or approve a seller-ready preview from a draft/upload when appropriate.</p>
+          </div>
+          <div class="next-item">
+            <h3>5. Run physical device acceptance</h3>
+            <p class="muted">Record iPhone Safari and Android Chrome results for homepage, gallery, saved preview, uploaded preview, and AI draft preview.</p>
+          </div>
+          <div class="next-item">
+            <h3>6. Keep deferred work deferred</h3>
+            <p class="muted">Do not spend this slice on payment, public pricing calculators, scheduling, full measurement, or SaaS polish.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>QA State</h2>
+        <div class="verification" style="margin-top: 12px">
+          <div class="panel">
+            <h3>Latest GStack QA outcome</h3>
+            <ul>
+              <li>QA found 3 issues and fixed all 3.</li>
+              <li>Health score moved from 74 to 94.</li>
+              <li>Fixes covered public Clerk gating, request upload overflow, and decimal print sizes.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Verified by QA artifact</h3>
+            <ul>
+              <li><code>pnpm typecheck</code> passed.</li>
+              <li><code>pnpm test</code> passed: 22 files, 96 tests.</li>
+              <li><code>pnpm build</code> passed.</li>
+              <li><code>pnpm test:e2e</code> passed: 36 tests.</li>
+              <li>Real-env browser smoke saved a <code>/request?intent=reserve</code> request.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="do-not">
+          <h2>Bottom Line</h2>
+          <p class="muted" style="margin-top: 8px">
+            The backend and workflow spine are much further along than the public sales page.
+            The next best move is to make the visible prospect experience match the GStack CEO plan,
+            then prove the full lead -> AI draft -> preview -> seller inbox loop in a real configured environment.
+          </p>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          Generated from the GStack CEO plan, engineering test plan, QA outcome, and current repo inspection.
+          No local app server was started.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

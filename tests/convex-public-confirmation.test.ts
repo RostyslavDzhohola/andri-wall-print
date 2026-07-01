@@ -41,7 +41,7 @@ describe("Convex public confirmation adapter", () => {
     });
 
     expect(JSON.stringify(parsed)).not.toMatch(/price|pricing|rate|estimate/i);
-    expect(parsed?.selectedPrintLabel).toBe("5 ft x 4 ft 2 in");
+    expect(parsed?.selectedPrintLabel).toBe("5 ft x 4.2 ft");
   });
 
   it("calls the Convex public HTTP mutation endpoint without auth fields", async () => {
@@ -148,7 +148,7 @@ describe("Convex public confirmation adapter", () => {
     const [confirmation] = serialized.confirmations;
 
     expect(confirmation).toMatchObject({
-      selectedPrintLabel: "5 ft x 4 ft 2 in",
+      selectedPrintLabel: "5 ft x 4.2 ft",
       buyerNote: "Looks good",
       internalEstimate: {
         amount: 874.86,

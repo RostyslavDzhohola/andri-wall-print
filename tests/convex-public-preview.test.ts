@@ -61,7 +61,7 @@ describe("Convex public preview adapter", () => {
         aspectRatio: "6:5",
         widthMeters: 1.524,
         heightMeters: 1.27,
-        label: "5 ft x 4 ft 2 in"
+        label: "5 ft x 4.2 ft"
       },
       assets: {
         poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
@@ -97,7 +97,7 @@ describe("Convex public preview adapter", () => {
     });
 
     expect(JSON.stringify(parsed)).not.toMatch(/price|pricing|rate|estimate/i);
-    expect(parsed?.print.label).toBe("5 ft x 4 ft 2 in");
+    expect(parsed?.print.label).toBe("5 ft x 4.2 ft");
   });
 
   it("calls the Convex public HTTP query endpoint", async () => {

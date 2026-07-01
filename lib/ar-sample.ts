@@ -1,5 +1,5 @@
 import {
-  formatFeetInchesFromMeters,
+  formatDecimalFeetFromMeters,
   makePreviewBundlePrintFromCentimeters,
   makePreviewBundlePrintFromDimensions,
   type PreviewBundlePrint
@@ -24,8 +24,8 @@ const PRINT_SIZE: ArSample["print"] = makePreviewBundlePrintFromCentimeters(45, 
 export const AR_SAMPLES: ArSample[] = [
   {
     id: "chicago-final-1",
-    title: "Chicago Final 1",
-    description: "Client-supplied Chicago wall artwork with the original 60 x 50 inch PDF proportions.",
+    title: "Pathways to Success",
+    description: "Chicago skyline artwork with the Bean, students, and the Pathways to Success message.",
     print: makePreviewBundlePrintFromDimensions({ width: 60, height: 50, unit: "in" }),
     assets: {
       glb: "/ar/chicago-final-1.glb",
@@ -35,8 +35,8 @@ export const AR_SAMPLES: ArSample[] = [
   },
   {
     id: "chicago-final-2",
-    title: "Chicago Final 2",
-    description: "Client-supplied Chicago lakefront artwork with the original 36 x 60 inch PDF proportions.",
+    title: "Lakefront Day",
+    description: "Chicago lakefront artwork with the skyline, trail, sailboats, and summer shoreline activity.",
     print: makePreviewBundlePrintFromDimensions({ width: 36, height: 60, unit: "in" }),
     assets: {
       glb: "/ar/chicago-final-2.glb",
@@ -46,8 +46,8 @@ export const AR_SAMPLES: ArSample[] = [
   },
   {
     id: "chicago-final-3",
-    title: "Chicago Final 3",
-    description: "Client-supplied Chicago train artwork with the original 48 x 60 inch PDF proportions.",
+    title: "River Train Crossing",
+    description: "Chicago train artwork with elevated tracks, river bridge, skyline, and commuters.",
     print: makePreviewBundlePrintFromDimensions({ width: 48, height: 60, unit: "in" }),
     assets: {
       glb: "/ar/chicago-final-3.glb",
@@ -57,7 +57,7 @@ export const AR_SAMPLES: ArSample[] = [
   },
   {
     id: "dragon-wall-print",
-    title: "Dragon Wall Print",
+    title: "Ember Dragon",
     description: "A high-detail cinematic dragon artwork for proving native AR wall placement.",
     print: PRINT_SIZE,
     assets: {
@@ -68,7 +68,7 @@ export const AR_SAMPLES: ArSample[] = [
   },
   {
     id: "elven-wall-print",
-    title: "Elven Portrait",
+    title: "Moonlit Elven Portrait",
     description: "An original high-fantasy portrait with luminous forest detail and silver ceremonial styling.",
     print: PRINT_SIZE,
     assets: {
@@ -79,7 +79,7 @@ export const AR_SAMPLES: ArSample[] = [
   },
   {
     id: "cyberpunk-wall-print",
-    title: "Cyberpunk Skyline",
+    title: "Neon Rain City",
     description: "A neon rain-soaked city scene built for a bold sci-fi wall print.",
     print: PRINT_SIZE,
     assets: {
@@ -99,7 +99,7 @@ export function getArSample(id: string) {
 }
 
 export function formatMeters(value: number) {
-  return formatFeetInchesFromMeters(value);
+  return formatDecimalFeetFromMeters(value);
 }
 
 export function formatPrintSize(print: ArSample["print"]) {

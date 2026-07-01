@@ -64,14 +64,14 @@ export function ArPreviewSurface({
           {headerAction ? <div className="flex shrink-0 items-center gap-3">{headerAction}</div> : null}
         </header>
 
-        <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:items-center">
+        <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] lg:items-center">
           <section className="grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
             <h1 className={cn("max-w-none text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl lg:max-w-[9ch]", headingClassName)}>{heading}</h1>
             {intro ? <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p> : null}
             {sideContent ? <div className="max-w-lg">{sideContent}</div> : null}
           </section>
 
-          <section className="relative overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
+          <section className="relative flex flex-col overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[size:46px_46px]" />
             <img
               alt={`${selectedSample.title} wall print`}
@@ -85,7 +85,7 @@ export function ArPreviewSurface({
               draggable={false}
               src={selectedSample.assets.poster}
             />
-            <Card className="relative z-20 mx-3 mb-3 mt-4 bg-card/95 py-3 shadow-lg backdrop-blur md:absolute md:bottom-4 md:left-4 md:right-4 md:mx-0 md:mb-0 md:mt-0" data-testid="artwork-controls">
+            <Card className="relative z-20 mx-3 mb-3 mt-4 bg-card/95 py-3 shadow-lg backdrop-blur" data-testid="artwork-controls">
               <CardContent className="px-3">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 sm:grid-cols-[auto_1fr_auto]">
                   {hasMultipleSamples ? (

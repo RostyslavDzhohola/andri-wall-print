@@ -113,7 +113,7 @@ describe("preview bundle contract", () => {
       aspectRatio: "45:90",
       widthMeters: 0.45,
       heightMeters: 0.9,
-      label: "1 ft 6 in x 2 ft 11 in"
+      label: "1.5 ft x 3 ft"
     });
     expect(makePreviewBundlePrintFromCentimeters(Number.NaN, 90)).toBe(DEFAULT_PREVIEW_BUNDLE_PRINT);
   });
@@ -125,9 +125,9 @@ describe("preview bundle contract", () => {
       aspectRatio: "152.4:127",
       widthMeters: 1.524,
       heightMeters: 1.27,
-      label: "5 ft x 4 ft 2 in"
+      label: "5 ft x 4.2 ft"
     });
-    expect(formatPreviewBundlePrintDimensions(print)).toBe("5 ft x 4 ft 2 in");
+    expect(formatPreviewBundlePrintDimensions(print)).toBe("5 ft x 4.2 ft");
     expect(formatPreviewBundlePrintArea(print)).toBe("20.8 sq ft");
   });
 

@@ -12,7 +12,6 @@ import {
   type PrintSizeFieldsValue
 } from "@/components/preview/print-size-fields";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +22,7 @@ import {
   normalizeBuilderUploadToPng,
   validateBuilderSourceUpload
 } from "@/lib/builder-upload-normalization";
-import { normalizeLeadEmail, type LeadRequestIntent } from "@/lib/lead-request-contract";
+import { isValidLeadEmail, normalizeLeadEmail, normalizeLeadPhone, type LeadContactMethod, type LeadRequestIntent } from "@/lib/lead-request-contract";
 import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
 import { cn } from "@/lib/utils";
 
@@ -42,19 +41,24 @@ type SubmissionResult = {
   publicPreviewUrl?: string;
 };
 
-const intentOptions: Array<{ value: LeadRequestIntent; label: string }> = [
-  { value: "concept", label: "Concept" },
-  { value: "reserve", label: "Reserve" },
-  { value: "contact", label: "Contact" }
+const contactMethodOptions: Array<{ value: LeadContactMethod; label: string }> = [
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "either", label: "Either" }
 ];
+
+const projectTypeOptions = ["Home wall", "Business wall", "Event or pop-up", "Not sure yet"] as const;
+const preferredContactGroupId = "preferred-contact-method";
 
 export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publicContactUrl }: PublicRequestFormProps) {
   const generateLeadUploadUrl = useMutation(leadRequestsApi.generateLeadUploadUrl);
   const submitLeadRequest = useMutation(leadRequestsApi.submitLeadRequest);
-  const [intent, setIntent] = useState<LeadRequestIntent>(defaultIntent);
+  const intent = defaultIntent;
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [preferredContactMethod, setPreferredContactMethod] = useState<LeadContactMethod>("either");
+  const [projectType, setProjectType] = useState<(typeof projectTypeOptions)[number]>("Home wall");
   const [businessName, setBusinessName] = useState("");
   const [wallDescription, setWallDescription] = useState("");
   const [conceptPrompt, setConceptPrompt] = useState("");
@@ -65,7 +69,22 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const printValidation = useMemo(() => resolvePrintSizeFieldsValue(printSize), [printSize]);
-  const canSubmit = Boolean(!busy && contactName.trim() && normalizeLeadEmail(contactEmail).includes("@") && printValidation.ok);
+  const normalizedEmail = normalizeLeadEmail(contactEmail);
+  const emailEntered = Boolean(normalizedEmail);
+  const emailValid = isValidLeadEmail(normalizedEmail);
+  const normalizedPhone = normalizeLeadPhone(contactPhone);
+  const phoneEntered = Boolean(contactPhone.trim());
+  const phoneValid = Boolean(normalizedPhone);
+  const preferredContactSatisfied =
+    preferredContactMethod === "email" ? emailValid : preferredContactMethod === "phone" ? phoneValid : emailValid || phoneValid;
+  const canSubmit = Boolean(
+    !busy &&
+      contactName.trim() &&
+      preferredContactSatisfied &&
+      (!emailEntered || emailValid) &&
+      (!phoneEntered || phoneValid) &&
+      printValidation.ok
+  );
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -125,8 +144,10 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
 
       const saved = (await submitLeadRequest({
         contactName,
-        contactEmail,
-        ...(contactPhone.trim() ? { contactPhone } : {}),
+        ...(normalizedEmail ? { contactEmail: normalizedEmail } : {}),
+        ...(normalizedPhone ? { contactPhone: normalizedPhone } : {}),
+        preferredContactMethod,
+        projectType,
         ...(businessName.trim() ? { businessName } : {}),
         ...(wallDescription.trim() ? { wallDescription } : {}),
         ...(conceptPrompt.trim() ? { conceptPrompt } : {}),
@@ -146,29 +167,6 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
 
   return (
     <form className="grid gap-5" onSubmit={submit}>
-      <div className="flex flex-wrap items-center gap-2">
-        {intentOptions.map((option) => (
-          <Button
-            aria-pressed={intent === option.value}
-            className="h-9 rounded-full px-4"
-            key={option.value}
-            onClick={() => {
-              setIntent(option.value);
-              if (option.value === "reserve") {
-                setReserveInterest(true);
-              }
-            }}
-            type="button"
-            variant={intent === option.value ? "default" : "outline"}
-          >
-            {option.label}
-          </Button>
-        ))}
-        <Badge className="ml-auto" variant={aiEnabled ? "secondary" : "outline"}>
-          {aiEnabled ? "AI drafts on" : "Seller review"}
-        </Badge>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="lead-name">Name</Label>
@@ -176,17 +174,51 @@ export function PublicRequestForm({ aiEnabled, defaultIntent, publicPhone, publi
         </div>
         <div className="grid gap-2">
           <Label htmlFor="lead-email">Email</Label>
-          <Input id="lead-email" inputMode="email" onChange={(event) => setContactEmail(event.target.value)} required type="email" value={contactEmail} />
+          <Input id="lead-email" inputMode="email" onChange={(event) => setContactEmail(event.target.value)} type="email" value={contactEmail} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="lead-phone">Phone</Label>
           <Input id="lead-phone" inputMode="tel" onChange={(event) => setContactPhone(event.target.value)} type="tel" value={contactPhone} />
         </div>
         <div className="grid gap-2">
+          <Label id={`${preferredContactGroupId}-label`}>Preferred contact</Label>
+          <div aria-labelledby={`${preferredContactGroupId}-label`} className="grid grid-cols-3 gap-2" role="group">
+            {contactMethodOptions.map((option) => (
+              <Button
+                aria-pressed={preferredContactMethod === option.value}
+                className="h-10 rounded-full px-3"
+                key={option.value}
+                onClick={() => setPreferredContactMethod(option.value)}
+                type="button"
+                variant={preferredContactMethod === option.value ? "default" : "outline"}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="lead-project-type">Project type</Label>
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            id="lead-project-type"
+            onChange={(event) => setProjectType(event.target.value as (typeof projectTypeOptions)[number])}
+            value={projectType}
+          >
+            {projectTypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid gap-2">
           <Label htmlFor="lead-business">Business or space</Label>
           <Input id="lead-business" onChange={(event) => setBusinessName(event.target.value)} value={businessName} />
         </div>
       </div>
+
+      <p className="text-sm text-muted-foreground">Email or phone is required. Pick how Wall Print Pro should reply first.</p>
 
       <div className="grid gap-2">
         <Label htmlFor="lead-wall">Wall context</Label>

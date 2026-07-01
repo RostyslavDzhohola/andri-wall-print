@@ -9,6 +9,8 @@ describe("lead request contract", () => {
         contactName: "  Jane   Buyer ",
         contactEmail: " JANE@EXAMPLE.COM ",
         contactPhone: "(555) 123-4567",
+        preferredContactMethod: "either",
+        projectType: "  Business wall ",
         businessName: "  Studio   A ",
         conceptPrompt: "  skyline mural ",
         intent: "reserve"
@@ -19,6 +21,8 @@ describe("lead request contract", () => {
       normalizedContactEmail: "jane@example.com",
       contactPhone: "(555) 123-4567",
       normalizedContactPhone: "5551234567",
+      preferredContactMethod: "either",
+      projectType: "Business wall",
       businessName: "Studio A",
       conceptPrompt: "skyline mural",
       intent: "reserve",
@@ -26,20 +30,52 @@ describe("lead request contract", () => {
     });
   });
 
-  it("rejects missing name and malformed email before persistence", () => {
+  it("accepts phone-only leads when phone is the preferred contact path", () => {
+    expect(
+      normalizeLeadRequestInput({
+        contactName: "Phone Lead",
+        contactPhone: "(312) 555-0101",
+        preferredContactMethod: "phone"
+      })
+    ).toMatchObject({
+      contactName: "Phone Lead",
+      contactEmail: "",
+      contactPhone: "(312) 555-0101",
+      normalizedContactEmail: "",
+      normalizedContactPhone: "3125550101",
+      preferredContactMethod: "phone"
+    });
+  });
+
+  it("rejects missing name and missing or malformed contact paths before persistence", () => {
     expect(() =>
       normalizeLeadRequestInput({
         contactName: "",
-        contactEmail: "buyer@example.com"
+        contactPhone: "(555) 123-4567"
       })
     ).toThrow("Name is required.");
 
     expect(() =>
       normalizeLeadRequestInput({
-        contactName: "Buyer",
-        contactEmail: "not-email"
+        contactName: "Buyer"
       })
-    ).toThrow("A valid email is required.");
+    ).toThrow("Email or phone is required.");
+
+    expect(() =>
+      normalizeLeadRequestInput({
+        contactName: "Buyer",
+        contactEmail: "not-email",
+        contactPhone: "(555) 123-4567"
+      })
+    ).toThrow("Enter a valid email address.");
+
+    expect(() =>
+      normalizeLeadRequestInput({
+        contactName: "Buyer",
+        contactEmail: "buyer@example.com",
+        preferredContactMethod: "phone"
+      })
+    ).toThrow("Phone is required when phone is the preferred contact method.");
   });
 
   it("builds deterministic phone and daily rate-limit keys", () => {

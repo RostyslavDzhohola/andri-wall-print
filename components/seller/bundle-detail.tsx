@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { getInitialClientPreviewUrl, resolveClientPreviewUrl } from "@/lib/client-preview-url";
-import { formatSquareFeet, formatUsdCents } from "@/lib/pricing-estimator";
 import { formatPreviewConfirmationAreaBasis } from "@/lib/preview-confirmation-contract";
 import { previewSourceLabel, previewStatusLabel, wallPreviewIssueMessage } from "@/lib/product-copy";
 
@@ -207,12 +206,6 @@ export function BundleDetail({ bundleId }: BundleDetailProps) {
               <dd className="text-muted-foreground">{previewSourceLabel(bundle.sourceKind)}</dd>
               <dt className="font-semibold">Print</dt>
               <dd className="text-muted-foreground">{bundle.print.label}</dd>
-              <dt className="font-semibold">Area</dt>
-              <dd className="text-muted-foreground">{formatSquareFeet(bundle.pricing.areaSquareFeet)} sq ft</dd>
-              <dt className="font-semibold">Rate</dt>
-              <dd className="text-muted-foreground">{formatUsdCents(bundle.pricing.pricePerSquareFootCents)} / sq ft</dd>
-              <dt className="font-semibold">Internal estimate</dt>
-              <dd className="text-muted-foreground">{formatUsdCents(bundle.pricing.estimateCents)}</dd>
             </dl>
 
             {bundle.failureReason || bundle.rejectionReason ? (
@@ -263,7 +256,6 @@ export function BundleDetail({ bundleId }: BundleDetailProps) {
               id: string;
               selectedPrintLabel: string;
               areaBasis: { kind: "selected_dimensions"; unit: "square_foot" | "square_meter"; value: number };
-              internalEstimate?: { amount: number; currency: string; label: string; source: "area_rate" };
               buyerNote?: string;
               createdAt: number;
             }) => (
@@ -278,8 +270,6 @@ export function BundleDetail({ bundleId }: BundleDetailProps) {
                 <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
                   <dt className="font-semibold">Area basis</dt>
                   <dd className="text-muted-foreground">{formatPreviewConfirmationAreaBasis(confirmation.areaBasis)}</dd>
-                  <dt className="font-semibold">Internal estimate</dt>
-                  <dd className="text-muted-foreground">{confirmation.internalEstimate?.label ?? formatUsdCents(bundle.pricing.estimateCents)}</dd>
                   {confirmation.buyerNote ? (
                     <>
                       <dt className="font-semibold">Note</dt>

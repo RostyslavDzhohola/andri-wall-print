@@ -71,9 +71,9 @@ describe("TypeScript AR asset generator", () => {
     expect(gltf.asset.extras.sizeGuide).toEqual({
       widthMeters: 0.45,
       heightMeters: 0.9,
-      widthLabel: "1 ft 6 in wide",
-      heightLabel: "2 ft 11 in tall",
-      summary: "1 ft 6 in wide x 2 ft 11 in tall"
+      widthLabel: "1.5 ft wide",
+      heightLabel: "3 ft tall",
+      summary: "1.5 ft wide x 3 ft tall"
     });
     expect(gltf.meshes[0].primitives).toHaveLength(2);
     expect(gltf.meshes[0].primitives[1]).toMatchObject({
@@ -103,7 +103,7 @@ describe("TypeScript AR asset generator", () => {
     expect(text).toContain('def Mesh "ArtworkPlane"');
     expect(text).toContain('def Mesh "SizeGuide"');
     expect(text).toContain('def Material "SizeGuideMaterial"');
-    expect(text).toContain('string sizeGuideSummary = "1 ft 6 in wide x 2 ft 11 in tall"');
+    expect(text).toContain('string sizeGuideSummary = "1.5 ft wide x 3 ft tall"');
     expect(text).toContain("asset inputs:file = @proof.png@");
   });
 

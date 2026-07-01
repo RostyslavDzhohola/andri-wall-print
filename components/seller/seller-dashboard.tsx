@@ -1,10 +1,10 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { CheckCircle2, Copy, DollarSign, ExternalLink, FileImage, Link2, Loader2, Plus, Save, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Copy, ExternalLink, FileImage, Link2, Loader2, Plus, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CreatePreviewFlow } from "@/components/seller/create-preview-flow";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,8 +20,6 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,7 +27,6 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { AR_SAMPLES } from "@/lib/ar-sample";
 import { getInitialClientPreviewUrl, resolveClientPreviewUrl } from "@/lib/client-preview-url";
-import { formatSquareFeet, formatUsdCents, parseUsdRateInputToCents, type SellerPricingEstimate } from "@/lib/pricing-estimator";
 import { formatPreviewBundlePrintDimensions } from "@/lib/preview-bundle-contract";
 import {
   inviteLinkStatusLabel,
@@ -41,7 +38,6 @@ import {
 
 const previewBundlesApi = api.previewBundles;
 const builderInvitesApi = api.builderInvites;
-const sellerPricingApi = api.sellerPricing;
 const dashboardSampleArtwork = AR_SAMPLES.slice(0, 3);
 
 type SellerBundle = {
@@ -50,7 +46,6 @@ type SellerBundle = {
   title: string;
   status: string;
   print: { label: string };
-  pricing: SellerPricingEstimate;
   publicUrl: string;
   createdVia: "seller" | "builder";
   updatedAt: number;
@@ -81,12 +76,6 @@ type CreatedInvite = {
   token: string;
   path: string;
   expiresAt: number;
-};
-
-type SellerPricingState = {
-  currency: "USD";
-  pricePerSquareFootCents: number;
-  updatedAt: number | null;
 };
 
 function formatDate(value: number) {
@@ -134,18 +123,15 @@ export function SellerDashboard() {
   const searchParams = useSearchParams();
   const bundles = useQuery(previewBundlesApi.listForSeller, isAuthenticated ? {} : "skip") as SellerBundle[] | undefined;
   const invites = useQuery(builderInvitesApi.listForSeller, isAuthenticated ? {} : "skip") as SellerInvite[] | undefined;
-  const pricing = useQuery(sellerPricingApi.getForSeller, isAuthenticated ? {} : "skip") as SellerPricingState | undefined;
   const createInvite = useMutation(builderInvitesApi.createInvite);
   const revokeInvite = useMutation(builderInvitesApi.revokeInvite);
   const deleteBundle = useMutation(previewBundlesApi.deleteBundle);
-  const updatePricing = useMutation(sellerPricingApi.updateForSeller);
   const [createdInvite, setCreatedInvite] = useState<CreatedInvite | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreatePreviewOpen, setIsCreatePreviewOpen] = useState(false);
   const [isInviteConfirmOpen, setIsInviteConfirmOpen] = useState(false);
-  const [pricingInput, setPricingInput] = useState("0.00");
   const isAuthorizing = isLoading || !isAuthenticated;
   const [createdInviteUrl, setCreatedInviteUrl] = useState("");
   const counts = useMemo(() => {
@@ -188,14 +174,6 @@ export function SellerDashboard() {
     };
   }, [createdInvite]);
 
-  useEffect(() => {
-    if (!pricing) {
-      return;
-    }
-
-    setPricingInput((pricing.pricePerSquareFootCents / 100).toFixed(2));
-  }, [pricing]);
-
   const copyText = async (value: string, message: string) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -209,24 +187,6 @@ export function SellerDashboard() {
   const copyShareablePath = async (path: string, message: string) => {
     const resolved = await resolveClientPreviewUrl(path);
     await copyText(resolved.url, resolved.warning ? `${message} ${resolved.warning}` : message);
-  };
-
-  const savePricing = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setBusy("pricing");
-    setError(null);
-    setNotice(null);
-
-    try {
-      const pricePerSquareFootCents = parseUsdRateInputToCents(pricingInput);
-      const updated = (await updatePricing({ pricePerSquareFootCents })) as SellerPricingState;
-      setPricingInput((updated.pricePerSquareFootCents / 100).toFixed(2));
-      setNotice("Internal square-foot rate updated.");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not update the square-foot rate.");
-    } finally {
-      setBusy(null);
-    }
   };
 
   const createInviteLink = async () => {
@@ -391,7 +351,6 @@ export function SellerDashboard() {
                     <TableRow>
                       <TableHead>Client preview</TableHead>
                       <TableHead className="hidden w-[130px] sm:table-cell">Status</TableHead>
-                      <TableHead className="hidden w-[190px] lg:table-cell">Internal estimate</TableHead>
                       <TableHead className="hidden w-[130px] md:table-cell">Updated</TableHead>
                       <TableHead className="w-[176px] text-right">Actions</TableHead>
                     </TableRow>
@@ -416,20 +375,11 @@ export function SellerDashboard() {
                                 </span>
                               </div>
                             ) : null}
-                            <div className="mt-1 text-xs text-muted-foreground lg:hidden">
-                              {formatSquareFeet(bundle.pricing.areaSquareFeet)} sq ft · {formatUsdCents(bundle.pricing.estimateCents)}
-                            </div>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
                             <Badge className={statusTone(bundle.status)} variant="outline">
                               {previewStatusLabel(bundle.status)}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <div className="font-medium">{formatUsdCents(bundle.pricing.estimateCents)}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {formatSquareFeet(bundle.pricing.areaSquareFeet)} sq ft @ {formatUsdCents(bundle.pricing.pricePerSquareFootCents)}
-                            </div>
                           </TableCell>
                           <TableCell className="hidden text-muted-foreground md:table-cell">{formatDate(bundle.updatedAt)}</TableCell>
                           <TableCell>
@@ -488,52 +438,7 @@ export function SellerDashboard() {
           </Card>
         </section>
 
-        <aside className="grid content-start gap-3" aria-label="Internal settings and guest upload invites">
-          <Card>
-            <CardHeader>
-              <CardTitle>Internal pricing</CardTitle>
-              <CardDescription className="leading-6">Set the USD square-foot rate used for admin estimates.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {isAuthorizing || pricing === undefined ? (
-                <div className="grid gap-2">
-                  <Skeleton className="h-11" />
-                  <Skeleton className="h-11" />
-                </div>
-              ) : (
-                <form className="grid gap-3" onSubmit={savePricing}>
-                  <div className="grid gap-2">
-                    <Label htmlFor="price-per-square-foot">USD per sq ft</Label>
-                    <div className="grid grid-cols-[auto_1fr] items-center rounded-lg border bg-background focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-                      <span className="grid size-11 place-items-center text-muted-foreground">
-                        <DollarSign className="size-4" />
-                      </span>
-                      <Input
-                        className="h-11 border-0 pl-0 focus-visible:ring-0"
-                        disabled={busy !== null}
-                        id="price-per-square-foot"
-                        inputMode="decimal"
-                        min="0"
-                        onChange={(event) => setPricingInput(event.target.value)}
-                        step="0.01"
-                        type="number"
-                        value={pricingInput}
-                      />
-                    </div>
-                  </div>
-                  <Button className="min-h-11 w-full" disabled={busy !== null} size="lg" type="submit">
-                    {busy === "pricing" ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                    Save rate
-                  </Button>
-                  <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-                    <div className="font-semibold">{formatUsdCents(pricing.pricePerSquareFootCents)} / sq ft</div>
-                    <div className="mt-1 text-muted-foreground">Currency: {pricing.currency}</div>
-                  </div>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-
+        <aside className="grid content-start gap-3" aria-label="Guest upload invites">
           <Card>
             <CardHeader>
               <CardTitle>Invite upload</CardTitle>

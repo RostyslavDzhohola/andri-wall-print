@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 
 import { AR_ASSET_SIZE_BUDGET_BYTES, AR_SAMPLE_TOTAL_SIZE_BUDGET_BYTES, type ArAssetKind } from "./ar-launcher";
-import { formatFeetInchesFromMeters } from "./preview-bundle-contract";
+import { formatDecimalFeetFromMeters } from "./preview-bundle-contract";
 
 export type FlatPrintSizeGuideOptions = {
   enabled: boolean;
@@ -59,7 +59,7 @@ function writeUInt32(value: number) {
 }
 
 function formatSizeGuideMeters(value: number) {
-  return formatFeetInchesFromMeters(value);
+  return formatDecimalFeetFromMeters(value);
 }
 
 function getSizeGuideLabels(input: FlatPrintAssetInput) {

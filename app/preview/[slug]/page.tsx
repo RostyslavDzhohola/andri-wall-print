@@ -1,9 +1,9 @@
-import { LogIn } from "lucide-react";
 import Link from "next/link";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicPreviewConfirmation } from "@/components/preview/public-preview-confirmation";
+import { PublicPreviewHeaderAction } from "@/components/preview/public-preview-header-action";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,6 @@ type PublicPreviewPageProps = {
   }>;
 };
 
-function previewSignInUrl(publicSlug: string) {
-  return `/sign-in?redirect_url=${encodeURIComponent(`/preview/${publicSlug}`)}`;
-}
-
 function previewAuthRuntimeAvailable() {
   return Boolean(readClerkPublishableKey() && readClerkSecretKey());
 }
@@ -33,14 +29,7 @@ function PreviewHeaderAction({ publicSlug }: { publicSlug: string }) {
     return null;
   }
 
-  return (
-    <Button asChild className="h-9 rounded-full px-4" variant="outline">
-      <Link href={previewSignInUrl(publicSlug)}>
-        <LogIn className="size-4" />
-        Sign in
-      </Link>
-    </Button>
-  );
+  return <PublicPreviewHeaderAction publicSlug={publicSlug} />;
 }
 
 function ConceptDraftNotice() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { ArrowLeft, Check, CircleUserRound, Images, LogIn, Ruler, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, CircleUserRound, Images, LogIn, Ruler, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
@@ -48,6 +48,7 @@ export function ArtworkGallerySurface({
   const selectedSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
   const selectedPrintSizeLabel = formatPreviewBundlePrintDimensions(selectedSample.print);
   const selectedPrintAreaLabel = formatPreviewBundlePrintArea(selectedSample.print);
+  const hasMultipleSamples = samples.length > 1;
 
   const selectArtwork = (sampleId: string) => {
     const nextIndex = samples.findIndex((sample) => sample.id === sampleId);
@@ -63,6 +64,14 @@ export function ArtworkGallerySurface({
         previewRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
       }, 0);
     }
+  };
+
+  const selectPrevious = () => {
+    setSelectedIndex((current) => (current - 1 + samples.length) % samples.length);
+  };
+
+  const selectNext = () => {
+    setSelectedIndex((current) => (current + 1) % samples.length);
   };
 
   const goBack = () => {
@@ -83,15 +92,15 @@ export function ArtworkGallerySurface({
         strategy="afterInteractive"
         type="module"
       />
-      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-4 md:px-6">
-        <header className="flex min-h-14 items-center justify-between gap-4 border-b py-3">
-          <BrandMark ariaLabel="Wall Print Pro homepage" className="min-w-0 text-lg" textClassName="hidden sm:inline" />
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 py-4 md:px-6">
+        <header className="flex items-center justify-between gap-4 pt-1 sm:pt-0">
+          <BrandMark ariaLabel="Wall Print Pro homepage" className="min-w-0 text-base sm:text-lg" textClassName="truncate" />
           <div className="flex shrink-0 items-center gap-2">
-            <Button aria-label="Go back" className="h-9 rounded-full px-3" onClick={goBack} type="button" variant="ghost">
+            <Button aria-label="Go back" className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" onClick={goBack} type="button" variant="ghost">
               <ArrowLeft className="size-4" aria-hidden="true" />
               <span className="hidden sm:inline">Back</span>
             </Button>
-            <Button asChild className="h-9 rounded-full px-3 sm:px-4" variant="ghost">
+            <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" variant="ghost">
               <Link aria-label={dashboardLabel} href={dashboardHref}>
                 <DashboardIcon kind={dashboardKind} />
                 <span className="hidden sm:inline">{dashboardLabel}</span>
@@ -135,7 +144,38 @@ export function ArtworkGallerySurface({
                 src={selectedSample.assets.poster}
               />
               <div className="relative z-20 mx-3 mb-3 mt-4 rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur md:absolute md:bottom-4 md:left-4 md:right-4 md:mx-0 md:mb-0 md:mt-0">
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div
+                  className={cn(
+                    "grid items-center gap-3",
+                    hasMultipleSamples ? "grid-cols-[auto_minmax(0,1fr)] sm:grid-cols-[auto_minmax(0,1fr)_auto]" : "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  )}
+                >
+                  {hasMultipleSamples ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        aria-label="Previous artwork"
+                        className="size-10 rounded-full"
+                        data-testid="gallery-previous-artwork"
+                        onClick={selectPrevious}
+                        size="icon"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ChevronLeft className="size-5" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        aria-label="Next artwork"
+                        className="size-10 rounded-full"
+                        data-testid="gallery-next-artwork"
+                        onClick={selectNext}
+                        size="icon"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ChevronRight className="size-5" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ) : null}
                   <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold" data-testid="gallery-selected-artwork-title">
                       {selectedSample.title}
@@ -145,7 +185,9 @@ export function ArtworkGallerySurface({
                       <span data-testid="gallery-selected-print-area">{selectedPrintAreaLabel}</span>
                     </div>
                   </div>
-                  <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                  <div className={cn("sm:justify-self-end", hasMultipleSamples ? "col-span-2 sm:col-span-1" : "")}>
+                    <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -191,7 +233,6 @@ export function ArtworkGallerySurface({
                         <Ruler className="size-4 text-primary" aria-hidden="true" />
                         {formatPreviewBundlePrintDimensions(sample.print)}
                       </span>
-                      <span className="text-sm font-semibold text-primary">{isSelected ? "Selected" : "Try this artwork"}</span>
                     </span>
                   </button>
                 );

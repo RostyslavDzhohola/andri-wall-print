@@ -297,6 +297,44 @@ export const getDashboard = query({
   }
 });
 
+export const getClaimForPublicSlug = query({
+  args: {
+    publicSlug: v.string()
+  },
+  returns: v.union(v.null(), buyerDashboardPreviewValidator),
+  handler: async (ctx, args) => {
+    const buyer = await requireBuyerIdentity(ctx);
+    const publicSlug = args.publicSlug.trim();
+
+    if (!publicSlug) {
+      return null;
+    }
+
+    const claim = await ctx.db
+      .query("buyerPreviewClaims")
+      .withIndex("by_buyer_public_slug", (q: any) => q.eq("buyerSubject", buyer.subject).eq("publicSlug", publicSlug))
+      .first();
+
+    if (!claim) {
+      return null;
+    }
+
+    const bundle = await ctx.db.get(claim.previewBundleId);
+
+    if (!bundle || ["failed", "rejected", "revoked"].includes(bundle.status)) {
+      return null;
+    }
+
+    return serializeBuyerDashboardPreview({
+      buyerSubject: buyer.subject,
+      claim,
+      bundle,
+      posterUrl: await readPosterUrl(ctx, bundle),
+      confirmation: await readClaimConfirmation(ctx, claim)
+    });
+  }
+});
+
 export const claimPublicPreview = mutation({
   args: {
     publicSlug: v.string(),

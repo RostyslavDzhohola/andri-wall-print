@@ -124,6 +124,8 @@ export default defineSchema({
     contactPhone: v.optional(v.string()),
     normalizedContactEmail: v.string(),
     normalizedContactPhone: v.optional(v.string()),
+    preferredContactMethod: v.optional(v.union(v.literal("email"), v.literal("phone"), v.literal("either"))),
+    projectType: v.optional(v.string()),
     businessName: v.optional(v.string()),
     wallDescription: v.optional(v.string()),
     conceptPrompt: v.optional(v.string()),
