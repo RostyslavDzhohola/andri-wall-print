@@ -358,6 +358,42 @@ export const finalizeAiDraftFailure = internalMutation({
   }
 });
 
+export const recordAiDraftGeneratedImage = internalMutation({
+  args: {
+    draftId: v.id("aiConceptDrafts"),
+    generatedImageStorageId: v.id("_storage"),
+    generatedImageMeta: v.object({
+      fileName: v.string(),
+      contentType: v.string(),
+      byteLength: v.number()
+    }),
+    providerMetadata: v.optional(v.string()),
+    model: v.optional(v.string())
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+
+    if (!draft) {
+      return null;
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.draftId, {
+      generatedImageStorageId: args.generatedImageStorageId,
+      generatedImageMeta: args.generatedImageMeta,
+      providerMetadata: args.providerMetadata,
+      model: args.model,
+      updatedAt: now
+    });
+    await ctx.db.patch(draft.leadRequestId, {
+      updatedAt: now
+    });
+
+    return null;
+  }
+});
+
 export const finalizeAiDraftReady = internalMutation({
   args: {
     draftId: v.id("aiConceptDrafts"),

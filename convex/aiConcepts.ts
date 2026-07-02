@@ -68,6 +68,7 @@ export const generateConceptDraft = internalAction({
     const result = await generateOpenAiConceptImage({
       apiKey: process.env.OPENAI_API_KEY,
       model: process.env.OPENAI_IMAGE_MODEL,
+      print: draft.print,
       prompt
     });
 
@@ -88,23 +89,49 @@ export const generateConceptDraft = internalAction({
       contentType: result.contentType,
       byteLength: result.bytes.byteLength
     };
-    const created = (await ctx.runMutation(internal.previewBundles.createBundleFromAiConcept, {
-      leadRequestId: draft.leadRequestId,
-      aiConceptDraftId: draft.draftId,
-      sourceStorageId: generatedImageStorageId,
-      originalFileName: fileName,
-      contentType: result.contentType,
-      byteLength: result.bytes.byteLength,
-      title: `${draft.contactName} concept draft`,
-      description: "Concept draft generated from a client request. Seller review required before artwork is final.",
-      prompt: draft.prompt,
-      print: draft.print
-    })) as {
+    await ctx.runMutation(internal.leadRequests.recordAiDraftGeneratedImage, {
+      draftId: args.draftId,
+      generatedImageStorageId,
+      generatedImageMeta,
+      providerMetadata: result.metadata,
+      model: result.model
+    });
+
+    let created: {
       bundleId: Id<"previewBundles">;
       publicSlug: string;
       publicUrl: string;
       status: string;
     };
+
+    try {
+      created = (await ctx.runMutation(internal.previewBundles.createBundleFromAiConcept, {
+        leadRequestId: draft.leadRequestId,
+        aiConceptDraftId: draft.draftId,
+        sourceStorageId: generatedImageStorageId,
+        originalFileName: fileName,
+        contentType: result.contentType,
+        byteLength: result.bytes.byteLength,
+        title: `${draft.contactName} concept draft`,
+        description: "Concept draft generated from a client request. Seller review required before artwork is final.",
+        prompt: draft.prompt,
+        print: draft.print
+      })) as {
+        bundleId: Id<"previewBundles">;
+        publicSlug: string;
+        publicUrl: string;
+        status: string;
+      };
+    } catch {
+      await ctx.runMutation(internal.leadRequests.finalizeAiDraftFailure, {
+        draftId: args.draftId,
+        status: "failed",
+        reason: "AI concept image was saved, but preview preparation failed.",
+        providerMetadata: result.metadata,
+        model: result.model
+      });
+      return null;
+    }
 
     await ctx.runMutation(internal.leadRequests.finalizeAiDraftReady, {
       draftId: args.draftId,
