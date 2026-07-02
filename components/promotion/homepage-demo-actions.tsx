@@ -28,7 +28,7 @@ function requestHrefForConceptPrompt(prompt: string) {
 export function HomepageDemoActions() {
   const { selectedSample } = useArPreviewSelection();
   const [conceptPrompt, setConceptPrompt] = useState("");
-  const selectedDesignHref = `/request?intent=concept&designId=${encodeURIComponent(selectedSample.id)}`;
+  const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedSample.id)}`;
   const conceptHref = useMemo(() => requestHrefForConceptPrompt(conceptPrompt), [conceptPrompt]);
 
   return (

@@ -3,22 +3,23 @@
 import { useRef, useState } from "react";
 
 const workVideoBaseUrl = "https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev";
+const workVideoVersion = "20260702-instagram-footage";
 
 const workVideos = [
   {
     id: "wall-print-1",
     poster: "/work-videos/wall-print-1-poster.jpg",
-    src: `${workVideoBaseUrl}/work-videos/wall-print-1.mp4`
+    src: `${workVideoBaseUrl}/work-videos/wall-print-1.mp4?v=${workVideoVersion}`
   },
   {
     id: "wall-print-2",
     poster: "/work-videos/wall-print-2-poster.jpg",
-    src: `${workVideoBaseUrl}/work-videos/wall-print-2.mp4`
+    src: `${workVideoBaseUrl}/work-videos/wall-print-2.mp4?v=${workVideoVersion}`
   },
   {
     id: "wall-print-3",
     poster: "/work-videos/wall-print-3-poster.jpg",
-    src: `${workVideoBaseUrl}/work-videos/wall-print-3.mp4`
+    src: `${workVideoBaseUrl}/work-videos/wall-print-3.mp4?v=${workVideoVersion}`
   }
 ] as const;
 
@@ -56,6 +57,10 @@ function WorkVideoCard({ video, index }: { video: (typeof workVideos)[number]; i
   };
 
   const toggleVideo = () => {
+    if (canUseHoverPlayback()) {
+      return;
+    }
+
     const videoElement = videoRef.current;
 
     if (!videoElement) {

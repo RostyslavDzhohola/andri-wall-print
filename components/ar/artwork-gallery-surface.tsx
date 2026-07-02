@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, CircleUserRound, Images, LogIn, Ruler, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, CircleUserRound, Images, LogIn, MessageCircle, Ruler, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
@@ -18,6 +18,7 @@ type ArtworkGallerySurfaceProps = {
   dashboardHref?: "/account" | "/admin" | "/dashboard";
   dashboardKind?: "account" | "admin" | "signIn";
   dashboardLabel?: string;
+  initialSampleId?: string;
   samples?: ArSample[];
   showUserButton?: boolean;
 };
@@ -38,17 +39,26 @@ export function ArtworkGallerySurface({
   dashboardHref = "/dashboard",
   dashboardKind = "signIn",
   dashboardLabel = "Sign in",
+  initialSampleId,
   samples = AR_SAMPLES,
   showUserButton = false
 }: ArtworkGallerySurfaceProps) {
   const router = useRouter();
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    const initialIndex = initialSampleId ? samples.findIndex((sample) => sample.id === initialSampleId) : -1;
+
+    return initialIndex >= 0 ? initialIndex : 0;
+  });
   const [diagnostics, setDiagnostics] = useState<ArDiagnostics | null>(null);
   const previewRef = useRef<HTMLElement | null>(null);
   const selectedSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
   const selectedPrintSizeLabel = formatPreviewBundlePrintDimensions(selectedSample.print);
   const selectedPrintAreaLabel = formatPreviewBundlePrintArea(selectedSample.print);
   const hasMultipleSamples = samples.length > 1;
+  const requestSelectedDesignHref = `/request?${new URLSearchParams({
+    intent: "concept",
+    designId: selectedSample.id
+  }).toString()}`;
 
   const selectArtwork = (sampleId: string) => {
     const nextIndex = samples.findIndex((sample) => sample.id === sampleId);
@@ -147,7 +157,7 @@ export function ArtworkGallerySurface({
                 <div
                   className={cn(
                     "grid items-center gap-3",
-                    hasMultipleSamples ? "grid-cols-[auto_minmax(0,1fr)] sm:grid-cols-[auto_minmax(0,1fr)_auto]" : "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]"
+                    hasMultipleSamples ? "grid-cols-[auto_minmax(0,1fr)]" : "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]"
                   )}
                 >
                   {hasMultipleSamples ? (
@@ -185,8 +195,16 @@ export function ArtworkGallerySurface({
                       <span data-testid="gallery-selected-print-area">{selectedPrintAreaLabel}</span>
                     </div>
                   </div>
-                  <div className={cn("sm:justify-self-end", hasMultipleSamples ? "col-span-2 sm:col-span-1" : "")}>
-                    <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                  <div className={cn("grid gap-2 sm:justify-self-end", hasMultipleSamples ? "col-span-2" : "")}>
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                      <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                      <Button asChild className="h-12 rounded-full px-5 text-base" variant="outline">
+                        <Link data-testid="gallery-request-selected-design" href={requestSelectedDesignHref}>
+                          <MessageCircle className="size-4" aria-hidden="true" />
+                          Request this design
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

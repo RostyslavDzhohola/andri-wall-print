@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wall Print Pro Creative Landing Concepts</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: #111;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img,
+      video {
+        display: block;
+        max-width: 100%;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .concept {
+        display: none;
+        min-height: 100vh;
+      }
+
+      body[data-concept="a"] .concept-a,
+      body[data-concept="b"] .concept-b,
+      body[data-concept="c"] .concept-c,
+      body[data-concept="d"] .concept-d,
+      body[data-concept="e"] .concept-e {
+        display: block;
+      }
+
+      .switcher {
+        position: fixed;
+        z-index: 100;
+        right: 18px;
+        bottom: 18px;
+        display: flex;
+        gap: 6px;
+        padding: 7px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 999px;
+        background: rgba(10, 10, 10, 0.72);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+        backdrop-filter: blur(18px);
+      }
+
+      .switcher a {
+        display: grid;
+        min-width: 38px;
+        height: 36px;
+        place-items: center;
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      body[data-concept="a"] .switcher a[href$="concept=a"],
+      body[data-concept="b"] .switcher a[href$="concept=b"],
+      body[data-concept="c"] .switcher a[href$="concept=c"],
+      body[data-concept="d"] .switcher a[href$="concept=d"],
+      body[data-concept="e"] .switcher a[href$="concept=e"] {
+        background: #fff;
+        color: #0a0a0a;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .brand img {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        gap: 9px;
+        border: 1px solid transparent;
+        border-radius: 0;
+        padding: 0 20px;
+        background: #fff;
+        color: #0d0d0d;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0;
+        white-space: nowrap;
+      }
+
+      .btn.dark {
+        background: #0d0d0d;
+        color: #fff;
+      }
+
+      .btn.line {
+        border-color: currentColor;
+        background: transparent;
+      }
+
+      .btn.orange {
+        background: #ff4d00;
+        color: #080808;
+      }
+
+      .video-fill {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .video-frame {
+        position: relative;
+        overflow: hidden;
+        background: #111;
+      }
+
+      .video-frame::after {
+        content: "MP4";
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        padding: 6px 9px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+      }
+
+      /* A: Installation Cinema */
+      .concept-a {
+        background: #050505;
+        color: #fff;
+        font-family: "Arial Narrow", "Roboto Condensed", Impact, ui-sans-serif, sans-serif;
+      }
+
+      .a-hero {
+        position: relative;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .a-hero video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.68;
+      }
+
+      .a-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.18) 64%, rgba(0, 0, 0, 0.72)),
+          linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.82));
+      }
+
+      .a-nav,
+      .a-copy,
+      .a-strip {
+        position: relative;
+        z-index: 2;
+      }
+
+      .a-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: min(1220px, calc(100% - 36px));
+        margin: 0 auto;
+        padding: 22px 0;
+        text-transform: uppercase;
+      }
+
+      .a-copy {
+        width: min(1220px, calc(100% - 36px));
+        margin: 0 auto;
+        padding-top: min(16vh, 150px);
+      }
+
+      .a-copy h1 {
+        max-width: 900px;
+        margin: 0 0 22px;
+        font-size: clamp(58px, 11vw, 152px);
+        font-weight: 950;
+        line-height: 0.82;
+        text-transform: uppercase;
+      }
+
+      .a-copy p {
+        max-width: 560px;
+        margin: 0 0 28px;
+        color: rgba(255, 255, 255, 0.78);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: clamp(18px, 2vw, 22px);
+        line-height: 1.45;
+      }
+
+      .a-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .a-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        width: min(1220px, calc(100% - 36px));
+        margin: 0 auto;
+        padding: 7vh 0 34px;
+      }
+
+      .a-mini {
+        height: 190px;
+        border-top: 1px solid rgba(255, 255, 255, 0.42);
+        padding-top: 10px;
+      }
+
+      .a-mini video {
+        height: 150px;
+      }
+
+      .a-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 8px;
+        color: rgba(255, 255, 255, 0.84);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* B: Proof Ledger */
+      .concept-b {
+        background: #f1eee5;
+        color: #17213b;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .b-page {
+        min-height: 100vh;
+        background:
+          linear-gradient(rgba(26, 39, 68, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(26, 39, 68, 0.06) 1px, transparent 1px),
+          #f1eee5;
+        background-size: 32px 32px;
+      }
+
+      .b-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: min(1180px, calc(100% - 34px));
+        margin: 0 auto;
+        padding: 22px 0;
+        border-bottom: 2px solid #17213b;
+        font-family: "Source Sans 3", Inter, sans-serif;
+      }
+
+      .b-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
+        gap: 34px;
+        width: min(1180px, calc(100% - 34px));
+        margin: 0 auto;
+        padding: 42px 0 62px;
+      }
+
+      .b-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: calc(100vh - 160px);
+      }
+
+      .b-copy h1 {
+        margin: 0 0 20px;
+        font-size: clamp(48px, 7.4vw, 98px);
+        font-weight: 700;
+        line-height: 0.94;
+      }
+
+      .b-copy p {
+        color: #4a4c4f;
+        font-family: "Source Sans 3", Inter, sans-serif;
+        font-size: 19px;
+        line-height: 1.55;
+      }
+
+      .b-kicker {
+        margin-bottom: 18px;
+        font-family: "Source Sans 3", Inter, sans-serif;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .b-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .b-ledger {
+        display: grid;
+        gap: 12px;
+      }
+
+      .b-case {
+        display: grid;
+        grid-template-columns: 132px minmax(0, 1fr);
+        min-height: 26vh;
+        border: 2px solid #17213b;
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      .b-case .meta {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 14px;
+        border-right: 2px solid #17213b;
+        font-family: "Source Sans 3", Inter, sans-serif;
+      }
+
+      .b-case .meta strong {
+        font-size: 34px;
+        line-height: 1;
+      }
+
+      .b-case .meta span {
+        color: #4d4b43;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .b-case video {
+        min-height: 26vh;
+      }
+
+      .b-notes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        border-top: 2px solid #17213b;
+      }
+
+      .b-note {
+        min-height: 190px;
+        padding: 20px;
+        border-right: 2px solid #17213b;
+        font-family: "Source Sans 3", Inter, sans-serif;
+      }
+
+      .b-note:last-child {
+        border-right: 0;
+      }
+
+      /* C: One Decision */
+      .concept-c {
+        background: #fff;
+        color: #050505;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .c-shell {
+        width: min(1040px, calc(100% - 28px));
+        margin: 0 auto;
+      }
+
+      .c-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 72px;
+        border-bottom: 3px solid #050505;
+      }
+
+      .c-hero {
+        display: grid;
+        gap: 22px;
+        padding: 34px 0 70px;
+      }
+
+      .c-hero h1 {
+        max-width: 1050px;
+        margin: 0;
+        font-size: clamp(42px, 8vw, 100px);
+        font-weight: 900;
+        line-height: 0.92;
+      }
+
+      .c-video {
+        height: min(66vh, 740px);
+        border: 3px solid #050505;
+      }
+
+      .c-primary {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        border-top: 3px solid #050505;
+        border-bottom: 3px solid #050505;
+        padding: 12px 0;
+      }
+
+      .c-primary p {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .c-more {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        padding: 0 0 70px;
+      }
+
+      .c-card {
+        border: 3px solid #050505;
+      }
+
+      .c-card video {
+        height: 320px;
+      }
+
+      .c-card strong {
+        display: block;
+        padding: 12px;
+        border-top: 3px solid #050505;
+        font-size: 22px;
+        text-transform: uppercase;
+      }
+
+      .c-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0;
+        padding: 0 0 80px;
+      }
+
+      .c-list span {
+        border: 3px solid #050505;
+        margin: -3px 0 0 -3px;
+        padding: 14px 18px;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      /* D: Before / During / After */
+      .concept-d {
+        background: #d7d7d1;
+        color: #151719;
+        font-family: "Arial Black", Arial, sans-serif;
+      }
+
+      .d-nav {
+        position: absolute;
+        z-index: 5;
+        top: 0;
+        right: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: min(1220px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 18px 0;
+        color: #fff;
+        mix-blend-mode: difference;
+      }
+
+      .d-hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr 0.9fr;
+        min-height: auto;
+        padding-top: 72px;
+      }
+
+      .d-panel {
+        position: relative;
+        overflow: hidden;
+        border-right: 3px solid #151719;
+      }
+
+      .d-panel:last-of-type {
+        border-right: 0;
+      }
+
+      .d-panel video,
+      .d-panel img {
+        width: 100%;
+        height: min(62vh, 620px);
+        object-fit: cover;
+      }
+
+      .d-panel img {
+        filter: saturate(0.92) contrast(1.04);
+      }
+
+      .d-panel-label {
+        position: absolute;
+        z-index: 3;
+        top: 16px;
+        left: 16px;
+        border: 3px solid #151719;
+        background: #d7d7d1;
+        padding: 8px 11px;
+        font-size: 13px;
+        font-weight: 950;
+        text-transform: uppercase;
+      }
+
+      .d-cta-strip {
+        display: grid;
+        grid-template-columns: minmax(0, 0.62fr) auto;
+        gap: 18px;
+        align-items: center;
+        padding: 22px 28px;
+        border-top: 3px solid #151719;
+        background: #d7d7d1;
+        color: #151719;
+      }
+
+      .d-cta-strip h1 {
+        margin: 0 0 10px;
+        font-size: clamp(28px, 4vw, 54px);
+        line-height: 0.94;
+        text-transform: uppercase;
+      }
+
+      .d-cta-strip p {
+        max-width: 780px;
+        margin: 0;
+        font-family: "Work Sans", Inter, sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .d-cta-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .d-badge {
+        position: absolute;
+        z-index: 4;
+        top: 92px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-4deg);
+        border: 3px solid #151719;
+        background: #d7d7d1;
+        padding: 12px 18px;
+        font-size: 14px;
+        font-weight: 950;
+        text-transform: uppercase;
+      }
+
+      .d-chapters {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+      }
+
+      .d-chapter {
+        min-height: 310px;
+        padding: 26px;
+        border-top: 3px solid #151719;
+        border-right: 3px solid #151719;
+      }
+
+      .d-chapter:last-child {
+        border-right: 0;
+      }
+
+      .d-chapter h2 {
+        margin: 0 0 14px;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 0.95;
+      }
+
+      .d-chapter p {
+        margin: 0;
+        font-family: "Work Sans", Inter, sans-serif;
+        font-weight: 700;
+        line-height: 1.5;
+      }
+
+      .d-demo-band {
+        display: grid;
+        grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
+        gap: 28px;
+        padding: 34px 28px;
+        border-top: 3px solid #151719;
+        background: #151719;
+        color: #d7d7d1;
+      }
+
+      .d-demo-band h2,
+      .d-video-section h2 {
+        margin: 0 0 12px;
+        font-size: clamp(34px, 5vw, 68px);
+        line-height: 0.9;
+        text-transform: uppercase;
+      }
+
+      .d-demo-band p,
+      .d-demo-card p,
+      .d-video-card p {
+        margin: 0;
+        font-family: "Work Sans", Inter, sans-serif;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .d-demo-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .d-demo-card {
+        min-height: 260px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 3px solid #d7d7d1;
+        padding: 18px;
+      }
+
+      .d-demo-card strong {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 28px;
+        line-height: 0.96;
+        text-transform: uppercase;
+      }
+
+      .d-video-section {
+        padding: 34px 28px 82px;
+        border-top: 3px solid #151719;
+      }
+
+      .d-video-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 20px;
+      }
+
+      .d-video-card {
+        border: 3px solid #151719;
+        background: #d7d7d1;
+      }
+
+      .d-video-card video {
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+      }
+
+      .d-video-card div {
+        min-height: 132px;
+        padding: 16px;
+        border-top: 3px solid #151719;
+      }
+
+      .d-video-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 24px;
+        text-transform: uppercase;
+      }
+
+      /* E: Live Jobs Channel */
+      .concept-e {
+        background: #111;
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
+      }
+
+      .e-shell {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.34fr) minmax(320px, 430px) minmax(280px, 0.34fr);
+        gap: 36px;
+        align-items: center;
+        width: min(1200px, calc(100% - 32px));
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 26px 0;
+      }
+
+      .e-side h1 {
+        margin: 0 0 18px;
+        font-size: clamp(42px, 6vw, 76px);
+        line-height: 0.92;
+      }
+
+      .e-side p {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 18px;
+        line-height: 1.5;
+      }
+
+      .phone {
+        position: relative;
+        height: min(820px, calc(100vh - 52px));
+        min-height: 650px;
+        overflow-y: auto;
+        border: 10px solid #050505;
+        border-radius: 42px;
+        background: #050505;
+        box-shadow: 0 34px 90px rgba(0, 0, 0, 0.55);
+        scroll-snap-type: y mandatory;
+      }
+
+      .story {
+        position: relative;
+        height: calc(min(820px, 100vh - 52px) - 20px);
+        min-height: 630px;
+        overflow: hidden;
+        border-radius: 30px;
+        scroll-snap-align: start;
+      }
+
+      .story::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.02) 36%, rgba(0, 0, 0, 0.74));
+      }
+
+      .story video,
+      .story img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .story-caption {
+        position: absolute;
+        z-index: 2;
+        right: 18px;
+        bottom: 22px;
+        left: 18px;
+      }
+
+      .story-caption h2 {
+        margin: 0 0 10px;
+        font-size: 32px;
+        line-height: 0.96;
+      }
+
+      .story-caption p {
+        margin: 0 0 14px;
+        color: rgba(255, 255, 255, 0.78);
+        line-height: 1.4;
+      }
+
+      .story-top {
+        position: absolute;
+        z-index: 2;
+        top: 18px;
+        right: 18px;
+        left: 18px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .rail {
+        display: grid;
+        gap: 14px;
+      }
+
+      .rail-item {
+        border-left: 2px solid rgba(255, 255, 255, 0.28);
+        padding-left: 16px;
+      }
+
+      .rail-item strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .rail-item span {
+        color: rgba(255, 255, 255, 0.64);
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      @media (max-width: 920px) {
+        .switcher {
+          right: 12px;
+          bottom: 12px;
+          left: 12px;
+          justify-content: center;
+        }
+
+        .a-strip,
+        .b-hero,
+        .b-notes,
+        .d-chapters,
+        .d-cta-strip,
+        .d-demo-band,
+        .d-demo-grid,
+        .d-video-grid,
+        .e-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .a-copy {
+          padding-top: 18vh;
+        }
+
+        .a-strip {
+          padding-bottom: 82px;
+        }
+
+        .a-mini {
+          height: 240px;
+        }
+
+        .a-mini video {
+          height: 200px;
+        }
+
+        .b-copy {
+          min-height: auto;
+        }
+
+        .b-case {
+          grid-template-columns: 96px 1fr;
+        }
+
+        .b-note {
+          border-right: 0;
+          border-bottom: 2px solid #17213b;
+        }
+
+        .c-primary,
+        .c-more,
+        .d-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .c-video {
+          height: 58vh;
+        }
+
+        .d-panel video,
+        .d-panel img {
+          height: 42vh;
+        }
+
+        .d-badge {
+          top: 84px;
+        }
+
+        .d-cta-actions {
+          justify-content: flex-start;
+        }
+
+        .e-shell {
+          width: 100%;
+          padding: 0;
+        }
+
+        .e-side,
+        .rail {
+          display: none;
+        }
+
+        .phone {
+          width: 100%;
+          height: 100vh;
+          min-height: 100vh;
+          border: 0;
+          border-radius: 0;
+        }
+
+        .story {
+          height: 100vh;
+          min-height: 100vh;
+          border-radius: 0;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .btn {
+          width: 100%;
+        }
+
+        .a-actions,
+        .b-actions {
+          display: grid;
+        }
+
+        .b-case {
+          grid-template-columns: 1fr;
+        }
+
+        .b-case .meta {
+          border-right: 0;
+          border-bottom: 2px solid #17213b;
+        }
+
+        .c-primary {
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="switcher" aria-label="Creative concepts">
+      <a href="?concept=a">A</a>
+      <a href="?concept=b">B</a>
+      <a href="?concept=c">C</a>
+      <a href="?concept=d">D</a>
+      <a href="?concept=e">E</a>
+    </nav>
+
+    <main class="concept concept-a" aria-label="Installation Cinema concept">
+      <section class="a-hero">
+        <video autoplay muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+          <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+        </video>
+        <header class="a-nav">
+          <span class="brand"><img alt="" src="/public/brand/wallprint-pro-mark.png" /> Wall Print Pro</span>
+          <span>Chicago installs</span>
+        </header>
+        <div class="a-copy">
+          <h1>Real wall prints. Real Chicago installs.</h1>
+          <p>Watch the work first. Request a preview when you are ready to see your own wall in the plan.</p>
+          <div class="a-actions">
+            <a class="btn" href="/request">Start my wall preview</a>
+            <a class="btn line" href="/public/ar/chicago-final-1.usdz" rel="ar">See sample in AR</a>
+          </div>
+        </div>
+        <div class="a-strip">
+          <article class="a-mini video-frame">
+            <div class="a-label"><span>Job 01</span><span>Install proof</span></div>
+            <video muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article class="a-mini video-frame">
+            <div class="a-label"><span>Job 02</span><span>Scale proof</span></div>
+            <video muted loop playsinline poster="/public/work-videos/wall-print-2-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-2.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article class="a-mini video-frame">
+            <div class="a-label"><span>Job 03</span><span>Finish proof</span></div>
+            <video muted loop playsinline poster="/public/work-videos/wall-print-3-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-3.mp4" type="video/mp4" />
+            </video>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <main class="concept concept-b" aria-label="Chicago Proof Ledger concept">
+      <div class="b-page">
+        <header class="b-nav">
+          <span class="brand"><img alt="" src="/public/brand/wallprint-pro-mark.png" /> Wall Print Pro</span>
+          <a class="btn dark" href="/request">Request a preview</a>
+        </header>
+        <section class="b-hero">
+          <div class="b-copy">
+            <div>
+              <div class="b-kicker">Chicago area · wall printing</div>
+              <h1>We install what we preview.</h1>
+              <p>These are recent wall-print jobs in the Chicago area. Start from one, or send your own wall and artwork.</p>
+              <div class="b-actions">
+                <a class="btn dark" href="/request">Request a preview for my wall</a>
+                <a class="btn line" href="/request?intent=concept#lead-upload-section">Upload my logo or art</a>
+              </div>
+            </div>
+            <p>Evidence first. AR is useful, but the buyer sees real work before the app asks for contact.</p>
+          </div>
+          <div class="b-ledger">
+            <article class="b-case video-frame">
+              <div class="meta"><strong>01</strong><span>Office feature wall</span></div>
+              <video class="video-fill" autoplay muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+                <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+              </video>
+            </article>
+            <article class="b-case video-frame">
+              <div class="meta"><strong>02</strong><span>Scale check</span></div>
+              <video class="video-fill" autoplay muted loop playsinline poster="/public/work-videos/wall-print-2-poster.jpg">
+                <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-2.mp4" type="video/mp4" />
+              </video>
+            </article>
+            <article class="b-case video-frame">
+              <div class="meta"><strong>03</strong><span>Finished surface</span></div>
+              <video class="video-fill" autoplay muted loop playsinline poster="/public/work-videos/wall-print-3-poster.jpg">
+                <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-3.mp4" type="video/mp4" />
+              </video>
+            </article>
+          </div>
+        </section>
+        <section class="b-notes">
+          <article class="b-note"><strong>Bring the art.</strong><br />Choose a design, upload a logo, or describe a custom wall-print concept.</article>
+          <article class="b-note"><strong>Send the request.</strong><br />Contact, wall context, size, and direction arrive together.</article>
+          <article class="b-note"><strong>Review the draft.</strong><br />The visual stays tied to a real follow-up conversation.</article>
+        </section>
+      </div>
+    </main>
+
+    <main class="concept concept-c" aria-label="One Decision concept">
+      <div class="c-shell">
+        <header class="c-nav">
+          <span class="brand"><img alt="" src="/public/brand/wallprint-pro-mark.png" /> Wall Print Pro</span>
+          <span>ONE ACTION</span>
+        </header>
+        <section class="c-hero">
+          <h1>See the install. Then request the preview.</h1>
+          <div class="c-video video-frame">
+            <video class="video-fill" autoplay muted loop playsinline poster="/public/work-videos/wall-print-2-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-2.mp4" type="video/mp4" />
+            </video>
+          </div>
+          <div class="c-primary">
+            <p>No gallery maze. No three equal CTAs. One video proves the service, one button starts the request.</p>
+            <a class="btn orange" href="/request">Send my wall details</a>
+          </div>
+        </section>
+        <section class="c-more">
+          <article class="c-card">
+            <video class="video-fill" muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+            </video>
+            <strong>More installs</strong>
+          </article>
+          <article class="c-card">
+            <video class="video-fill" muted loop playsinline poster="/public/work-videos/wall-print-3-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-3.mp4" type="video/mp4" />
+            </video>
+            <strong>More proof</strong>
+          </article>
+        </section>
+        <section class="c-list" aria-label="What Wall Print Pro needs">
+          <span>Wall photo</span>
+          <span>Approx size</span>
+          <span>Art or idea</span>
+          <span>Best contact</span>
+          <span>Preview before estimate</span>
+        </section>
+      </div>
+    </main>
+
+    <main class="concept concept-d" aria-label="Before During After concept">
+      <header class="d-nav">
+        <span class="brand"><img alt="" src="/public/brand/wallprint-pro-mark.png" /> Wall Print Pro</span>
+        <a class="btn" href="./virtual-demo.html">Open virtual demo</a>
+      </header>
+      <section class="d-hero">
+        <div class="d-panel video-frame">
+          <span class="d-panel-label">Before</span>
+          <img alt="Wall before print setup" src="/public/work-videos/wall-print-1-poster.jpg" />
+        </div>
+        <div class="d-panel video-frame">
+          <span class="d-panel-label">During</span>
+          <video autoplay muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+            <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <div class="d-panel">
+          <span class="d-panel-label">After</span>
+          <img alt="Finished wall print at the job site" src="./assets/instagram-job-reference.jpg" />
+        </div>
+        <div class="d-badge">Before · during · after</div>
+      </section>
+      <section class="d-cta-strip">
+        <div>
+          <h1>Don't wait. Check the virtual demo on your wall right now.</h1>
+          <p>Open the demo flow, then choose artwork, upload a logo, or describe an idea to generate a preview.</p>
+        </div>
+        <div class="d-cta-actions">
+          <a class="btn dark" href="./virtual-demo.html">Open virtual demo</a>
+          <button class="btn line js-share-demo" type="button">Send to iPhone</button>
+        </div>
+      </section>
+      <section class="d-chapters">
+        <article class="d-chapter">
+          <h2>Before</h2>
+          <p>Show the blank wall or the current surface so the preview is grounded in the real room.</p>
+        </article>
+        <article class="d-chapter">
+          <h2>During</h2>
+          <p>Keep the install videos close to the CTA so buyers understand this is a physical service, not only a mockup tool.</p>
+        </article>
+        <article class="d-chapter">
+          <h2>After</h2>
+          <p>Use job-site after photos as proof, then let the buyer preview their own wall before the estimate.</p>
+        </article>
+      </section>
+      <section class="d-demo-band">
+        <div>
+          <h2>Virtual demo paths.</h2>
+          <p>The original homepage functionality stays intact, but it moves behind one stronger CTA.</p>
+        </div>
+        <div class="d-demo-grid">
+          <a class="d-demo-card" href="./virtual-demo.html#choose">
+            <span>
+              <strong>Choose our artwork</strong>
+              <p>Start from a Wall Print Pro sample and preview it immediately.</p>
+            </span>
+            <span class="btn">Choose design</span>
+          </a>
+          <a class="d-demo-card" href="./virtual-demo.html#upload">
+            <span>
+              <strong>Upload art or logo</strong>
+              <p>Bring a logo, mural file, or client artwork into the demo flow.</p>
+            </span>
+            <span class="btn">Upload artwork</span>
+          </a>
+          <a class="d-demo-card" href="./virtual-demo.html#generate">
+            <span>
+              <strong>Generate an idea</strong>
+              <p>Describe the wall print and generate artwork to preview on the wall.</p>
+            </span>
+            <span class="btn">Describe idea</span>
+          </a>
+        </div>
+      </section>
+      <section class="d-video-section">
+        <h2>Three real install clips.</h2>
+        <div class="d-video-grid">
+          <article class="d-video-card">
+            <video autoplay muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+            </video>
+            <div>
+              <strong>Install proof</strong>
+              <p>The work video stays a first-class proof point.</p>
+            </div>
+          </article>
+          <article class="d-video-card">
+            <video muted loop playsinline poster="/public/work-videos/wall-print-2-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-2.mp4" type="video/mp4" />
+            </video>
+            <div>
+              <strong>Scale proof</strong>
+              <p>Buyers can see the job size and surface before they request.</p>
+            </div>
+          </article>
+          <article class="d-video-card">
+            <video muted loop playsinline poster="/public/work-videos/wall-print-3-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-3.mp4" type="video/mp4" />
+            </video>
+            <div>
+              <strong>Finish proof</strong>
+              <p>The landing page still shows all three clips from the original page.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <main class="concept concept-e" aria-label="Live Jobs Channel concept">
+      <section class="e-shell">
+        <div class="e-side">
+          <span class="brand"><img alt="" src="/public/brand/wallprint-pro-mark.png" /> Wall Print Pro</span>
+          <h1>Live jobs channel.</h1>
+          <p>The mobile version is the product here: swipe through real installs, then open the request sheet.</p>
+          <a class="btn" href="/request">Request a preview</a>
+        </div>
+        <div class="phone" aria-label="Scrollable jobs feed">
+          <article class="story">
+            <video autoplay muted loop playsinline poster="/public/work-videos/wall-print-3-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-3.mp4" type="video/mp4" />
+            </video>
+            <div class="story-top"><span>Chicago · Wall Print Pro</span><span>01/03</span></div>
+            <div class="story-caption">
+              <h2>Would your wall look like this?</h2>
+              <p>Swipe the installs. Start the preview when one feels close.</p>
+              <a class="btn" href="/request">Request a preview</a>
+            </div>
+          </article>
+          <article class="story">
+            <video muted loop playsinline poster="/public/work-videos/wall-print-1-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-1.mp4" type="video/mp4" />
+            </video>
+            <div class="story-top"><span>Install proof</span><span>02/03</span></div>
+            <div class="story-caption">
+              <h2>Real surface. Real scale.</h2>
+              <p>This direction is built for social traffic and phone review.</p>
+              <a class="btn line" href="/request?intent=concept#lead-upload-section">Upload my art</a>
+            </div>
+          </article>
+          <article class="story">
+            <video muted loop playsinline poster="/public/work-videos/wall-print-2-poster.jpg">
+              <source src="https://pub-6ee5a28089da498fa3f4d2d028592f3c.r2.dev/work-videos/wall-print-2.mp4" type="video/mp4" />
+            </video>
+            <div class="story-top"><span>Finished wall</span><span>03/03</span></div>
+            <div class="story-caption">
+              <h2>Send the wall next.</h2>
+              <p>Photo, approximate size, and either art or a written idea.</p>
+              <a class="btn" href="/request">Open request sheet</a>
+            </div>
+          </article>
+        </div>
+        <div class="rail">
+          <div class="rail-item"><strong>Proof first</strong><span>The videos are the page, not a section after the pitch.</span></div>
+          <div class="rail-item"><strong>Phone native</strong><span>Snap-scroll and overlay CTAs use the habit people already know.</span></div>
+          <div class="rail-item"><strong>AR later</strong><span>AR can be a final story slide after proof.</span></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const conceptMap = new Map([
+        ["1", "a"],
+        ["2", "b"],
+        ["3", "c"],
+        ["4", "d"],
+        ["5", "e"],
+        ["a", "a"],
+        ["b", "b"],
+        ["c", "c"],
+        ["d", "d"],
+        ["e", "e"]
+      ]);
+
+      const params = new URLSearchParams(window.location.search);
+      const concept = conceptMap.get((params.get("concept") || "a").toLowerCase()) || "a";
+      document.body.dataset.concept = concept;
+      document.title = `Wall Print Pro Creative Concept ${concept.toUpperCase()}`;
+      const demoUrl = new URL("./virtual-demo.html", window.location.href).href;
+
+      const syncVideos = () => {
+        for (const video of document.querySelectorAll("video")) {
+          const isVisible = video.closest(".concept")?.matches(`.concept-${concept}`);
+          video.muted = true;
+          if (isVisible) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        }
+      };
+
+      syncVideos();
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const video = entry.target;
+            if (entry.isIntersecting && video.closest(".concept")?.matches(`.concept-${concept}`)) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
+          }
+        },
+        { threshold: 0.35 }
+      );
+
+      for (const video of document.querySelectorAll("video")) {
+        observer.observe(video);
+      }
+
+      const shareDemo = async () => {
+        const shareData = {
+          title: "Wall Print Pro virtual demo",
+          text: "Open this Wall Print Pro preview on your iPhone.",
+          url: demoUrl
+        };
+
+        try {
+          if (navigator.share) {
+            await navigator.share(shareData);
+            return;
+          }
+
+          await navigator.clipboard.writeText(demoUrl);
+        } catch {
+          window.prompt("Copy this link and open it on your iPhone:", demoUrl);
+        }
+      };
+
+      for (const button of document.querySelectorAll(".js-share-demo")) {
+        button.addEventListener("click", shareDemo);
+      }
+    </script>
+  </body>
+</html>

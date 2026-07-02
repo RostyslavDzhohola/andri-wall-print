@@ -44,6 +44,40 @@ async function expectNoBannedRenderedTerms(page: Page) {
   }
 }
 
+async function expectWallPlacementEntryPoint(page: Page, expectedQuickLookHref?: string) {
+  const quickLook = page.getByTestId("quick-look-link");
+  const shareToPhone = page.getByTestId("share-to-phone");
+
+  await expect
+    .poll(async () => {
+      if ((await quickLook.count()) > 0) {
+        return "quick-look";
+      }
+
+      if ((await shareToPhone.count()) > 0) {
+        return "share";
+      }
+
+      return "none";
+    })
+    .not.toBe("none");
+
+  if ((await quickLook.count()) > 0) {
+    await expect(quickLook).toContainText("Place on wall");
+    await expect(quickLook).toHaveAttribute("rel", "ar");
+
+    if (expectedQuickLookHref) {
+      await expect(quickLook).toHaveAttribute("href", expectedQuickLookHref);
+    }
+
+    await expect(shareToPhone).toHaveCount(0);
+    return;
+  }
+
+  await expect(shareToPhone).toContainText("Send to iPhone");
+  await expect(quickLook).toHaveCount(0);
+}
+
 test("homepage renders a static artwork presentation with native AR assets", async ({ page }) => {
   await page.goto("/");
 
@@ -51,7 +85,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText("Start with real Wall Print Pro proof, then send the idea")).toBeVisible();
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
   await expect(page.getByRole("link", { name: "Request", exact: true })).toHaveAttribute("href", "/request");
-  await expect(page.getByRole("link", { name: "Choose design" })).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-1");
+  await expect(page.getByRole("link", { name: "Choose design" })).toHaveAttribute("href", "/gallery?designId=chicago-final-1");
   await expect(page.getByRole("link", { name: "Upload art/logo" })).toHaveAttribute("href", "/request?intent=concept#lead-upload-section");
   await expect(page.getByRole("link", { name: "Describe idea" })).toHaveAttribute("href", "/request?intent=concept#lead-concept");
   await page.getByLabel("Describe idea").fill("Gold leaf logo wall");
@@ -70,7 +104,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
-  await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
+  await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/gallery?designId=chicago-final-2");
   await expect(page.getByTestId("homepage-proof-note")).toContainText("Lakefront Day");
   await page.getByTestId("previous-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
@@ -85,8 +119,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-placement", "wall");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-scale", "fixed");
   await expect(page.getByTestId("ar-launcher-model")).not.toHaveAttribute("camera-controls", "");
-  await expect(page.getByTestId("quick-look-link")).toHaveCount(0);
-  await expect(page.getByTestId("share-to-phone")).toContainText("Send to iPhone");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
   await expect(page.getByTestId("ar-launcher-model")).toHaveCount(1);
   await expect(page.getByText("The gallery uses real GLB/USDZ wall-placement assets.")).toHaveCount(0);
@@ -106,9 +139,9 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("work-video").first()).toHaveAttribute("muted", "");
   await expect(page.getByTestId("work-video").first()).toHaveAttribute("loop", "");
   await expect(page.locator('[data-testid="work-video"] source')).toHaveCount(3);
-  await expect(page.locator('[data-testid="work-video"] source').nth(0)).toHaveAttribute("src", /\/work-videos\/wall-print-1\.mp4$/);
-  await expect(page.locator('[data-testid="work-video"] source').nth(1)).toHaveAttribute("src", /\/work-videos\/wall-print-2\.mp4$/);
-  await expect(page.locator('[data-testid="work-video"] source').nth(2)).toHaveAttribute("src", /\/work-videos\/wall-print-3\.mp4$/);
+  await expect(page.locator('[data-testid="work-video"] source').nth(0)).toHaveAttribute("src", /\/work-videos\/wall-print-1\.mp4(?:\?.*)?$/);
+  await expect(page.locator('[data-testid="work-video"] source').nth(1)).toHaveAttribute("src", /\/work-videos\/wall-print-2\.mp4(?:\?.*)?$/);
+  await expect(page.locator('[data-testid="work-video"] source').nth(2)).toHaveAttribute("src", /\/work-videos\/wall-print-3\.mp4(?:\?.*)?$/);
   await expect(page.getByRole("link", { name: "Watch on Instagram" })).toHaveCount(0);
   await expectNoBannedRenderedTerms(page);
 });
@@ -124,14 +157,16 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Pathways to Success");
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-1.png");
   await expect(page.getByTestId("gallery-selected-print-size")).toHaveText("5 ft x 4.2 ft");
+  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-1");
   await expect(page.getByText("Try this artwork")).toHaveCount(0);
   await expect(page.getByText("Selected", { exact: true })).toHaveCount(0);
-  await expect(page.getByTestId("share-to-phone")).toContainText("Send to iPhone");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
 
   await page.getByTestId("gallery-next-artwork").click();
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Lakefront Day");
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
   await expect(page.getByTestId("gallery-selected-print-size")).toHaveText("3 ft x 5 ft");
+  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
 
   await page.getByTestId("gallery-previous-artwork").click();
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Pathways to Success");
@@ -141,8 +176,22 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Ember Dragon");
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/dragon-wall-print.png");
   await expect(page.getByTestId("gallery-selected-print-size")).toHaveText("1.5 ft x 3 ft");
+  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=dragon-wall-print");
   await expect(page.locator('[data-artwork-id="dragon-wall-print"]')).toHaveAttribute("aria-pressed", "true");
   await expectNoBannedRenderedTerms(page);
+});
+
+test("homepage selected design opens the public gallery before the request gate", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("next-artwork").click();
+
+  await page.getByTestId("homepage-selected-design-handoff").click();
+
+  await expect(page).toHaveURL(/\/gallery\?designId=chicago-final-2$/);
+  await expect(page.getByRole("heading", { name: "Choose artwork to see on your wall." })).toBeVisible();
+  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Lakefront Day");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
+  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
 });
 
 test.describe("mobile gallery layout", () => {
@@ -300,7 +349,7 @@ test("bottom controls cycle the selected picture and native AR target", async ({
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/ar/chicago-final-2.glb");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/ar/chicago-final-2.usdz");
-  await expect(page.getByTestId("share-to-phone")).toContainText("Send to iPhone");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
 
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("River Train Crossing");
@@ -308,7 +357,7 @@ test("bottom controls cycle the selected picture and native AR target", async ({
 
   await page.getByTestId("previous-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
-  await expect(page.getByTestId("share-to-phone")).toContainText("Send to iPhone");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
 });
 
 test.describe("AR launcher access guidance", () => {
@@ -505,8 +554,7 @@ test("public preview route renders a ready seeded artwork", async ({ page }) => 
   await expect(page.getByTestId("public-confirmation-dimensions")).toHaveCount(0);
   await expect(page.getByTestId("previous-artwork")).toHaveCount(0);
   await expect(page.getByTestId("next-artwork")).toHaveCount(0);
-  await expect(page.getByTestId("quick-look-link")).toHaveCount(0);
-  await expect(page.getByTestId("share-to-phone")).toContainText("Send to iPhone");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-placement", "wall");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-scale", "fixed");
   await expect(page.getByTestId("artwork-width-guide")).toHaveCount(0);
