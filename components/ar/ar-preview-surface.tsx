@@ -10,6 +10,7 @@ import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { hasReadyArAssetUrls } from "@/lib/ar-launcher";
 import { AR_SAMPLES, DEFAULT_AR_SAMPLE, type ArSample } from "@/lib/ar-sample";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,8 @@ type ArPreviewSurfaceProps = {
 type ArPreviewSelectionContextValue = {
   selectedIndex: number;
   selectedSample: ArSample;
+  selectedBaseSample: ArSample;
+  showPreviewSample: (sample: ArSample) => void;
 };
 
 const ArPreviewSelectionContext = createContext<ArPreviewSelectionContextValue | null>(null);
@@ -54,20 +57,25 @@ export function ArPreviewSurface({
   afterContent
 }: ArPreviewSurfaceProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const selectedSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
+  const [previewSample, setPreviewSample] = useState<ArSample | null>(null);
+  const selectedBaseSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
+  const selectedSample = previewSample ?? selectedBaseSample;
   const [diagnostics, setDiagnostics] = useState<ArDiagnostics | null>(null);
   const hasMultipleSamples = samples.length > 1;
+  const hasReadyArAssets = hasReadyArAssetUrls(selectedSample);
 
   const selectPrevious = () => {
+    setPreviewSample(null);
     setSelectedIndex((current) => (current - 1 + samples.length) % samples.length);
   };
 
   const selectNext = () => {
+    setPreviewSample(null);
     setSelectedIndex((current) => (current + 1) % samples.length);
   };
 
   return (
-    <ArPreviewSelectionContext.Provider value={{ selectedIndex, selectedSample }}>
+    <ArPreviewSelectionContext.Provider value={{ selectedIndex, selectedSample, selectedBaseSample, showPreviewSample: setPreviewSample }}>
       <main className="min-h-screen bg-background text-foreground">
         <Script
           crossOrigin="anonymous"
@@ -152,7 +160,13 @@ export function ArPreviewSurface({
                     </div>
 
                     <div className="col-span-2 sm:col-span-1 sm:justify-self-end">
-                      <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                      {hasReadyArAssets ? (
+                        <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                      ) : (
+                        <Button className="min-h-10 rounded-full px-4" disabled type="button" variant="outline">
+                          Preview only
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

@@ -2,34 +2,69 @@
 
 import { Images, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useArPreviewSelection } from "@/components/ar/ar-preview-surface";
+import type { ArSample } from "@/lib/ar-sample";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { LEAD_CONCEPT_PROMPT_MAX_LENGTH } from "@/lib/lead-request-contract";
 
-function requestHrefForConceptPrompt(prompt: string) {
-  const trimmedPrompt = prompt.trim();
-
-  if (!trimmedPrompt) {
-    return "/request?intent=concept#lead-concept";
-  }
-
-  const params = new URLSearchParams({
-    intent: "concept",
-    conceptPrompt: trimmedPrompt.slice(0, LEAD_CONCEPT_PROMPT_MAX_LENGTH)
-  });
-
-  return `/request?${params.toString()}`;
-}
+type ConceptArtResponse =
+  | {
+      ok: true;
+      sample: ArSample;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
 
 export function HomepageDemoActions() {
-  const { selectedSample } = useArPreviewSelection();
+  const { selectedBaseSample, selectedSample, showPreviewSample } = useArPreviewSelection();
   const [conceptPrompt, setConceptPrompt] = useState("");
-  const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedSample.id)}`;
-  const conceptHref = useMemo(() => requestHrefForConceptPrompt(conceptPrompt), [conceptPrompt]);
+  const [generationStatus, setGenerationStatus] = useState<"idle" | "generating" | "ready">("idle");
+  const [generationMessage, setGenerationMessage] = useState<string | null>(null);
+  const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedBaseSample.id)}`;
+
+  const generateConceptArtwork = async () => {
+    const prompt = conceptPrompt.trim();
+
+    if (!prompt) {
+      setGenerationStatus("idle");
+      setGenerationMessage("Describe the wall print idea first.");
+      return;
+    }
+
+    setGenerationStatus("generating");
+    setGenerationMessage("Creating artwork preview...");
+
+    try {
+      const response = await fetch("/api/concept-art", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt,
+          selectedDesignId: selectedBaseSample.id
+        })
+      });
+      const result = (await response.json()) as ConceptArtResponse;
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.ok ? "Artwork generation failed." : result.message);
+      }
+
+      showPreviewSample(result.sample);
+      setGenerationStatus("ready");
+      setGenerationMessage("Artwork created on this page.");
+    } catch (error) {
+      setGenerationStatus("idle");
+      setGenerationMessage(error instanceof Error ? error.message : "Artwork generation failed.");
+    }
+  };
 
   return (
     <div className="grid gap-4" data-testid="homepage-demo-actions">
@@ -61,14 +96,23 @@ export function HomepageDemoActions() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button asChild className="min-h-10 rounded-full px-4">
-            <Link data-testid="homepage-concept-handoff" href={conceptHref}>
-              <Sparkles className="size-4" aria-hidden="true" />
-              Describe idea
-            </Link>
+          <Button
+            className="min-h-10 rounded-full px-4"
+            data-testid="homepage-concept-generate"
+            disabled={generationStatus === "generating"}
+            onClick={() => void generateConceptArtwork()}
+            type="button"
+          >
+            <Sparkles className="size-4" aria-hidden="true" />
+            {generationStatus === "generating" ? "Creating art" : "Describe idea"}
           </Button>
-          <span className="text-xs font-medium text-muted-foreground">Selected: {selectedSample.title}</span>
+          <span className="text-xs font-medium text-muted-foreground">Selected: {selectedBaseSample.title}</span>
         </div>
+        {generationMessage ? (
+          <p className="text-xs font-medium text-muted-foreground" data-testid="homepage-concept-status">
+            {generationMessage}
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border bg-muted/35 p-3 text-sm leading-6" data-testid="homepage-proof-note">
