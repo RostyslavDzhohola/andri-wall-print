@@ -1,94 +1,44 @@
 # TODOs
 
-## P0: Finish Clerk/Convex Auth Setup
-
-What: Finish the remaining local Clerk app credentials for Wall Print Pro by setting `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `WALL_PRINT_PRO_SELLER_EMAILS`.
-
-Why: Convex now has `CLERK_JWT_ISSUER_DOMAIN`; the admin UI still needs the Clerk frontend/backend keys, and admin mutations require an authenticated allowlisted identity.
-
-Context: Do not commit secrets. The Wall Print Pro Clerk development issuer is `https://sacred-shrimp-11.clerk.accounts.dev`, and it is already set locally and in the Convex dev deployment.
-
-Depends on / blocked by: Clerk publishable key, Clerk secret key, and admin allowlist choice.
-
-## P0: Push Convex Functions After Clerk Issuer Exists
+## P0: Push Convex Functions After Backend Changes
 
 What: Keep Convex functions deployed after auth or schema changes.
 
 Why: The local implementation uses generic Convex references so the repo can typecheck without generated API updates, but the deployment still needs new schema/functions pushed when auth or backend code changes.
 
-Context: `pnpm exec convex codegen` has succeeded once with the real Clerk issuer and pushed `previewBundles`, `bundleGeneration`, `sellerAuth`, and Clerk `auth.config.ts` to the dev deployment.
+Context: `pnpm exec convex codegen` has succeeded once and pushed `previewBundles`, `bundleGeneration`, and `auth.config.ts` to the dev deployment. The launch plan (docs/plans/2026-07-03-public-funnel-launch.md) adds new schema (global generation cap, concept AR fields) that must be pushed.
 
 Depends on / blocked by: Future backend changes.
 
-## P1: Validate Admin Preview Links On Real Devices
+## P1: Clerk Full Teardown (week 2 after launch)
 
-What: Create a ready sample preview link from `/admin/new`, open its `/preview/[slug]` link on iPhone Safari and Android Chrome, and tap `Place on wall`.
+What: Remove the dormant Clerk surface: `convex/auth.config.ts`, `proxy.ts` matcher, `ConvexProviderWithClerk` branches in `components/app-providers.tsx`, runtime-env Clerk readers, Clerk env vars in Vercel + Convex, and package dependencies; add proxy regression tests.
 
-Why: Browser tests prove routing and AR handoff markup, but native wall placement is the actual acceptance path.
+Why: Launch (per D9) deleted only the visible auth surfaces and left the plumbing dormant to avoid auth-wiring surgery in launch week. The dormant surface is dead weight and a confusion hazard once launch is stable.
 
-Context: Test both an immediate checked-sample preview link and a generated PNG-upload preview link.
+Context: Nothing public is gated; surviving Convex functions are already null-identity-safe after the launch ctx.auth audit.
 
-Depends on / blocked by: Clerk setup, Convex function push, deployed URL, and real phones.
-
-## P1: Run Authenticated Seller Design Review
-
-What: Run GStack design review on the signed-in seller surfaces: `/admin`, `/admin/new`, and bundle detail pages.
-
-Why: The unauthenticated design review on 2026-06-08 could only inspect the redirect and Clerk shell. The actual seller form and dashboard need visual QA once auth is available.
-
-Context: Full report: `/Users/Rostyslav/.gstack/projects/preview-picture/designs/design-audit-20260608-022640/design-audit-localhost-3000.md`.
-
-Depends on / blocked by: Clerk setup, allowlisted local seller account, and seeded bundle state.
-
-## P1: Harden Uploaded PNG Generation
-
-What: Add image dimension sniffing, optional PNG normalization, and stricter malformed-image rejection before generation.
-
-Why: The current TypeScript generator builds GLB/USDZ from PNG bytes and enforces byte budgets, but it does not yet resize, crop, or decode arbitrary PNGs.
-
-Context: Keep PDFs manual. The first uploaded path is PNG-only.
-
-Depends on / blocked by: Real admin-upload QA and decision on server-side image library.
-
-## P2: Revisit Advanced Physical-Size Overrides After Phone QA
-
-What: Decide whether the admin create flow needs an advanced print-size override after testing real saved-artwork and uploaded-artwork client previews on phones.
-
-Why: The EOD flow now uses saved artwork metadata or the current default print size so sellers can create preview links without extra fields.
-
-Context: Only add the override if real phone placement shows that the simplified flow is not accurate enough for client handoff.
-
-Depends on / blocked by: Real iPhone and Android `Place on wall` results for one saved-artwork preview and one uploaded-artwork preview.
+Depends on / blocked by: Launch stable for a few days.
 
 ## P1: Add Convex Function Harness Tests
 
-What: Add mocked Convex identity/database tests for unauthenticated, non-allowlisted, allowlisted, stale completion, retry, revoke, and ownership paths.
+What: Add mocked Convex identity/database tests for the surviving public function paths (public preview access, gated generation branches, stale completion, retry).
 
-Why: Current tests cover shared validators, generator structure, public adapter behavior, and route behavior. Function-level auth/state coverage is still a gap.
+Why: Current tests cover shared validators, generator structure, public adapter behavior, and route behavior. Function-level state coverage is still a gap.
 
-Context: Use a focused Convex test harness instead of broad UI-only coverage.
+Context: Use a focused Convex test harness instead of broad UI-only coverage. Seller/admin auth paths were deleted at launch; only public-path coverage remains relevant.
 
 Depends on / blocked by: Choosing the test harness for Convex generic functions.
 
-## P2: Fix Clerk Widget Brand Name
+## P2: September Local-SEO Ops Plan (off-site)
 
-What: Make Clerk render `Wall Print Pro`, not `Wallprintpro`, inside sign-in and sign-up screens.
+What: Plan and run the off-site local-SEO levers: Google Business Profile posts fed by portfolio photos, review collection, NAP citation consistency, and service-area settings.
 
-Why: The rest of the product uses the spaced brand name, and the current widget title reads like an unpolished app-config default.
+Why: On-site SEO alone won't rank "wall printing Chicago" by September; these are the heavier local levers.
 
-Context: The 2026-06-08 design review added a branded loading shell, but the settled Clerk widget still renders its own app name.
+Context: Approved as D13 in the launch plan review. Portfolio photos in `content/work/` feed GBP posts.
 
-Depends on / blocked by: Clerk app display-name configuration or a deeper Clerk appearance override.
-
-## P2: Create DESIGN.md For Brand Baseline
-
-What: Save the current color, spacing, component, and typography baseline in `DESIGN.md`, then choose whether Geist should stay or be replaced by a more distinctive display/body pairing.
-
-Why: The current UI is clean, but the type system still reads generic for a brand-forward wall-print landing surface.
-
-Context: Use the inferred design system from `/Users/Rostyslav/.gstack/projects/preview-picture/designs/design-audit-20260608-022640/design-audit-localhost-3000.md`.
-
-Depends on / blocked by: Brand direction for Wall Print Pro.
+Depends on / blocked by: Launch live + client GBP access.
 
 ## P2: Add Device Support Matrix
 
@@ -96,6 +46,28 @@ What: Document tested devices, browsers, AR mode used, placement quality, known 
 
 Why: WebAR behavior differs across iPhone Safari, Android Chrome, desktop browsers, and unsupported devices.
 
-Context: Fill this only from real phone results, not desktop assumptions.
+Context: Fill this only from real phone results, not desktop assumptions. Feeds the day-4 production-device gate (D8) and T8 QA pass.
 
 Depends on / blocked by: Real iPhone and Android testing.
+
+## P3: Automated AR-Link Email Sender (evidence-gated)
+
+What: Resend + retry job restoring the "email me the AR link" promise cut at launch (D11.7).
+
+Why: At launch the asset-generation failure path says "leave this open / scan QR / come back" and the captured email routes to the client as a manual lead. Automate only if real usage shows manual follow-up leaking.
+
+Context: Lead email is already captured and visible to the client. Approved as D14 in the launch plan review.
+
+Depends on / blocked by: Evidence from real post-launch usage.
+
+---
+
+## Retired at implementation start (2026-07-03, per launch plan D12)
+
+- P0 Finish Clerk/Convex Auth Setup — mooted: admin/seller surfaces deleted at launch (D9)
+- P1 Validate Admin Preview Links On Real Devices — superseded by the public hero-path day-4 device gate (T8)
+- P1 Run Authenticated Seller Design Review — mooted: seller surfaces deleted
+- P1 Harden Uploaded PNG Generation — absorbed into launch scope as T7 (public upload hardening)
+- P2 Revisit Advanced Physical-Size Overrides — mooted: admin create flow deleted
+- P2 Fix Clerk Widget Brand Name — mooted: sign-in/up screens deleted
+- P2 Create DESIGN.md For Brand Baseline — absorbed into launch scope (W3/T3 creates DESIGN.md from approved C2 tokens)
