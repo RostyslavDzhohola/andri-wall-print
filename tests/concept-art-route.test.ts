@@ -108,4 +108,33 @@ describe("/api/concept-art", () => {
     expect(String((calls[0].body.args as Record<string, unknown>).conceptPrompt)).toContain("Pathways to Success");
     expect(JSON.stringify(calls[0].body)).not.toMatch(/OPENAI|sk-/i);
   });
+
+  it("maps unavailable generation from Convex to 503", async () => {
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    globalThis.fetch = vi.fn(async () => {
+      return Response.json({
+        status: "success",
+        value: {
+          ok: false,
+          code: "GENERATION_UNAVAILABLE",
+          message: "AI concept drafting is temporarily unavailable."
+        }
+      });
+    }) as typeof fetch;
+
+    const response = await POST(
+      conceptArtRequest({
+        contactEmail: "buyer@example.com",
+        prompt: "Chicago skyline for a kids area mural"
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body).toEqual({
+      ok: false,
+      code: "GENERATION_UNAVAILABLE",
+      message: "AI concept drafting is temporarily unavailable."
+    });
+  });
 });

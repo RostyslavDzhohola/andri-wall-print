@@ -117,16 +117,36 @@ function aiConceptsEnabled() {
   return (value === "1" || value === "true") && Boolean(process.env.OPENAI_API_KEY);
 }
 
-export function getChicagoGenerationDayKey(now = Date.now()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Chicago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(new Date(now));
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+export function getChicagoGenerationDayKey(now: number) {
+  const utcYear = new Date(now).getUTCFullYear();
+  const dstStart = getChicagoDstStartUtcMs(utcYear);
+  const dstEnd = getChicagoDstEndUtcMs(utcYear);
+  const utcOffsetHours = now >= dstStart && now < dstEnd ? -5 : -6;
+  const chicagoDate = new Date(now + utcOffsetHours * 60 * 60 * 1_000);
+  const year = chicagoDate.getUTCFullYear();
+  const month = String(chicagoDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(chicagoDate.getUTCDate()).padStart(2, "0");
 
-  return `${values.year}-${values.month}-${values.day}`;
+  return `${year}-${month}-${day}`;
+}
+
+function getChicagoDstStartUtcMs(year: number) {
+  const secondSunday = getNthSundayOfMonth(year, 2, 2);
+
+  return Date.UTC(year, 2, secondSunday, 8, 0, 0, 0);
+}
+
+function getChicagoDstEndUtcMs(year: number) {
+  const firstSunday = getNthSundayOfMonth(year, 10, 1);
+
+  return Date.UTC(year, 10, firstSunday, 7, 0, 0, 0);
+}
+
+function getNthSundayOfMonth(year: number, monthIndex: number, nth: number) {
+  const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1)).getUTCDay();
+  const firstSunday = 1 + ((7 - firstDayOfMonth) % 7);
+
+  return firstSunday + (nth - 1) * 7;
 }
 
 export function selectConceptGenerationGate(input: {
@@ -136,7 +156,8 @@ export function selectConceptGenerationGate(input: {
   now?: number;
   globalDailyCap?: number;
 }): ConceptGenerationGateDecision {
-  const dayKey = getChicagoGenerationDayKey(input.now);
+  const now = input.now ?? Date.now();
+  const dayKey = getChicagoGenerationDayKey(now);
   const email = input.contactEmail?.trim() ?? "";
 
   if (!email || !isValidLeadEmail(email)) {
@@ -468,6 +489,14 @@ export async function startConceptGenerationHandler(ctx: any, args: {
       ok: false,
       code: "INVALID_EMAIL",
       message: "Enter a valid email address to generate a concept draft."
+    };
+  }
+
+  if (!aiConceptsEnabled()) {
+    return {
+      ok: false,
+      code: "GENERATION_UNAVAILABLE",
+      message: "AI concept drafting is temporarily unavailable."
     };
   }
 

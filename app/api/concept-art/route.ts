@@ -74,7 +74,7 @@ function resultStatus(value: unknown) {
     return 429;
   }
 
-  if (value.code === "GLOBAL_DAILY_CAP_REACHED") {
+  if (value.code === "GLOBAL_DAILY_CAP_REACHED" || value.code === "GENERATION_UNAVAILABLE") {
     return 503;
   }
 

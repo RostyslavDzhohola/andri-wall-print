@@ -10,6 +10,7 @@ import {
 import { LEAD_AI_RATE_LIMIT_PER_DAY, makeLeadRateLimitBucket } from "@/lib/lead-request-contract";
 
 const NOW = Date.parse("2026-07-04T17:30:00.000Z");
+const originalEnv = { ...process.env };
 
 type Row = Record<string, any> & { _id: string };
 
@@ -96,8 +97,19 @@ function createFakeCtx(seed: Record<string, Row[]> = {}) {
 
 describe("concept generation gate", () => {
   afterEach(() => {
+    process.env = { ...originalEnv };
     vi.restoreAllMocks();
   });
+
+  function enableAiConcepts() {
+    process.env.WALL_PRINT_PRO_AI_CONCEPTS_ENABLED = "1";
+    process.env.OPENAI_API_KEY = "test-openai-key";
+  }
+
+  function disableAiConcepts() {
+    process.env.WALL_PRINT_PRO_AI_CONCEPTS_ENABLED = "0";
+    delete process.env.OPENAI_API_KEY;
+  }
 
   it("rejects no or invalid email without reserving quota", () => {
     expect(
@@ -126,6 +138,7 @@ describe("concept generation gate", () => {
   });
 
   it("returns a friendly contact-limit result", async () => {
+    enableAiConcepts();
     vi.spyOn(Date, "now").mockReturnValue(NOW);
     const fake = createFakeCtx({
       leadRateLimits: [
@@ -160,6 +173,7 @@ describe("concept generation gate", () => {
   });
 
   it("returns a friendly global capacity result without incrementing past the cap", async () => {
+    enableAiConcepts();
     vi.spyOn(Date, "now").mockReturnValue(NOW);
     const dayKey = getChicagoGenerationDayKey(NOW);
     const fake = createFakeCtx({
@@ -195,6 +209,7 @@ describe("concept generation gate", () => {
   });
 
   it("records the lead and funnel event, reserves caps, and schedules generation on success", async () => {
+    enableAiConcepts();
     vi.spyOn(Date, "now").mockReturnValue(NOW);
     const fake = createFakeCtx();
 
@@ -242,6 +257,30 @@ describe("concept generation gate", () => {
     });
   });
 
+  it("returns generation unavailable before quota, draft, or scheduler side effects when disabled", async () => {
+    disableAiConcepts();
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx();
+
+    const result = await startConceptGenerationHandler(fake.ctx, {
+      contactEmail: "buyer@example.com",
+      contactName: "Buyer",
+      conceptPrompt: "Chicago skyline mural"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "GENERATION_UNAVAILABLE",
+      message: "AI concept drafting is temporarily unavailable."
+    });
+    expect(fake.tables.leadRequests).toHaveLength(0);
+    expect(fake.tables.leadRateLimits).toHaveLength(0);
+    expect(fake.tables.globalGenerationCap).toHaveLength(0);
+    expect(fake.tables.aiConceptDrafts).toHaveLength(0);
+    expect(fake.tables.funnelEvents).toHaveLength(0);
+    expect(fake.scheduled).toHaveLength(0);
+  });
+
   it("propagates provider failure codes into draft failure metadata", () => {
     expect(
       mapOpenAiFailureToAiDraftFailure({
@@ -271,7 +310,27 @@ describe("concept generation gate", () => {
   });
 
   it("keys the global cap to the America/Chicago calendar day", () => {
+    expect(getChicagoGenerationDayKey(Date.parse("2026-01-02T05:59:59.000Z"))).toBe("2026-01-01");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-01-02T06:00:00.000Z"))).toBe("2026-01-02");
     expect(getChicagoGenerationDayKey(Date.parse("2026-07-04T04:59:59.000Z"))).toBe("2026-07-03");
     expect(getChicagoGenerationDayKey(Date.parse("2026-07-04T05:00:00.000Z"))).toBe("2026-07-04");
+  });
+
+  it("handles the 2026 Chicago DST spring-forward boundary with arithmetic offsets", () => {
+    expect(getChicagoGenerationDayKey(Date.parse("2026-03-08T05:59:59.000Z"))).toBe("2026-03-07");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-03-08T06:00:00.000Z"))).toBe("2026-03-08");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-03-08T07:59:59.000Z"))).toBe("2026-03-08");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-03-08T08:00:00.000Z"))).toBe("2026-03-08");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-03-09T04:59:59.000Z"))).toBe("2026-03-08");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-03-09T05:00:00.000Z"))).toBe("2026-03-09");
+  });
+
+  it("handles the 2026 Chicago DST fall-back boundary with arithmetic offsets", () => {
+    expect(getChicagoGenerationDayKey(Date.parse("2026-11-01T04:59:59.000Z"))).toBe("2026-10-31");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-11-01T05:00:00.000Z"))).toBe("2026-11-01");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-11-01T06:59:59.000Z"))).toBe("2026-11-01");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-11-01T07:00:00.000Z"))).toBe("2026-11-01");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-11-02T05:59:59.000Z"))).toBe("2026-11-01");
+    expect(getChicagoGenerationDayKey(Date.parse("2026-11-02T06:00:00.000Z"))).toBe("2026-11-02");
   });
 });
