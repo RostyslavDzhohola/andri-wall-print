@@ -1,6 +1,15 @@
 export const LEAD_REQUEST_INTENTS = ["contact", "concept", "reserve"] as const;
 export const LEAD_REQUEST_STATUSES = ["new", "reviewing", "contacted", "won", "lost", "archived"] as const;
-export const AI_CONCEPT_DRAFT_STATUSES = ["queued", "generating", "ready", "failed", "rejected", "rate_limited", "disabled"] as const;
+export const AI_CONCEPT_DRAFT_STATUSES = [
+  "queued",
+  "generating",
+  "ready",
+  "composite_only",
+  "failed",
+  "rejected",
+  "rate_limited",
+  "disabled"
+] as const;
 export const LEAD_CONTACT_METHODS = ["email", "phone", "either"] as const;
 
 export type LeadRequestIntent = (typeof LEAD_REQUEST_INTENTS)[number];

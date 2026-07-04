@@ -28,6 +28,8 @@ export function formatAiConceptDraftStatus(value: string | undefined) {
       return "Concept draft in progress";
     case "ready":
       return "Concept draft ready";
+    case "composite_only":
+      return "Concept poster ready";
     case "failed":
       return "Concept draft failed";
     case "rejected":

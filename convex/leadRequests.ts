@@ -17,7 +17,7 @@ import {
 } from "../lib/lead-request-contract";
 import { formatPreviewBundlePrintDimensions } from "../lib/preview-bundle-contract";
 import { requireWallPrintProSeller } from "./sellerAuth";
-import { printValidator } from "./validators";
+import { assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
 
 const internal = generatedInternal as any;
 
@@ -107,8 +107,94 @@ const sellerLeadValidator = v.object({
   updatedAt: v.number()
 });
 
+const conceptStatusValidator = v.union(
+  v.object({
+    ok: v.literal(false),
+    code: v.string(),
+    message: v.string()
+  }),
+  v.object({
+    ok: v.literal(true),
+    leadRequestId: v.string(),
+    draftId: v.string(),
+    status: v.union(v.literal("queued"), v.literal("generating"), v.literal("ready"), v.literal("composite_only"), v.literal("failed")),
+    message: v.string(),
+    title: v.string(),
+    description: v.string(),
+    print: v.optional(printValidator),
+    assets: v.optional(
+      v.object({
+        poster: v.union(v.string(), v.null()),
+        glb: v.optional(v.union(v.string(), v.null())),
+        usdz: v.optional(v.union(v.string(), v.null()))
+      })
+    ),
+    publicPreviewUrl: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    providerFailureCode: v.optional(v.string())
+  })
+);
+
 function toPublicUrl(publicSlug: string) {
   return `/preview/${publicSlug}`;
+}
+
+type PublicConceptStatus = "queued" | "generating" | "ready" | "composite_only" | "failed";
+
+function mapPublicConceptStatus(status: string): PublicConceptStatus {
+  if (status === "queued" || status === "generating" || status === "ready" || status === "composite_only") {
+    return status;
+  }
+
+  return "failed";
+}
+
+function publicConceptStatusMessage(status: PublicConceptStatus, reason?: string) {
+  if (status === "queued") {
+    return "Request saved. The concept draft is queued.";
+  }
+
+  if (status === "generating") {
+    return "Creating artwork and preparing the AR wall preview.";
+  }
+
+  if (status === "ready") {
+    return "Artwork preview is ready for wall placement.";
+  }
+
+  if (status === "composite_only") {
+    return "Your poster preview is ready, but wall placement needs manual follow-up.";
+  }
+
+  return reason || "Artwork generation failed.";
+}
+
+async function getDraftAssetUrls(ctx: any, draft: any) {
+  const posterStorageId = draft.assetStorageIds?.poster ?? draft.generatedImageStorageId;
+
+  if (!posterStorageId) {
+    return undefined;
+  }
+
+  if (draft.status === "ready" && draft.assetStorageIds) {
+    const [poster, glb, usdz] = await Promise.all([
+      ctx.storage.getUrl(draft.assetStorageIds.poster),
+      ctx.storage.getUrl(draft.assetStorageIds.glb),
+      ctx.storage.getUrl(draft.assetStorageIds.usdz)
+    ]);
+
+    return {
+      poster,
+      glb,
+      usdz
+    };
+  }
+
+  const poster = await ctx.storage.getUrl(posterStorageId);
+
+  return {
+    poster
+  };
 }
 
 function aiConceptsEnabled() {
@@ -663,6 +749,53 @@ export const listForSeller = query({
   }
 });
 
+export const getConceptGenerationStatus = query({
+  args: {
+    leadRequestId: v.id("leadRequests")
+  },
+  returns: conceptStatusValidator,
+  handler: async (ctx, args) => {
+    const lead = await ctx.db.get(args.leadRequestId);
+
+    if (!lead || !lead.aiConceptDraftId) {
+      return {
+        ok: false as const,
+        code: "NOT_FOUND",
+        message: "This concept request was not found."
+      };
+    }
+
+    const draft = await ctx.db.get(lead.aiConceptDraftId);
+
+    if (!draft) {
+      return {
+        ok: false as const,
+        code: "NOT_FOUND",
+        message: "This concept request was not found."
+      };
+    }
+
+    const status = mapPublicConceptStatus(draft.status);
+    const reason = draft.failureReason ?? draft.refusalReason;
+    const assets = await getDraftAssetUrls(ctx, draft);
+
+    return {
+      ok: true as const,
+      leadRequestId: lead._id,
+      draftId: draft._id,
+      status,
+      message: publicConceptStatusMessage(status, reason),
+      title: `${lead.contactName} concept draft`,
+      description: "Concept draft generated from a client request. Seller review required before artwork is final.",
+      ...(lead.print ? { print: lead.print } : {}),
+      ...(assets ? { assets } : {}),
+      ...(draft.publicPreviewSlug ? { publicPreviewUrl: toPublicUrl(draft.publicPreviewSlug) } : {}),
+      ...(reason ? { failureReason: reason } : {}),
+      ...(draft.providerFailureCode ? { providerFailureCode: draft.providerFailureCode } : {})
+    };
+  }
+});
+
 export const updateStatus = mutation({
   args: {
     leadRequestId: v.id("leadRequests"),
@@ -821,8 +954,10 @@ export const finalizeAiDraftReady = internalMutation({
       contentType: v.string(),
       byteLength: v.number()
     }),
-    previewBundleId: v.id("previewBundles"),
-    publicPreviewSlug: v.string(),
+    assetStorageIds: assetStorageIdsValidator,
+    assetMeta: assetMetaValidator,
+    previewBundleId: v.optional(v.id("previewBundles")),
+    publicPreviewSlug: v.optional(v.string()),
     providerMetadata: v.optional(v.string()),
     model: v.optional(v.string())
   },
@@ -839,16 +974,63 @@ export const finalizeAiDraftReady = internalMutation({
       status: "ready",
       generatedImageStorageId: args.generatedImageStorageId,
       generatedImageMeta: args.generatedImageMeta,
+      assetStorageIds: args.assetStorageIds,
+      assetMeta: args.assetMeta,
       previewBundleId: args.previewBundleId,
       publicPreviewSlug: args.publicPreviewSlug,
+      failureReason: undefined,
+      refusalReason: undefined,
       providerMetadata: args.providerMetadata,
       model: args.model,
       completedAt: now,
       updatedAt: now
     });
     await ctx.db.patch(draft.leadRequestId, {
-      previewBundleId: args.previewBundleId,
-      publicPreviewSlug: args.publicPreviewSlug,
+      ...(args.previewBundleId ? { previewBundleId: args.previewBundleId } : {}),
+      ...(args.publicPreviewSlug ? { publicPreviewSlug: args.publicPreviewSlug } : {}),
+      updatedAt: now
+    });
+
+    return null;
+  }
+});
+
+export const finalizeAiDraftCompositeOnly = internalMutation({
+  args: {
+    draftId: v.id("aiConceptDrafts"),
+    generatedImageStorageId: v.id("_storage"),
+    generatedImageMeta: v.object({
+      fileName: v.string(),
+      contentType: v.string(),
+      byteLength: v.number()
+    }),
+    reason: v.string(),
+    providerMetadata: v.optional(v.string()),
+    model: v.optional(v.string())
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+
+    if (!draft) {
+      return null;
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.draftId, {
+      status: "composite_only",
+      generatedImageStorageId: args.generatedImageStorageId,
+      generatedImageMeta: args.generatedImageMeta,
+      assetStorageIds: undefined,
+      assetMeta: undefined,
+      failureReason: args.reason,
+      refusalReason: undefined,
+      providerMetadata: args.providerMetadata,
+      model: args.model,
+      completedAt: now,
+      updatedAt: now
+    });
+    await ctx.db.patch(draft.leadRequestId, {
       updatedAt: now
     });
 

@@ -920,7 +920,9 @@ export const createBundleFromAiConcept = internalMutation({
     title: v.string(),
     description: v.optional(v.string()),
     prompt: v.string(),
-    print: v.optional(printValidator)
+    print: v.optional(printValidator),
+    assetStorageIds: v.optional(assetStorageIdsValidator),
+    assetMeta: v.optional(assetMetaValidator)
   },
   returns: createdPreviewLinkValidator,
   handler: async (ctx, args) => {
@@ -967,18 +969,23 @@ export const createBundleFromAiConcept = internalMutation({
       print,
       generatorVersion: PREVIEW_GENERATOR_VERSION,
       idempotencyKey,
-      status: "uploaded",
+      status: args.assetStorageIds && args.assetMeta ? "ready" : "uploaded",
+      ...(args.assetStorageIds ? { assetStorageIds: args.assetStorageIds } : {}),
+      ...(args.assetMeta ? { assetMeta: args.assetMeta } : {}),
+      ...(args.assetStorageIds && args.assetMeta ? { publicReadyAt: now } : {}),
       createdAt: now,
       updatedAt: now
     });
 
-    await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
+    if (!args.assetStorageIds || !args.assetMeta) {
+      await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
+    }
 
     return {
       bundleId,
       publicSlug,
       publicUrl: toPublicUrl(publicSlug),
-      status: "uploaded"
+      status: args.assetStorageIds && args.assetMeta ? "ready" : "uploaded"
     };
   }
 });

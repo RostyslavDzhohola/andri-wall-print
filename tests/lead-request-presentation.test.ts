@@ -8,6 +8,7 @@ describe("lead request presentation", () => {
     expect(formatAiConceptDraftStatus("queued")).toBe("Concept draft queued");
     expect(formatAiConceptDraftStatus("failed")).toBe("Concept draft failed");
     expect(formatAiConceptDraftStatus("ready")).toBe("Concept draft ready");
+    expect(formatAiConceptDraftStatus("composite_only")).toBe("Concept poster ready");
     expect(formatAiConceptDraftStatus("rejected")).toBe("Concept draft rejected");
     expect(formatAiConceptDraftStatus("rate_limited")).toBe("Daily concept draft limit reached");
   });

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { POST } from "@/app/api/concept-art/route";
+import { GET, POST } from "@/app/api/concept-art/route";
 
 const originalEnv = { ...process.env };
 const originalFetch = globalThis.fetch;
@@ -12,6 +12,12 @@ function conceptArtRequest(body: unknown) {
     headers: {
       "Content-Type": "application/json"
     }
+  });
+}
+
+function conceptStatusRequest(leadRequestId = "lead_123") {
+  return new Request(`http://localhost:3000/api/concept-art?leadRequestId=${encodeURIComponent(leadRequestId)}`, {
+    method: "GET"
   });
 }
 
@@ -135,6 +141,88 @@ describe("/api/concept-art", () => {
       ok: false,
       code: "GENERATION_UNAVAILABLE",
       message: "AI concept drafting is temporarily unavailable."
+    });
+  });
+
+  it("polls the public concept status query", async () => {
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    globalThis.fetch = vi.fn(async (input, init) => {
+      calls.push({
+        url: String(input),
+        body: JSON.parse(String(init?.body)) as Record<string, unknown>
+      });
+
+      return Response.json({
+        status: "success",
+        value: {
+          ok: true,
+          leadRequestId: "lead_123",
+          draftId: "draft_123",
+          status: "ready",
+          message: "Artwork preview is ready for wall placement.",
+          title: "Buyer concept draft",
+          description: "Concept draft generated from a client request.",
+          assets: {
+            poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
+            glb: "https://steady-otter-123.convex.cloud/api/storage/glb",
+            usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
+          }
+        }
+      });
+    }) as typeof fetch;
+
+    const response = await GET(conceptStatusRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      ok: true,
+      status: "ready",
+      assets: {
+        poster: expect.stringContaining("/poster"),
+        glb: expect.stringContaining("/glb"),
+        usdz: expect.stringContaining("/usdz")
+      }
+    });
+    expect(calls).toEqual([
+      {
+        url: "https://steady-otter-123.convex.cloud/api/query",
+        body: {
+          path: "leadRequests:getConceptGenerationStatus",
+          args: {
+            leadRequestId: "lead_123"
+          },
+          format: "json"
+        }
+      }
+    ]);
+  });
+
+  it("returns 202 while concept status is still generating", async () => {
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    globalThis.fetch = vi.fn(async () => {
+      return Response.json({
+        status: "success",
+        value: {
+          ok: true,
+          leadRequestId: "lead_123",
+          draftId: "draft_123",
+          status: "generating",
+          message: "Creating artwork and preparing the AR wall preview.",
+          title: "Buyer concept draft",
+          description: "Concept draft generated from a client request."
+        }
+      });
+    }) as typeof fetch;
+
+    const response = await GET(conceptStatusRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(202);
+    expect(body).toMatchObject({
+      ok: true,
+      status: "generating"
     });
   });
 });

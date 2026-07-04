@@ -81,6 +81,18 @@ function resultStatus(value: unknown) {
   return 503;
 }
 
+function conceptStatusHttpStatus(value: unknown) {
+  if (!isRecord(value) || value.ok === false) {
+    return 404;
+  }
+
+  if (value.status === "ready" || value.status === "composite_only" || value.status === "failed") {
+    return 200;
+  }
+
+  return 202;
+}
+
 async function startConceptGeneration(input: {
   contactEmail: string;
   contactName?: string;
@@ -150,6 +162,91 @@ async function startConceptGeneration(input: {
     status: resultStatus(body.value),
     body: body.value
   };
+}
+
+async function getConceptGenerationStatus(leadRequestId: string) {
+  const convexUrl = readConvexRuntimeUrl();
+
+  if (!convexUrl) {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
+
+  const response = await fetch(`${normalizeConvexUrl(convexUrl)}/api/query`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({
+      path: "leadRequests:getConceptGenerationStatus",
+      args: {
+        leadRequestId
+      },
+      format: "json"
+    }),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
+
+  const body = (await response.json()) as ConvexHttpResponse;
+
+  if (body.status === "error") {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
+
+  return {
+    status: conceptStatusHttpStatus(body.value),
+    body: body.value
+  };
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const leadRequestId = url.searchParams.get("leadRequestId")?.trim() ?? "";
+
+  if (!leadRequestId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "MISSING_LEAD_REQUEST",
+        message: "Concept status is unavailable."
+      },
+      { status: 400 }
+    );
+  }
+
+  const result = await getConceptGenerationStatus(leadRequestId);
+
+  return NextResponse.json(result.body, {
+    status: result.status,
+    headers: {
+      "Cache-Control": "no-store"
+    }
+  });
 }
 
 export async function POST(request: Request) {

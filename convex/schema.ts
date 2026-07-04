@@ -158,6 +158,7 @@ export default defineSchema({
       v.literal("queued"),
       v.literal("generating"),
       v.literal("ready"),
+      v.literal("composite_only"),
       v.literal("failed"),
       v.literal("rejected"),
       v.literal("rate_limited"),
@@ -173,6 +174,8 @@ export default defineSchema({
         byteLength: v.number()
       })
     ),
+    assetStorageIds: v.optional(assetStorageIdsValidator),
+    assetMeta: v.optional(assetMetaValidator),
     previewBundleId: v.optional(v.id("previewBundles")),
     publicPreviewSlug: v.optional(v.string()),
     failureReason: v.optional(v.string()),

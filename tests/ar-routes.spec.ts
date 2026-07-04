@@ -87,9 +87,10 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByRole("link", { name: "Request", exact: true })).toHaveAttribute("href", "/request");
   await expect(page.getByRole("link", { name: "Choose design" })).toHaveAttribute("href", "/gallery?designId=chicago-final-1");
   await expect(page.getByRole("link", { name: "Upload art/logo" })).toHaveAttribute("href", "/request?intent=concept#lead-upload-section");
-  await expect(page.getByRole("link", { name: "Describe idea" })).toHaveAttribute("href", "/request?intent=concept#lead-concept");
+  await expect(page.getByRole("button", { name: "Generate concept" })).toBeVisible();
+  await expect(page.getByLabel("Email")).toHaveAttribute("type", "email");
   await page.getByLabel("Describe idea").fill("Gold leaf logo wall");
-  await expect(page.getByTestId("homepage-concept-handoff")).toHaveAttribute("href", /\/request\?intent=concept&conceptPrompt=Gold\+leaf\+logo\+wall$/);
+  await expect(page.getByLabel("Describe idea")).toHaveValue("Gold leaf logo wall");
   await expect(page.getByTestId("homepage-proof-note")).toContainText("Pathways to Success");
   await expect(page.getByRole("link", { name: "Request wall preview" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Try artwork" })).toHaveCount(0);
@@ -144,6 +145,75 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.locator('[data-testid="work-video"] source').nth(2)).toHaveAttribute("src", /\/work-videos\/wall-print-3\.mp4(?:\?.*)?$/);
   await expect(page.getByRole("link", { name: "Watch on Instagram" })).toHaveCount(0);
   await expectNoBannedRenderedTerms(page);
+});
+
+test("homepage concept flow polls until generated AR assets are ready", async ({ page }) => {
+  const calls: Array<{ method: string; url: string; body?: unknown }> = [];
+
+  await page.route("**/api/concept-art**", async (route) => {
+    const request = route.request();
+    calls.push({
+      method: request.method(),
+      url: request.url(),
+      body: request.method() === "POST" ? request.postDataJSON() : undefined
+    });
+
+    if (request.method() === "POST") {
+      await route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          code: "QUEUED",
+          leadRequestId: "lead_hero_123",
+          message: "Request saved. The concept draft is being prepared for seller review."
+        })
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        leadRequestId: "lead_hero_123",
+        draftId: "draft_hero_123",
+        status: "ready",
+        message: "Artwork preview is ready for wall placement.",
+        title: "Generated skyline concept",
+        description: "Concept draft generated from a client request.",
+        print: {
+          aspectRatio: "6:5",
+          widthMeters: 1.524,
+          heightMeters: 1.27,
+          label: "5 ft x 4.2 ft"
+        },
+        assets: {
+          poster: "/artworks/chicago-final-1.png",
+          glb: "/ar/chicago-final-1.glb",
+          usdz: "/ar/chicago-final-1.usdz"
+        }
+      })
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("buyer@example.com");
+  await page.getByLabel("Describe idea").fill("Chicago skyline for a school lobby");
+  await page.getByTestId("homepage-concept-generate").click();
+
+  await expect(page.getByTestId("homepage-concept-status")).toContainText("Artwork preview is ready for wall placement.");
+  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Generated skyline concept");
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-1.png");
+  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+  expect(calls.map((call) => call.method)).toEqual(["POST", "GET"]);
+  expect(calls[0].body).toMatchObject({
+    contactEmail: "buyer@example.com",
+    prompt: "Chicago skyline for a school lobby",
+    selectedDesignId: "chicago-final-1"
+  });
+  expect(calls[1].url).toContain("leadRequestId=lead_hero_123");
 });
 
 test("gallery route lets users choose existing artwork for wall placement", async ({ page }) => {
