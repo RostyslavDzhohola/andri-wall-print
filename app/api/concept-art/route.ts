@@ -1,19 +1,38 @@
 import { NextResponse } from "next/server";
 
 import { AR_SAMPLE_IDS, DEFAULT_AR_SAMPLE, getArSample } from "@/lib/ar-sample";
-import { LEAD_CONCEPT_PROMPT_MAX_LENGTH } from "@/lib/lead-request-contract";
-import { generateOpenAiConceptImage, makeWallPrintConceptPrompt } from "@/lib/openai-image-provider";
+import { isValidLeadEmail, LEAD_CONCEPT_PROMPT_MAX_LENGTH, normalizeLeadEmail } from "@/lib/lead-request-contract";
+import { readConvexRuntimeUrl } from "@/lib/runtime-env";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 type ConceptArtRequestBody = {
+  contactEmail?: unknown;
+  email?: unknown;
+  contactName?: unknown;
   prompt?: unknown;
   selectedDesignId?: unknown;
 };
 
+type ConvexSuccessResponse = {
+  status: "success";
+  value: unknown;
+};
+
+type ConvexErrorResponse = {
+  status: "error";
+  errorMessage?: string;
+};
+
+type ConvexHttpResponse = ConvexSuccessResponse | ConvexErrorResponse;
+
 function normalizePrompt(value: unknown) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, LEAD_CONCEPT_PROMPT_MAX_LENGTH) : "";
+}
+
+function normalizeOptionalText(value: unknown) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
 function resolveSelectedSample(value: unknown) {
@@ -24,36 +43,113 @@ function resolveSelectedSample(value: unknown) {
   return getArSample(value);
 }
 
-function failureStatus(code: string) {
-  if (code === "missing_api_key") {
+function normalizeRequestEmail(body: ConceptArtRequestBody) {
+  const email = normalizeLeadEmail(typeof body.contactEmail === "string" ? body.contactEmail : typeof body.email === "string" ? body.email : "");
+
+  return isValidLeadEmail(email) ? email : "";
+}
+
+function normalizeConvexUrl(convexUrl: string) {
+  return convexUrl.replace(/\/+$/, "");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function resultStatus(value: unknown) {
+  if (!isRecord(value)) {
     return 503;
   }
 
-  if (code === "refused") {
-    return 422;
+  if (value.code === "QUEUED") {
+    return 202;
   }
 
-  if (code === "timeout") {
-    return 504;
+  if (value.code === "INVALID_EMAIL" || value.code === "INVALID_GENERATION_REQUEST") {
+    return 400;
   }
 
-  return 502;
+  if (value.code === "CONTACT_RATE_LIMITED") {
+    return 429;
+  }
+
+  if (value.code === "GLOBAL_DAILY_CAP_REACHED") {
+    return 503;
+  }
+
+  return 503;
 }
 
-function publicFailureMessage(code: string) {
-  if (code === "missing_api_key") {
-    return "Artwork generation is not configured.";
+async function startConceptGeneration(input: {
+  contactEmail: string;
+  contactName?: string;
+  conceptPrompt: string;
+  selectedDesignId?: unknown;
+}) {
+  const convexUrl = readConvexRuntimeUrl();
+
+  if (!convexUrl) {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
   }
 
-  if (code === "refused") {
-    return "The image provider rejected this wall-print idea. Try a different description.";
+  const selectedSample = resolveSelectedSample(input.selectedDesignId);
+  const response = await fetch(`${normalizeConvexUrl(convexUrl)}/api/mutation`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({
+      path: "leadRequests:startConceptGeneration",
+      args: {
+        contactEmail: input.contactEmail,
+        ...(input.contactName ? { contactName: input.contactName } : {}),
+        businessName: "Wall Print Pro",
+        wallDescription: "Homepage instant artwork preview",
+        conceptPrompt: `${input.conceptPrompt}. Use this selected proof as loose visual context, not a copy: ${selectedSample.title} - ${selectedSample.description}`,
+        print: selectedSample.print
+      },
+      format: "json"
+    }),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
   }
 
-  if (code === "timeout") {
-    return "Artwork generation timed out. Try again.";
+  const body = (await response.json()) as ConvexHttpResponse;
+
+  if (body.status === "error") {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
   }
 
-  return "Artwork generation is not configured correctly.";
+  return {
+    status: resultStatus(body.value),
+    body: body.value
+  };
 }
 
 export async function POST(request: Request) {
@@ -66,51 +162,34 @@ export async function POST(request: Request) {
   }
 
   const prompt = normalizePrompt(body.prompt);
+  const contactEmail = normalizeRequestEmail(body);
 
   if (!prompt) {
     return NextResponse.json({ ok: false, message: "Describe the wall print idea first." }, { status: 400 });
   }
 
-  const selectedSample = resolveSelectedSample(body.selectedDesignId);
-  const conceptPrompt = makeWallPrintConceptPrompt({
-    businessName: "Wall Print Pro",
-    conceptPrompt: `${prompt}. Use this selected proof as loose visual context, not a copy: ${selectedSample.title} - ${selectedSample.description}`,
-    wallDescription: "Homepage instant artwork preview"
-  });
-  const result = await generateOpenAiConceptImage({
-    apiKey: process.env.OPENAI_API_KEY,
-    model: process.env.OPENAI_IMAGE_MODEL,
-    print: selectedSample.print,
-    prompt: conceptPrompt
-  });
-
-  if (!result.ok) {
-    return NextResponse.json({ ok: false, message: publicFailureMessage(result.code) }, { status: failureStatus(result.code) });
+  if (!contactEmail) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "INVALID_EMAIL",
+        message: "Enter a valid email address to generate a concept draft."
+      },
+      { status: 400 }
+    );
   }
 
-  return NextResponse.json(
-    {
-      ok: true,
-      sample: {
-        id: `generated-concept-${Date.now()}`,
-        title: "Generated concept",
-        description: prompt,
-        print: selectedSample.print,
-        assets: {
-          poster: `data:${result.contentType};base64,${Buffer.from(result.bytes).toString("base64")}`,
-          glb: "",
-          usdz: ""
-        }
-      },
-      generation: {
-        model: result.model,
-        size: result.size
-      }
-    },
-    {
-      headers: {
-        "Cache-Control": "no-store"
-      }
+  const result = await startConceptGeneration({
+    contactEmail,
+    contactName: normalizeOptionalText(body.contactName),
+    conceptPrompt: prompt,
+    selectedDesignId: body.selectedDesignId
+  });
+
+  return NextResponse.json(result.body, {
+    status: result.status,
+    headers: {
+      "Cache-Control": "no-store"
     }
-  );
+  });
 }

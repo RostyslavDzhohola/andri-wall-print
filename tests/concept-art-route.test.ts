@@ -22,53 +22,27 @@ describe("/api/concept-art", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns a generated artwork sample without creating a lead request", async () => {
-    const providerRequests: Array<Record<string, unknown>> = [];
-    process.env.OPENAI_API_KEY = "sk-test";
-    process.env.OPENAI_IMAGE_MODEL = "gpt-image-2";
-    globalThis.fetch = vi.fn(async (_input, init) => {
-      providerRequests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
-
-      return Response.json({
-        data: [
-          {
-            b64_json: Buffer.from("png-bytes").toString("base64")
-          }
-        ]
-      });
-    }) as typeof fetch;
-
-    const response = await POST(conceptArtRequest({ prompt: "Chicago skyline for a kids area mural", selectedDesignId: "chicago-final-1" }));
-    const body = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(body).toMatchObject({
-      ok: true,
-      sample: {
-        title: "Generated concept",
-        description: "Chicago skyline for a kids area mural",
-        assets: {
-          poster: `data:image/png;base64,${Buffer.from("png-bytes").toString("base64")}`,
-          glb: "",
-          usdz: ""
-        }
-      }
-    });
-    const providerRequest = providerRequests[0];
-
-    expect(providerRequest).toMatchObject({
-      model: "gpt-image-2",
-      output_format: "png"
-    });
-    expect(String(providerRequest?.prompt)).toContain("full-bleed rectangular artwork");
-    expect(String(providerRequest?.prompt)).toContain("Pathways to Success");
-  });
-
-  it("rejects empty prompts before calling the image provider", async () => {
+  it("rejects missing email before calling Convex", async () => {
     const fetchMock = vi.fn();
     globalThis.fetch = fetchMock as typeof fetch;
 
-    const response = await POST(conceptArtRequest({ prompt: "   " }));
+    const response = await POST(conceptArtRequest({ prompt: "Chicago skyline mural" }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      ok: false,
+      code: "INVALID_EMAIL",
+      message: "Enter a valid email address to generate a concept draft."
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty prompts before calling Convex", async () => {
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const response = await POST(conceptArtRequest({ contactEmail: "buyer@example.com", prompt: "   " }));
     const body = await response.json();
 
     expect(response.status).toBe(400);
@@ -79,27 +53,59 @@ describe("/api/concept-art", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does not expose provider credential errors to the browser", async () => {
-    process.env.OPENAI_API_KEY = "sk-test";
-    globalThis.fetch = vi.fn(async () =>
-      Response.json(
-        {
-          error: {
-            message: "Incorrect API key provided: sk-proj-secret-value."
-          }
-        },
-        { status: 401 }
-      )
-    ) as typeof fetch;
+  it("calls the gated Convex mutation instead of the image provider", async () => {
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    globalThis.fetch = vi.fn(async (input, init) => {
+      calls.push({
+        url: String(input),
+        body: JSON.parse(String(init?.body)) as Record<string, unknown>
+      });
 
-    const response = await POST(conceptArtRequest({ prompt: "Chicago skyline mural", selectedDesignId: "chicago-final-1" }));
+      return Response.json({
+        status: "success",
+        value: {
+          ok: true,
+          code: "QUEUED",
+          leadRequestId: "lead_123",
+          status: "new",
+          aiDraftStatus: "queued",
+          message: "Request saved. The concept draft is being prepared for seller review."
+        }
+      });
+    }) as typeof fetch;
+
+    const response = await POST(
+      conceptArtRequest({
+        contactEmail: " BUYER@EXAMPLE.COM ",
+        contactName: "Buyer",
+        prompt: "Chicago skyline for a kids area mural",
+        selectedDesignId: "chicago-final-1"
+      })
+    );
     const body = await response.json();
 
-    expect(response.status).toBe(502);
-    expect(body).toEqual({
-      ok: false,
-      message: "Artwork generation is not configured correctly."
+    expect(response.status).toBe(202);
+    expect(body).toMatchObject({
+      ok: true,
+      code: "QUEUED",
+      leadRequestId: "lead_123"
     });
-    expect(JSON.stringify(body)).not.toContain("sk-proj");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      url: "https://steady-otter-123.convex.cloud/api/mutation",
+      body: {
+        path: "leadRequests:startConceptGeneration",
+        format: "json"
+      }
+    });
+    expect(calls[0].body.args).toMatchObject({
+      contactEmail: "buyer@example.com",
+      contactName: "Buyer",
+      businessName: "Wall Print Pro",
+      wallDescription: "Homepage instant artwork preview"
+    });
+    expect(String((calls[0].body.args as Record<string, unknown>).conceptPrompt)).toContain("Pathways to Success");
+    expect(JSON.stringify(calls[0].body)).not.toMatch(/OPENAI|sk-/i);
   });
 });

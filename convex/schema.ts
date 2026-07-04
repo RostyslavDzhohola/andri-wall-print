@@ -178,6 +178,7 @@ export default defineSchema({
     failureReason: v.optional(v.string()),
     refusalReason: v.optional(v.string()),
     providerMetadata: v.optional(v.string()),
+    providerFailureCode: v.optional(v.string()),
     requestedAt: v.number(),
     startedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
@@ -191,5 +192,19 @@ export default defineSchema({
     count: v.number(),
     firstRequestAt: v.number(),
     updatedAt: v.number()
-  }).index("by_contact_bucket", ["contactKey", "bucket"])
+  }).index("by_contact_bucket", ["contactKey", "bucket"]),
+  globalGenerationCap: defineTable({
+    dayKey: v.string(),
+    count: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  }).index("by_day_key", ["dayKey"]),
+  funnelEvents: defineTable({
+    leadRequestId: v.id("leadRequests"),
+    kind: v.string(),
+    code: v.string(),
+    createdAt: v.number()
+  })
+    .index("by_lead_createdAt", ["leadRequestId", "createdAt"])
+    .index("by_kind_createdAt", ["kind", "createdAt"])
 });

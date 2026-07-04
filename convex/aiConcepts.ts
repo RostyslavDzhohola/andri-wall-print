@@ -5,9 +5,18 @@ import { internal as generatedInternal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
-import { generateOpenAiConceptImage, makeWallPrintConceptPrompt } from "../lib/openai-image-provider";
+import { generateOpenAiConceptImage, makeWallPrintConceptPrompt, type OpenAiImageFailure } from "../lib/openai-image-provider";
 
 const internal = generatedInternal as any;
+
+export function mapOpenAiFailureToAiDraftFailure(failure: OpenAiImageFailure) {
+  return {
+    status: failure.code === "refused" ? ("rejected" as const) : ("failed" as const),
+    reason: failure.reason,
+    providerFailureCode: failure.code,
+    ...(failure.metadata ? { providerMetadata: failure.metadata } : {})
+  };
+}
 
 function toArrayBuffer(bytes: Uint8Array) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
@@ -73,11 +82,13 @@ export const generateConceptDraft = internalAction({
     });
 
     if (!result.ok) {
+      const failure = mapOpenAiFailureToAiDraftFailure(result);
       await ctx.runMutation(internal.leadRequests.finalizeAiDraftFailure, {
         draftId: args.draftId,
-        status: result.code === "refused" ? "rejected" : "failed",
-        reason: result.reason,
-        providerMetadata: result.metadata
+        status: failure.status,
+        reason: failure.reason,
+        providerMetadata: failure.providerMetadata,
+        providerFailureCode: failure.providerFailureCode
       });
       return null;
     }
