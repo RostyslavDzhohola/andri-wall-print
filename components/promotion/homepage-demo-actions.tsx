@@ -2,7 +2,7 @@
 
 import { ArrowRight, Images, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useArPreviewSelection } from "@/components/ar/ar-preview-surface";
 import type { ArSample } from "@/lib/ar-sample";
@@ -108,6 +108,20 @@ function startFailureMessage(code: string | undefined, fallback: string) {
   return fallback;
 }
 
+// The QR code must always encode a scannable ABSOLUTE URL — phone cameras treat
+// a bare path like "/gallery?designId=…" as plain text. Resolves relative paths
+// against the current origin (the composite_only share state only renders
+// client-side, after user interaction, so window is available there).
+export function resolveAbsoluteShareUrl(url: string, origin?: string) {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  const base = origin ?? (typeof window !== "undefined" ? window.location.origin : "");
+
+  return base ? new URL(url, base).toString() : url;
+}
+
 // Detects the daily-cap / rate-limit "come back tomorrow" outcome so the failed
 // state can render the warm at-capacity card instead of a hard error.
 export function isAtCapacityFailureMessage(message: string | null | undefined) {
@@ -194,6 +208,7 @@ export function HomepageDemoActions() {
   const [canCheckAgain, setCanCheckAgain] = useState(false);
   const [activeEntry, setActiveEntry] = useState<HomepageEntry>("describe");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const entryTabRefs = useRef<Partial<Record<HomepageEntry, HTMLButtonElement | null>>>({});
   const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedBaseSample.id)}`;
   const uploadHref = "/request?intent=concept#lead-upload-section";
 
@@ -364,15 +379,26 @@ export function HomepageDemoActions() {
   ];
 
   const handleEntryKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+    const currentIndex = entries.findIndex((entry) => entry.key === activeEntry);
+    let nextIndex: number;
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      const delta = event.key === "ArrowRight" ? 1 : -1;
+      nextIndex = (currentIndex + delta + entries.length) % entries.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = entries.length - 1;
+    } else {
       return;
     }
 
     event.preventDefault();
-    const currentIndex = entries.findIndex((entry) => entry.key === activeEntry);
-    const delta = event.key === "ArrowRight" ? 1 : -1;
-    const next = entries[(currentIndex + delta + entries.length) % entries.length];
+    const next = entries[nextIndex];
     setActiveEntry(next.key);
+    // Roving tabindex: focus must follow selection, or the visible focus ring
+    // stays parked on a now tabIndex={-1} button.
+    entryTabRefs.current[next.key]?.focus();
   };
 
   return (
@@ -398,6 +424,9 @@ export function HomepageDemoActions() {
               data-testid={`homepage-entry-${entry.key}`}
               key={entry.key}
               onClick={() => setActiveEntry(entry.key)}
+              ref={(element) => {
+                entryTabRefs.current[entry.key] = element;
+              }}
               role="tab"
               tabIndex={selected ? 0 : -1}
               type="button"
@@ -511,7 +540,7 @@ export function HomepageDemoActions() {
               className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground"
               data-testid="homepage-generation-progress"
             >
-              <Sparkles className="size-4 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+              <Sparkles className="size-4 shrink-0 text-primary motion-safe:animate-pulse" aria-hidden="true" />
               {HOME_GENERATION_LOADING}
             </div>
           ) : null}
@@ -521,7 +550,7 @@ export function HomepageDemoActions() {
               className="flex items-start gap-3 rounded-md border border-status-ready-border bg-status-ready p-3 text-status-ready-foreground"
               data-testid="homepage-composite-share"
             >
-              <QrCode value={shareUrl ?? selectedDesignHref} title="Scan to open this concept on your phone" />
+              <QrCode value={resolveAbsoluteShareUrl(shareUrl ?? selectedDesignHref)} title="Scan to open this concept on your phone" />
               <p className="text-sm leading-6">{HOME_COMPOSITE_ONLY_BODY}</p>
             </div>
           ) : null}
