@@ -18,6 +18,8 @@ Why: Launch (per D9) deleted only the visible auth surfaces and left the plumbin
 
 Context: Nothing public is gated; surviving Convex functions are already null-identity-safe after the launch ctx.auth audit.
 
+Week-2 teardown note: `convex/sellerPricing.ts` still exports now-dead `getForSeller`/`updateForSeller` names; remove or rename them during Clerk teardown so the disabled seller/admin naming stops misleading future work.
+
 Depends on / blocked by: Launch stable for a few days.
 
 ## P1: Add Convex Function Harness Tests
