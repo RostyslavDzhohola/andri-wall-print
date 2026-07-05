@@ -22,7 +22,8 @@ import {
   HOME_GENERATION_LICENSING_NOTE,
   HOME_GENERATION_LOADING,
   HOME_SEE_ON_WALL_CTA,
-  HOME_UPLOAD_ACCEPTED_FORMATS
+  HOME_UPLOAD_ACCEPTED_FORMATS,
+  HOME_UPLOAD_ENTRY_BODY
 } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 
@@ -122,6 +123,25 @@ export function resolveAbsoluteShareUrl(url: string, origin?: string) {
   return base ? new URL(url, base).toString() : url;
 }
 
+// Picks the composite_only QR target: the shareable public preview URL when the
+// draft reached `ready`, otherwise the concept's own poster image so the QR opens
+// THIS concept on the phone — never the stock /gallery sample. Returns null when
+// neither exists so the caller renders the composite message without a QR.
+export function resolveCompositeShareTarget(input: { shareUrl: string | null; posterUrl: string | null }) {
+  const url = input.shareUrl ?? input.posterUrl;
+
+  if (!url) {
+    return null;
+  }
+
+  return {
+    url,
+    // A resolved share URL points at the interactive preview page; the poster
+    // fallback is just the concept image.
+    title: input.shareUrl ? "Scan to open this concept on your phone" : "Scan to open your concept image on your phone"
+  };
+}
+
 // Detects the daily-cap / rate-limit "come back tomorrow" outcome so the failed
 // state can render the warm at-capacity card instead of a hard error.
 export function isAtCapacityFailureMessage(message: string | null | undefined) {
@@ -208,6 +228,7 @@ export function HomepageDemoActions() {
   const [canCheckAgain, setCanCheckAgain] = useState(false);
   const [activeEntry, setActiveEntry] = useState<HomepageEntry>("describe");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const entryTabRefs = useRef<Partial<Record<HomepageEntry, HTMLButtonElement | null>>>({});
   const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedBaseSample.id)}`;
   const uploadHref = "/request?intent=concept#lead-upload-section";
@@ -285,6 +306,9 @@ export function HomepageDemoActions() {
       setCanCheckAgain(false);
       setGenerationStatus("composite_only");
       setShareUrl(status.publicPreviewUrl ?? null);
+      // composite_only never has publicPreviewUrl (only set on `ready`); fall back
+      // to the concept's own poster so the QR opens THIS concept, not stock art.
+      setPosterUrl(poster ?? null);
       setGenerationMessage(HOME_COMPOSITE_ONLY_BODY);
       return;
     }
@@ -325,6 +349,7 @@ export function HomepageDemoActions() {
     setGenerationStatus("generating");
     setGenerationMessage(HOME_GENERATION_LOADING);
     setShareUrl(null);
+    setPosterUrl(null);
     setCanCheckAgain(false);
     let submittedLeadRequestId: string | null = null;
 
@@ -459,7 +484,7 @@ export function HomepageDemoActions() {
       {activeEntry === "upload" ? (
         <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
           <p className="text-sm leading-6 text-muted-foreground">
-            Upload your own art or logo and see it printed on your wall. {HOME_UPLOAD_ACCEPTED_FORMATS}
+            {HOME_UPLOAD_ENTRY_BODY} {HOME_UPLOAD_ACCEPTED_FORMATS}
           </p>
           <Button asChild className="min-h-11 w-fit rounded-full px-5" size="lg">
             <Link data-testid="homepage-upload-handoff" href={uploadHref}>
@@ -550,7 +575,11 @@ export function HomepageDemoActions() {
               className="flex items-start gap-3 rounded-md border border-status-ready-border bg-status-ready p-3 text-status-ready-foreground"
               data-testid="homepage-composite-share"
             >
-              <QrCode value={resolveAbsoluteShareUrl(shareUrl ?? selectedDesignHref)} title="Scan to open this concept on your phone" />
+              {(() => {
+                const target = resolveCompositeShareTarget({ shareUrl, posterUrl });
+
+                return target ? <QrCode value={resolveAbsoluteShareUrl(target.url)} title={target.title} /> : null;
+              })()}
               <p className="text-sm leading-6">{HOME_COMPOSITE_ONLY_BODY}</p>
             </div>
           ) : null}

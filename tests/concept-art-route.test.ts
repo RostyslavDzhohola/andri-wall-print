@@ -199,6 +199,45 @@ describe("/api/concept-art", () => {
     ]);
   });
 
+  it("returns a JSON 503 when the Convex mutation fetch rejects", async () => {
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError("network down");
+    }) as typeof fetch;
+
+    const response = await POST(
+      conceptArtRequest({
+        contactEmail: "buyer@example.com",
+        prompt: "Chicago skyline for a kids area mural"
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body).toEqual({
+      ok: false,
+      code: "UNAVAILABLE",
+      message: "AI concept drafting is temporarily unavailable."
+    });
+  });
+
+  it("returns a JSON 503 when the Convex status fetch rejects", async () => {
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError("network down");
+    }) as typeof fetch;
+
+    const response = await GET(conceptStatusRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body).toEqual({
+      ok: false,
+      code: "UNAVAILABLE",
+      message: "AI concept drafting is temporarily unavailable."
+    });
+  });
+
   it("returns 202 while concept status is still generating", async () => {
     process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
     globalThis.fetch = vi.fn(async () => {

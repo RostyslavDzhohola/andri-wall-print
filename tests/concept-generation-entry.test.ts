@@ -310,7 +310,7 @@ describe("concept generation gate", () => {
     });
   });
 
-  it("returns generation unavailable before quota, draft, or scheduler side effects when disabled", async () => {
+  it("saves the lead and a disabled funnel event without quota, draft, or scheduler side effects when disabled", async () => {
     disableAiConcepts();
     vi.spyOn(Date, "now").mockReturnValue(NOW);
     const fake = createFakeCtx();
@@ -321,16 +321,26 @@ describe("concept generation gate", () => {
       conceptPrompt: "Chicago skyline mural"
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       ok: false,
       code: "GENERATION_UNAVAILABLE",
+      status: "new",
       message: "AI concept drafting is temporarily unavailable."
     });
-    expect(fake.tables.leadRequests).toHaveLength(0);
+    // The lead email is captured even when generation is disabled.
+    expect(fake.tables.leadRequests).toHaveLength(1);
+    expect((result as { leadRequestId?: string }).leadRequestId).toBe(fake.tables.leadRequests[0]._id);
+    expect(fake.tables.funnelEvents).toEqual([
+      expect.objectContaining({
+        leadRequestId: fake.tables.leadRequests[0]._id,
+        kind: "concept_generation_disabled",
+        code: "GENERATION_UNAVAILABLE"
+      })
+    ]);
+    // But no quota consumed, no draft queued, nothing scheduled.
     expect(fake.tables.leadRateLimits).toHaveLength(0);
     expect(fake.tables.globalGenerationCap).toHaveLength(0);
     expect(fake.tables.aiConceptDrafts).toHaveLength(0);
-    expect(fake.tables.funnelEvents).toHaveLength(0);
     expect(fake.scheduled).toHaveLength(0);
   });
 

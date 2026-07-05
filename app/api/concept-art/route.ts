@@ -113,26 +113,39 @@ async function startConceptGeneration(input: {
   }
 
   const selectedSample = resolveSelectedSample(input.selectedDesignId);
-  const response = await fetch(`${normalizeConvexUrl(convexUrl)}/api/mutation`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      path: "leadRequests:startConceptGeneration",
-      args: {
-        contactEmail: input.contactEmail,
-        ...(input.contactName ? { contactName: input.contactName } : {}),
-        businessName: "Wall Print Pro",
-        wallDescription: "Homepage instant artwork preview",
-        conceptPrompt: `${input.conceptPrompt}. Use this selected proof as loose visual context, not a copy: ${selectedSample.title} - ${selectedSample.description}`,
-        print: selectedSample.print
+  let response: Response;
+
+  try {
+    response = await fetch(`${normalizeConvexUrl(convexUrl)}/api/mutation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
       },
-      format: "json"
-    }),
-    cache: "no-store"
-  });
+      body: JSON.stringify({
+        path: "leadRequests:startConceptGeneration",
+        args: {
+          contactEmail: input.contactEmail,
+          ...(input.contactName ? { contactName: input.contactName } : {}),
+          businessName: "Wall Print Pro",
+          wallDescription: "Homepage instant artwork preview",
+          conceptPrompt: `${input.conceptPrompt}. Use this selected proof as loose visual context, not a copy: ${selectedSample.title} - ${selectedSample.description}`,
+          print: selectedSample.print
+        },
+        format: "json"
+      }),
+      cache: "no-store"
+    });
+  } catch {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
 
   if (!response.ok) {
     return {
@@ -145,7 +158,20 @@ async function startConceptGeneration(input: {
     };
   }
 
-  const body = (await response.json()) as ConvexHttpResponse;
+  let body: ConvexHttpResponse;
+
+  try {
+    body = (await response.json()) as ConvexHttpResponse;
+  } catch {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
 
   if (body.status === "error") {
     return {
@@ -178,21 +204,34 @@ async function getConceptGenerationStatus(leadRequestId: string) {
     };
   }
 
-  const response = await fetch(`${normalizeConvexUrl(convexUrl)}/api/query`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      path: "leadRequests:getConceptGenerationStatus",
-      args: {
-        leadRequestId
+  let response: Response;
+
+  try {
+    response = await fetch(`${normalizeConvexUrl(convexUrl)}/api/query`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
       },
-      format: "json"
-    }),
-    cache: "no-store"
-  });
+      body: JSON.stringify({
+        path: "leadRequests:getConceptGenerationStatus",
+        args: {
+          leadRequestId
+        },
+        format: "json"
+      }),
+      cache: "no-store"
+    });
+  } catch {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
 
   if (!response.ok) {
     return {
@@ -205,7 +244,20 @@ async function getConceptGenerationStatus(leadRequestId: string) {
     };
   }
 
-  const body = (await response.json()) as ConvexHttpResponse;
+  let body: ConvexHttpResponse;
+
+  try {
+    body = (await response.json()) as ConvexHttpResponse;
+  } catch {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        code: "UNAVAILABLE",
+        message: "AI concept drafting is temporarily unavailable."
+      }
+    };
+  }
 
   if (body.status === "error") {
     return {

@@ -13,6 +13,7 @@ import {
   HOME_COMPARISON_ROWS,
   HOME_COMPARISON_SUBHEAD,
   HOME_FOOTER_TAGLINE,
+  HOME_HEADLINE,
   HOME_LOCATION_BADGE,
   HOME_NAV_RESERVE_CTA,
   HOME_PORTFOLIO_TEASER_CTA,
@@ -299,7 +300,7 @@ export default function Home() {
       <LocalBusinessJsonLd />
       <ArPreviewSurface
         brandName="Wall Print Pro"
-        heading="Not wallpaper. Not vinyl. Printed straight onto your wall."
+        heading={HOME_HEADLINE}
         headingClassName="text-[2.5rem] max-w-3xl sm:max-w-3xl md:max-w-4xl lg:max-w-[16ch]"
         intro={HOME_SUBHEAD}
         eyebrow={<ChicagoBadge />}

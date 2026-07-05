@@ -52,6 +52,14 @@ Context: Fill this only from real phone results, not desktop assumptions. Feeds 
 
 Depends on / blocked by: Real iPhone and Android testing.
 
+## P2: Week-2 Polish Batch (from final whole-branch review triage, 2026-07-04)
+
+What: Small quality items triaged WEEK-2 by the final launch review: failed-status retry-message UI test + double-submit rendered test; 429+Retry-After for both limit paths; aiConceptsEnabled guard inside queueConceptDraftForLead; GET concept-art 400 on malformed id; shared test fixture helpers + tightened wrong-type assertions; prune uploadValidation re-export barrel; tabpanel/aria-controls pairing on the chooser; keep chooser panels mounted mid-generation; consolidate duplicate session-id validators and trailing-slash trimmers; verify /request upload-rejected inline styling on real devices; rate/abuse guards on generateLeadUploadUrl and logReservedVisit.
+
+Why: None block launch; together they harden coverage, a11y, and abuse surfaces.
+
+Depends on / blocked by: Launch shipped; fold alongside the Clerk teardown week.
+
 ## P3: Automated AR-Link Email Sender (evidence-gated)
 
 What: Resend + retry job restoring the "email me the AR link" promise cut at launch (D11.7).

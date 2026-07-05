@@ -542,14 +542,6 @@ export async function startConceptGenerationHandler(ctx: any, args: {
     };
   }
 
-  if (!aiConceptsEnabled()) {
-    return {
-      ok: false,
-      code: "GENERATION_UNAVAILABLE",
-      message: "AI concept drafting is temporarily unavailable."
-    };
-  }
-
   const leadRequestId = await ctx.db.insert("leadRequests", {
     ...normalized,
     ...(args.print ? { print: args.print } : {}),
@@ -557,6 +549,26 @@ export async function startConceptGenerationHandler(ctx: any, args: {
     createdAt: now,
     updatedAt: now
   });
+
+  // Capture the lead even when generation is disabled: the email is the point of
+  // the funnel. No quota consumption, no draft, no scheduling on this path.
+  if (!aiConceptsEnabled()) {
+    await insertFunnelEvent(ctx, {
+      leadRequestId,
+      kind: "concept_generation_disabled",
+      code: "GENERATION_UNAVAILABLE",
+      createdAt: now
+    });
+
+    return {
+      ok: false,
+      code: "GENERATION_UNAVAILABLE",
+      leadRequestId,
+      status: "new",
+      message: "AI concept drafting is temporarily unavailable."
+    };
+  }
+
   const queued = await queueConceptDraftForLead(ctx, {
     leadRequestId,
     normalized,

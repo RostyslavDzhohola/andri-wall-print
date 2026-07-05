@@ -48,7 +48,7 @@ export default function WorkIndexPage() {
             <li key={job.slug}>
               <Link
                 href={`/work/${job.slug}`}
-                className="group flex min-h-11 flex-col overflow-hidden rounded-[0.625rem] border border-border bg-card shadow-[0_24px_70px_rgba(35,31,25,.12)] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group-hover:-translate-y-0.5"
+                className="group flex min-h-11 flex-col overflow-hidden rounded-[0.625rem] border border-border bg-card shadow-[0_24px_70px_rgba(35,31,25,.12)] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary hover:-translate-y-0.5"
               >
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
                   <Image

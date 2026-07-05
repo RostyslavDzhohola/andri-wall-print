@@ -93,10 +93,11 @@ export const HOME_HEADLINE = "Not wallpaper. Not vinyl. Printed straight onto yo
 export const HOME_SUBHEAD =
   "Custom wall printing in Chicago. Choose a design, upload your own art or logo, or describe an idea — then see it on your actual wall before you commit.";
 
-// Three-entry chooser labels + primary CTA.
-export const HOME_ENTRY_CHOOSE = "Choose design";
-export const HOME_ENTRY_UPLOAD = "Upload art/logo";
-export const HOME_ENTRY_DESCRIBE = "Describe idea";
+// Three-entry chooser labels + primary CTA. Kept short (≤11 chars) so all three
+// render untruncated inside the segmented control at 375px.
+export const HOME_ENTRY_CHOOSE = "Our designs";
+export const HOME_ENTRY_UPLOAD = "Your art";
+export const HOME_ENTRY_DESCRIBE = "Describe it";
 export const HOME_SEE_ON_WALL_CTA = "See it on your wall";
 
 // D10 binding licensing line shown wherever generation appears.
@@ -110,6 +111,9 @@ export const HOME_AT_CAPACITY_BODY = "Leave your email — you're first in line 
 export const HOME_COMPOSITE_ONLY_BODY =
   "Here's your concept on the wall. Scan the QR to open it on your phone, or leave this open and come back — we'll also follow up by email.";
 export const HOME_UPLOAD_ACCEPTED_FORMATS = "Accepted formats: JPEG, PNG, WebP.";
+// Upload entry promises the real flow: there is no public upload→AR pipeline on
+// this branch (lead capture only), so we don't over-promise "see it on your wall".
+export const HOME_UPLOAD_ENTRY_BODY = "Send us your art or logo — we'll show it on your wall at your estimate.";
 
 // Specs band.
 export const HOME_SPECS = [

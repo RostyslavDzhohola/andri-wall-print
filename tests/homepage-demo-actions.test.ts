@@ -4,7 +4,8 @@ import {
   canRetryConceptStatusPollFailure,
   canStartHomepageConceptGeneration,
   CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES,
-  resolveAbsoluteShareUrl
+  resolveAbsoluteShareUrl,
+  resolveCompositeShareTarget
 } from "@/components/promotion/homepage-demo-actions";
 
 describe("homepage concept generation controls", () => {
@@ -32,6 +33,33 @@ describe("homepage concept generation controls", () => {
     expect(canRetryConceptStatusPollFailure({ consecutiveFailures: 1 })).toBe(true);
     expect(canRetryConceptStatusPollFailure({ consecutiveFailures: CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES })).toBe(true);
     expect(canRetryConceptStatusPollFailure({ consecutiveFailures: CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES + 1 })).toBe(false);
+  });
+
+  it("encodes the concept poster (not a /gallery href) in the composite_only QR", () => {
+    const posterUrl = "https://steady-otter-123.convex.cloud/api/storage/poster-abc";
+
+    // composite_only never has a public preview URL, so the QR falls back to the
+    // concept's own poster — never the stock /gallery sample.
+    const target = resolveCompositeShareTarget({ shareUrl: null, posterUrl });
+
+    expect(target).not.toBeNull();
+    expect(target?.url).toBe(posterUrl);
+    expect(target?.url).not.toContain("/gallery");
+    expect(target?.title).toBe("Scan to open your concept image on your phone");
+  });
+
+  it("prefers the public share URL over the poster when the draft is ready", () => {
+    const target = resolveCompositeShareTarget({
+      shareUrl: "https://www.wallprintpro.com/preview/xyz",
+      posterUrl: "https://steady-otter-123.convex.cloud/api/storage/poster-abc"
+    });
+
+    expect(target?.url).toBe("https://www.wallprintpro.com/preview/xyz");
+    expect(target?.title).toBe("Scan to open this concept on your phone");
+  });
+
+  it("renders no QR when neither a share URL nor a poster exists", () => {
+    expect(resolveCompositeShareTarget({ shareUrl: null, posterUrl: null })).toBeNull();
   });
 
   it("always yields an absolute URL for the share QR", () => {
