@@ -4,9 +4,11 @@ import { mapOpenAiFailureToAiDraftFailure } from "@/convex/aiConcepts";
 import {
   GLOBAL_CONCEPT_GENERATION_DAILY_CAP,
   getChicagoGenerationDayKey,
+  logReservedVisitHandler,
   selectConceptGenerationGate,
   startConceptGenerationHandler
 } from "@/convex/leadRequests";
+import { RESERVED_SESSION_ID_MAX_LENGTH } from "@/lib/reserved-session-id";
 import { LEAD_AI_RATE_LIMIT_PER_DAY, makeLeadRateLimitBucket } from "@/lib/lead-request-contract";
 
 const NOW = Date.parse("2026-07-04T17:30:00.000Z");
@@ -254,6 +256,57 @@ describe("concept generation gate", () => {
       args: {
         draftId: fake.tables.aiConceptDrafts[0]._id
       }
+    });
+  });
+
+  it("records a reserved page visit as a session-only funnel event", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx();
+
+    const result = await logReservedVisitHandler(fake.ctx, {
+      sessionId: "cs_live_TEST_123"
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      sessionId: "cs_live_TEST_123"
+    });
+    expect(fake.tables.funnelEvents).toHaveLength(1);
+    expect(fake.tables.funnelEvents[0]).toMatchObject({
+      sessionId: "cs_live_TEST_123",
+      kind: "reserved_visit",
+      code: "RESERVED_VISIT",
+      createdAt: NOW
+    });
+    expect(fake.tables.funnelEvents[0]).not.toHaveProperty("leadRequestId");
+  });
+
+  it("rejects invalid reserved session ids and truncates oversized safe ids", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const invalid = createFakeCtx();
+
+    await expect(
+      logReservedVisitHandler(invalid.ctx, {
+        sessionId: "cs_live_bad-hyphen"
+      })
+    ).rejects.toMatchObject({
+      data: {
+        code: "INVALID_RESERVED_SESSION_ID"
+      }
+    });
+    expect(invalid.tables.funnelEvents).toHaveLength(0);
+
+    const oversized = createFakeCtx();
+    const longSessionId = "A".repeat(RESERVED_SESSION_ID_MAX_LENGTH + 45);
+    const result = await logReservedVisitHandler(oversized.ctx, {
+      sessionId: longSessionId
+    });
+
+    expect(result.sessionId).toHaveLength(RESERVED_SESSION_ID_MAX_LENGTH);
+    expect(oversized.tables.funnelEvents[0]).toMatchObject({
+      sessionId: "A".repeat(RESERVED_SESSION_ID_MAX_LENGTH),
+      kind: "reserved_visit",
+      code: "RESERVED_VISIT"
     });
   });
 

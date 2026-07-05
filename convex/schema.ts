@@ -203,7 +203,8 @@ export default defineSchema({
     updatedAt: v.number()
   }).index("by_day_key", ["dayKey"]),
   funnelEvents: defineTable({
-    leadRequestId: v.id("leadRequests"),
+    leadRequestId: v.optional(v.id("leadRequests")),
+    sessionId: v.optional(v.string()),
     kind: v.string(),
     code: v.string(),
     createdAt: v.number()

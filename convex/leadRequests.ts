@@ -16,6 +16,7 @@ import {
   type NormalizedLeadContact
 } from "../lib/lead-request-contract";
 import { formatPreviewBundlePrintDimensions } from "../lib/preview-bundle-contract";
+import { normalizeReservedSessionId } from "../lib/reserved-session-id";
 import { requireWallPrintProSeller } from "./sellerAuth";
 import { assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
 
@@ -71,6 +72,11 @@ const startedConceptGenerationValidator = v.object({
   status: v.optional(v.string()),
   aiDraftStatus: v.optional(v.string()),
   message: v.string()
+});
+
+const reservedVisitLogValidator = v.object({
+  ok: v.literal(true),
+  sessionId: v.string()
 });
 
 const aiDraftGenerationValidator = v.union(
@@ -351,7 +357,15 @@ async function reserveGlobalGenerationCap(ctx: any, dayKey: string, now: number)
   return true;
 }
 
-async function insertFunnelEvent(ctx: any, input: { leadRequestId: Id<"leadRequests">; kind: string; code: string; createdAt: number }) {
+type FunnelEventInput = {
+  leadRequestId?: Id<"leadRequests">;
+  sessionId?: string;
+  kind: string;
+  code: string;
+  createdAt: number;
+};
+
+async function insertFunnelEvent(ctx: any, input: FunnelEventInput) {
   await ctx.db.insert("funnelEvents", input);
 }
 
@@ -635,6 +649,40 @@ export const startConceptGeneration = mutation({
   returns: startedConceptGenerationValidator,
   handler: async (ctx, args) => {
     return await startConceptGenerationHandler(ctx, args);
+  }
+});
+
+export async function logReservedVisitHandler(ctx: any, args: { sessionId: string }) {
+  const sessionId = normalizeReservedSessionId(args.sessionId);
+
+  if (!sessionId) {
+    throw new ConvexError({
+      code: "INVALID_RESERVED_SESSION_ID",
+      message: "Reserved session id is invalid."
+    });
+  }
+
+  const now = Date.now();
+  await insertFunnelEvent(ctx, {
+    sessionId,
+    kind: "reserved_visit",
+    code: "RESERVED_VISIT",
+    createdAt: now
+  });
+
+  return {
+    ok: true as const,
+    sessionId
+  };
+}
+
+export const logReservedVisit = mutation({
+  args: {
+    sessionId: v.string()
+  },
+  returns: reservedVisitLogValidator,
+  handler: async (ctx, args) => {
+    return await logReservedVisitHandler(ctx, args);
   }
 });
 

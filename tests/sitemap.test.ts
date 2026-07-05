@@ -5,14 +5,14 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getWorkSlugs } from "@/lib/work-content";
 
 describe("sitemap", () => {
-  it("lists /, /gallery, /work, every /work/[slug], and /reserved", () => {
+  it("lists /, /gallery, /work, and every /work/[slug], but not /reserved", () => {
     const siteUrl = getSiteUrl();
     const urls = sitemap().map((entry) => entry.url);
 
     expect(urls).toContain(`${siteUrl}/`);
     expect(urls).toContain(`${siteUrl}/gallery`);
     expect(urls).toContain(`${siteUrl}/work`);
-    expect(urls).toContain(`${siteUrl}/reserved`);
+    expect(urls).not.toContain(`${siteUrl}/reserved`);
 
     for (const slug of getWorkSlugs()) {
       expect(urls).toContain(`${siteUrl}/work/${slug}`);

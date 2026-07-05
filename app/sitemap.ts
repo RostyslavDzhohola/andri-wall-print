@@ -10,8 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${siteUrl}/`, lastModified, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/gallery`, lastModified, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/work`, lastModified, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/reserved`, lastModified, changeFrequency: "monthly", priority: 0.5 }
+    { url: `${siteUrl}/work`, lastModified, changeFrequency: "weekly", priority: 0.8 }
   ];
 
   const workRoutes: MetadataRoute.Sitemap = getWorkSlugs().map((slug) => ({
