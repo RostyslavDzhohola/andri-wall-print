@@ -1,7 +1,6 @@
 import { ConvexError } from "convex/values";
 
 import { validatePreviewBundleUpload } from "../lib/preview-bundle-contract";
-import { validatePreparedPngTextureBytes } from "../lib/upload-image-validation";
 
 export {
   PREPARED_PNG_BYTE_LENGTH_MISMATCH_REASON,
@@ -59,24 +58,6 @@ function throwInvalidUpload(message: string): never {
   });
 }
 
-async function validateStoredUploadBytesIfReadable(ctx: any, sourceStorageId: string, expectedByteLength: number) {
-  if (typeof ctx.storage?.get !== "function") {
-    return;
-  }
-
-  const blob = await ctx.storage.get(sourceStorageId);
-
-  if (!blob) {
-    throwInvalidUpload("Uploaded artwork was not found. Choose the file again.");
-  }
-
-  const validation = validatePreparedPngTextureBytes(new Uint8Array(await blob.arrayBuffer()), expectedByteLength);
-
-  if (!validation.ok) {
-    throwInvalidUpload(validation.reason);
-  }
-}
-
 export async function validateStoredPreviewUpload(ctx: any, input: StoredPreviewUploadInput) {
   const metadata = await ctx.db.system.get("_storage", input.sourceStorageId);
 
@@ -98,8 +79,6 @@ export async function validateStoredPreviewUpload(ctx: any, input: StoredPreview
   if (input.contentType !== contentType || input.byteLength !== byteLength) {
     throwInvalidUpload("Uploaded artwork metadata did not match the stored file. Choose the file again.");
   }
-
-  await validateStoredUploadBytesIfReadable(ctx, input.sourceStorageId, byteLength);
 
   const sourceFingerprint = normalizeUploadSourceFingerprint(input.sourceFingerprint);
   const storedFingerprint = normalizeUploadSourceFingerprint(metadata.sha256);

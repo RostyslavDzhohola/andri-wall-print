@@ -152,11 +152,14 @@ describe("TypeScript AR asset generator", () => {
     );
   });
 
-  it("rejects non-PNG bytes before they can be embedded into generated AR assets", () => {
+  it("rejects action-path source bytes that are not prepared PNGs before generating AR assets", () => {
+    const forgedStoredBytes = Uint8Array.from([0x47, 0x49, 0x46, 0x38]);
+
     expect(() =>
       generateFlatPrintAssets({
         ...INPUT,
-        textureBytes: Uint8Array.from([0x47, 0x49, 0x46, 0x38])
+        textureBytes: forgedStoredBytes,
+        expectedTextureByteLength: forgedStoredBytes.byteLength
       })
     ).toThrow("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
   });

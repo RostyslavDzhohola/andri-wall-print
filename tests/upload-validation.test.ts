@@ -50,10 +50,6 @@ function u32le(value: number) {
   return Uint8Array.from([value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff]);
 }
 
-function toArrayBuffer(bytes: Uint8Array) {
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-}
-
 function makePng(widthPx: number, heightPx: number) {
   return concatBytes(
     Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -123,18 +119,13 @@ function makeFtyp(brand: string) {
   return concatBytes(u32be(24), bytesFromAscii("ftyp"), bytesFromAscii(brand), new Uint8Array(12));
 }
 
-function ctxWithStoredUpload(metadata: { contentType?: string; size: number; sha256: string } | null, bytes?: Uint8Array) {
+function ctxWithStoredUpload(metadata: { contentType?: string; size: number; sha256: string } | null) {
   return {
     db: {
       system: {
         get: async () => metadata
       }
-    },
-    storage: bytes
-      ? {
-          get: async () => new Blob([toArrayBuffer(bytes)])
-        }
-      : undefined
+    }
   };
 }
 
@@ -248,7 +239,7 @@ describe("stored preview upload validation", () => {
     const bytes = makePng(800, 600);
 
     await expect(
-      validateStoredPreviewUpload(ctxWithStoredUpload({ contentType: "image/png", size: bytes.byteLength, sha256: PNG_SHA }, bytes), {
+      validateStoredPreviewUpload(ctxWithStoredUpload({ contentType: "image/png", size: bytes.byteLength, sha256: PNG_SHA }), {
         sourceStorageId: "storage_123",
         contentType: "image/png",
         byteLength: bytes.byteLength,
@@ -283,24 +274,11 @@ describe("stored preview upload validation", () => {
     ).rejects.toThrow("Prepared upload must be a PNG image before AR generation.");
   });
 
-  it("rejects stored files whose actual bytes do not match their image metadata", async () => {
-    const bytes = bytesFromAscii("GIF89a");
-
-    await expect(
-      validateStoredPreviewUpload(ctxWithStoredUpload({ contentType: "image/png", size: bytes.byteLength, sha256: PNG_SHA }, bytes), {
-        sourceStorageId: "storage_123",
-        contentType: "image/png",
-        byteLength: bytes.byteLength,
-        sourceFingerprint: PNG_SHA
-      })
-    ).rejects.toThrow("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
-  });
-
   it("rejects fingerprint mismatches", async () => {
     const bytes = makePng(800, 600);
 
     await expect(
-      validateStoredPreviewUpload(ctxWithStoredUpload({ contentType: "image/png", size: bytes.byteLength, sha256: PNG_SHA }, bytes), {
+      validateStoredPreviewUpload(ctxWithStoredUpload({ contentType: "image/png", size: bytes.byteLength, sha256: PNG_SHA }), {
         sourceStorageId: "storage_123",
         contentType: "image/png",
         byteLength: bytes.byteLength,
