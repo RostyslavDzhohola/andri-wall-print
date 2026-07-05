@@ -456,7 +456,9 @@ export function HomepageDemoActions() {
               tabIndex={selected ? 0 : -1}
               type="button"
             >
-              <Icon className="size-4 shrink-0" aria-hidden="true" />
+              {/* Icons are decorative in the tabs; hide them below ~400px so all
+                  three labels render with zero ellipsis at 375px. */}
+              <Icon className="hidden size-4 shrink-0 min-[400px]:block" aria-hidden="true" />
               <span className="truncate">{entry.label}</span>
             </button>
           );

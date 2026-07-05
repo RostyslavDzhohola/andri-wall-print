@@ -93,11 +93,12 @@ export const HOME_HEADLINE = "Not wallpaper. Not vinyl. Printed straight onto yo
 export const HOME_SUBHEAD =
   "Custom wall printing in Chicago. Choose a design, upload your own art or logo, or describe an idea — then see it on your actual wall before you commit.";
 
-// Three-entry chooser labels + primary CTA. Kept short (≤11 chars) so all three
-// render untruncated inside the segmented control at 375px.
-export const HOME_ENTRY_CHOOSE = "Our designs";
+// Three-entry chooser labels + primary CTA. Kept short (≤8 chars) so all three
+// render with ZERO ellipsis in the segmented control at 375px — the control also
+// hides its decorative leading icons below 400px (see homepage-demo-actions.tsx).
+export const HOME_ENTRY_CHOOSE = "Designs";
 export const HOME_ENTRY_UPLOAD = "Your art";
-export const HOME_ENTRY_DESCRIBE = "Describe it";
+export const HOME_ENTRY_DESCRIBE = "Describe";
 export const HOME_SEE_ON_WALL_CTA = "See it on your wall";
 
 // D10 binding licensing line shown wherever generation appears.
