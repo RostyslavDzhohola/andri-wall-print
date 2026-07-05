@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GalleryHorizontal, LogIn } from "lucide-react";
+import { GalleryHorizontal } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicRequestForm } from "@/components/request/public-request-form";
@@ -59,12 +59,6 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
               <Link href="/gallery">
                 <GalleryHorizontal className="size-4" />
                 Gallery
-              </Link>
-            </Button>
-            <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" size="lg" variant="outline">
-              <Link href="/dashboard">
-                <LogIn className="size-4" />
-                <span className="sr-only sm:not-sr-only">Sign in</span>
               </Link>
             </Button>
           </div>

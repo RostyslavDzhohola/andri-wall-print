@@ -1,7 +1,6 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, CircleUserRound, Images, LogIn, MessageCircle, Ruler, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Images, MessageCircle, Ruler } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
@@ -15,33 +14,13 @@ import { formatPreviewBundlePrintArea, formatPreviewBundlePrintDimensions } from
 import { cn } from "@/lib/utils";
 
 type ArtworkGallerySurfaceProps = {
-  dashboardHref?: "/account" | "/admin" | "/dashboard";
-  dashboardKind?: "account" | "admin" | "signIn";
-  dashboardLabel?: string;
   initialSampleId?: string;
   samples?: ArSample[];
-  showUserButton?: boolean;
 };
 
-function DashboardIcon({ kind }: { kind: NonNullable<ArtworkGallerySurfaceProps["dashboardKind"]> }) {
-  if (kind === "admin") {
-    return <ShieldCheck className="size-4" aria-hidden="true" />;
-  }
-
-  if (kind === "account") {
-    return <CircleUserRound className="size-4" aria-hidden="true" />;
-  }
-
-  return <LogIn className="size-4" aria-hidden="true" />;
-}
-
 export function ArtworkGallerySurface({
-  dashboardHref = "/dashboard",
-  dashboardKind = "signIn",
-  dashboardLabel = "Sign in",
   initialSampleId,
-  samples = AR_SAMPLES,
-  showUserButton = false
+  samples = AR_SAMPLES
 }: ArtworkGallerySurfaceProps) {
   const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(() => {
@@ -90,7 +69,7 @@ export function ArtworkGallerySurface({
       return;
     }
 
-    router.push(dashboardHref);
+    router.push("/");
   };
 
   return (
@@ -110,14 +89,6 @@ export function ArtworkGallerySurface({
               <ArrowLeft className="size-4" aria-hidden="true" />
               <span className="hidden sm:inline">Back</span>
             </Button>
-            <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" variant="ghost">
-              <Link aria-label={dashboardLabel} href={dashboardHref}>
-                <DashboardIcon kind={dashboardKind} />
-                <span className="hidden sm:inline">{dashboardLabel}</span>
-                <span className="sm:hidden">{dashboardKind === "admin" ? "Admin" : dashboardKind === "account" ? "Saved" : "Sign in"}</span>
-              </Link>
-            </Button>
-            {showUserButton ? <UserButton /> : null}
           </div>
         </header>
 

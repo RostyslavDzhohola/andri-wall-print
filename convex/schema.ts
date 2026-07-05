@@ -25,20 +25,6 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number()
   }).index("by_slug", ["slug"]),
-  builderInvites: defineTable({
-    sellerSubject: v.string(),
-    tokenHash: v.string(),
-    expiresAt: v.number(),
-    maxGenerations: v.number(),
-    generatedCount: v.number(),
-    maxUploadStarts: v.number(),
-    uploadStartedCount: v.number(),
-    revokedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number()
-  })
-    .index("by_token_hash", ["tokenHash"])
-    .index("by_seller_createdAt", ["sellerSubject", "createdAt"]),
   sellerPricingSettings: defineTable({
     sellerSubject: v.string(),
     currency: v.literal("USD"),
@@ -50,7 +36,7 @@ export default defineSchema({
     publicSlug: v.string(),
     sellerSubject: v.string(),
     sellerEmail: v.optional(v.string()),
-    builderInviteId: v.optional(v.id("builderInvites")),
+    builderInviteId: v.optional(v.string()),
     leadRequestId: v.optional(v.id("leadRequests")),
     aiConceptDraftId: v.optional(v.id("aiConceptDrafts")),
     createdVia: v.optional(v.union(v.literal("seller"), v.literal("builder"), v.literal("lead"))),
@@ -99,25 +85,6 @@ export default defineSchema({
   })
     .index("by_preview_bundle_createdAt", ["previewBundleId", "createdAt"])
     .index("by_public_slug_createdAt", ["publicSlug", "createdAt"]),
-  buyerProfiles: defineTable({
-    buyerSubject: v.string(),
-    buyerEmail: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number()
-  }).index("by_buyer_subject", ["buyerSubject"]),
-  buyerPreviewClaims: defineTable({
-    buyerSubject: v.string(),
-    buyerEmail: v.optional(v.string()),
-    previewBundleId: v.id("previewBundles"),
-    publicSlug: v.string(),
-    confirmationId: v.optional(v.id("previewConfirmations")),
-    source: v.union(v.literal("public_preview"), v.literal("confirmation")),
-    createdAt: v.number(),
-    updatedAt: v.number()
-  })
-    .index("by_buyer_createdAt", ["buyerSubject", "createdAt"])
-    .index("by_buyer_public_slug", ["buyerSubject", "publicSlug"])
-    .index("by_preview_bundle", ["previewBundleId"]),
   leadRequests: defineTable({
     contactName: v.string(),
     contactEmail: v.string(),

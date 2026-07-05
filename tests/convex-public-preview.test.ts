@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { getPublicPreviewHandler } from "@/convex/arPreviews";
 import { assertValidAssetMeta, assertValidPrint } from "@/convex/validators";
 import { getPublicPreview, parseConvexPreviewValue, type PublicPreviewOptions } from "@/lib/convex-public-preview";
 
@@ -12,6 +13,54 @@ function jsonResponse(body: unknown, options: { ok?: boolean; status?: number } 
 }
 
 describe("Convex public preview adapter", () => {
+  it("serves getPublicPreview with a null identity", async () => {
+    const getUserIdentity = vi.fn(async () => null);
+    const readyBundle = {
+      publicSlug: "p-public-ready",
+      title: "Public Ready",
+      description: "Client proof",
+      status: "ready",
+      source: { kind: "upload" },
+      print: {
+        aspectRatio: "6:5",
+        widthMeters: 1.524,
+        heightMeters: 1.27,
+        label: "152 x 127 cm"
+      },
+      assetUrls: {
+        poster: "https://example.com/poster.png",
+        glb: "https://example.com/model.glb",
+        usdz: "https://example.com/model.usdz"
+      },
+      assetMeta: {
+        poster: { fileName: "poster.png", contentType: "image/png", byteLength: 100 },
+        glb: { fileName: "model.glb", contentType: "model/gltf-binary", byteLength: 100 },
+        usdz: { fileName: "model.usdz", contentType: "model/vnd.usdz+zip", byteLength: 100 }
+      }
+    };
+    const ctx = {
+      auth: { getUserIdentity },
+      db: {
+        query: (tableName: string) => ({
+          withIndex: () => ({
+            first: async () => (tableName === "previewBundles" ? readyBundle : null)
+          })
+        })
+      },
+      storage: {
+        getUrl: vi.fn()
+      }
+    };
+
+    await expect(getPublicPreviewHandler(ctx, { slug: "p-public-ready" })).resolves.toMatchObject({
+      id: "p-public-ready",
+      slug: "p-public-ready",
+      status: "ready",
+      sourceKind: "upload"
+    });
+    expect(getUserIdentity).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid seed dimensions and byte sizes before writing Convex records", () => {
     expect(() => assertValidPrint({ widthMeters: 0, heightMeters: 1 })).toThrow("print.widthMeters must be a positive finite number.");
     expect(() => assertValidPrint({ widthMeters: 1, heightMeters: Number.POSITIVE_INFINITY })).toThrow(

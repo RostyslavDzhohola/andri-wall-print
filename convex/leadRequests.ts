@@ -7,17 +7,13 @@ import {
   AI_CONCEPT_DRAFT_STATUSES,
   LEAD_CONTACT_METHODS,
   LEAD_AI_RATE_LIMIT_PER_DAY,
-  LEAD_REQUEST_STATUSES,
   isValidLeadEmail,
-  isLeadRequestStatus,
   makeLeadRateLimitBucket,
   normalizeLeadRequestInput,
   type AiConceptDraftStatus,
   type NormalizedLeadContact
 } from "../lib/lead-request-contract";
-import { formatPreviewBundlePrintDimensions } from "../lib/preview-bundle-contract";
 import { normalizeReservedSessionId } from "../lib/reserved-session-id";
-import { requireWallPrintProSeller } from "./sellerAuth";
 import { assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
 
 const internal = generatedInternal as any;
@@ -91,27 +87,6 @@ const aiDraftGenerationValidator = v.union(
     print: v.optional(printValidator)
   })
 );
-
-const sellerLeadValidator = v.object({
-  id: v.string(),
-  contactName: v.string(),
-  contactEmail: v.optional(v.string()),
-  contactPhone: v.optional(v.string()),
-  preferredContactMethod: v.optional(v.string()),
-  projectType: v.optional(v.string()),
-  businessName: v.optional(v.string()),
-  wallDescription: v.optional(v.string()),
-  conceptPrompt: v.optional(v.string()),
-  intent: v.string(),
-  reserveInterest: v.boolean(),
-  status: v.string(),
-  aiDraftStatus: v.optional(v.string()),
-  aiFailureReason: v.optional(v.string()),
-  printLabel: v.optional(v.string()),
-  publicPreviewUrl: v.optional(v.string()),
-  createdAt: v.number(),
-  updatedAt: v.number()
-});
 
 const conceptStatusValidator = v.union(
   v.object({
@@ -513,31 +488,6 @@ async function queueConceptDraftForLead(
   };
 }
 
-async function serializeSellerLead(ctx: any, lead: any) {
-  const draft = lead.aiConceptDraftId ? await ctx.db.get(lead.aiConceptDraftId) : null;
-
-  return {
-    id: lead._id,
-    contactName: lead.contactName,
-    contactEmail: lead.contactEmail,
-    contactPhone: lead.contactPhone,
-    preferredContactMethod: lead.preferredContactMethod,
-    projectType: lead.projectType,
-    businessName: lead.businessName,
-    wallDescription: lead.wallDescription,
-    conceptPrompt: lead.conceptPrompt,
-    intent: lead.intent,
-    reserveInterest: lead.reserveInterest,
-    status: lead.status,
-    aiDraftStatus: draft?.status,
-    aiFailureReason: draft?.failureReason ?? draft?.refusalReason,
-    printLabel: lead.print ? formatPreviewBundlePrintDimensions(lead.print) : undefined,
-    publicPreviewUrl: lead.publicPreviewSlug ? toPublicUrl(lead.publicPreviewSlug) : undefined,
-    createdAt: lead.createdAt,
-    updatedAt: lead.updatedAt
-  };
-}
-
 export const generateLeadUploadUrl = mutation({
   args: {},
   returns: v.string(),
@@ -781,22 +731,6 @@ export const submitLeadRequest = mutation({
   }
 });
 
-export const listForSeller = query({
-  args: {},
-  returns: v.array(sellerLeadValidator),
-  handler: async (ctx) => {
-    await requireWallPrintProSeller(ctx);
-    const leads = await ctx.db.query("leadRequests").withIndex("by_createdAt").order("desc").take(100);
-    const serialized = [];
-
-    for (const lead of leads) {
-      serialized.push(await serializeSellerLead(ctx, lead));
-    }
-
-    return serialized;
-  }
-});
-
 export const getConceptGenerationStatus = query({
   args: {
     leadRequestId: v.id("leadRequests")
@@ -841,31 +775,6 @@ export const getConceptGenerationStatus = query({
       ...(reason ? { failureReason: reason } : {}),
       ...(draft.providerFailureCode ? { providerFailureCode: draft.providerFailureCode } : {})
     };
-  }
-});
-
-export const updateStatus = mutation({
-  args: {
-    leadRequestId: v.id("leadRequests"),
-    status: v.union(...LEAD_REQUEST_STATUSES.map((status) => v.literal(status)))
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await requireWallPrintProSeller(ctx);
-
-    if (!isLeadRequestStatus(args.status)) {
-      throw new ConvexError({
-        code: "INVALID_LEAD_STATUS",
-        message: "Lead status is not supported."
-      });
-    }
-
-    await ctx.db.patch(args.leadRequestId, {
-      status: args.status,
-      updatedAt: Date.now()
-    });
-
-    return null;
   }
 });
 

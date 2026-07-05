@@ -17,9 +17,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
 
   return (
     <ArtworkGallerySurface
-      dashboardHref="/dashboard"
-      dashboardLabel="Sign in"
-      dashboardKind="signIn"
       initialSampleId={resolveGalleryInitialDesignId(resolvedSearchParams)}
     />
   );

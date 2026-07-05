@@ -1,15 +1,13 @@
 "use client";
 
-import { CheckCircle2, Copy, Loader2, LogIn, Send } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Copy, Loader2, Send } from "lucide-react";
+import { useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { BuyerPreviewSaveAction, type ExistingBuyerConfirmation } from "@/components/preview/buyer-preview-save-action";
 import type { ArSample } from "@/lib/ar-sample";
 import {
   buildBuyerPreviewShareText,
@@ -21,7 +19,6 @@ type PublicPreviewConfirmationProps = {
   sample: ArSample;
   publicSlug: string;
   canSubmit: boolean;
-  buyerAccountsEnabled: boolean;
 };
 
 type ConfirmationResponse =
@@ -42,22 +39,12 @@ function absoluteUrl(value: string) {
   return new URL(value, window.location.origin).toString();
 }
 
-export function PublicPreviewConfirmation({ sample, publicSlug, canSubmit, buyerAccountsEnabled }: PublicPreviewConfirmationProps) {
+export function PublicPreviewConfirmation({ sample, publicSlug, canSubmit }: PublicPreviewConfirmationProps) {
   const [buyerNote, setBuyerNote] = useState("");
   const [busy, setBusy] = useState<"submit" | "share" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<PublicPreviewConfirmation | null>(null);
-  const [existingConfirmation, setExistingConfirmation] = useState<ExistingBuyerConfirmation | null>(null);
-  const displayedConfirmation = confirmation ?? existingConfirmation;
-  const hasHydratedNoteRef = useRef(false);
-
-  useEffect(() => {
-    if (!confirmation && !hasHydratedNoteRef.current && existingConfirmation?.buyerNote) {
-      setBuyerNote(existingConfirmation.buyerNote);
-      hasHydratedNoteRef.current = true;
-    }
-  }, [confirmation, existingConfirmation]);
 
   const shareSummary = () =>
     buildBuyerPreviewShareText({
@@ -160,24 +147,14 @@ export function PublicPreviewConfirmation({ sample, publicSlug, canSubmit, buyer
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button className="min-h-11 rounded-full px-5" disabled={!canSubmit || busy !== null || displayedConfirmation !== null} onClick={() => void submitConfirmation()} type="button">
-            {busy === "submit" ? <Loader2 className="size-4 animate-spin" /> : displayedConfirmation ? <CheckCircle2 className="size-4" /> : <Send className="size-4" />}
-            {displayedConfirmation ? "Sent to admin" : "Send to admin"}
+          <Button className="min-h-11 rounded-full px-5" disabled={!canSubmit || busy !== null || confirmation !== null} onClick={() => void submitConfirmation()} type="button">
+            {busy === "submit" ? <Loader2 className="size-4 animate-spin" /> : confirmation ? <CheckCircle2 className="size-4" /> : <Send className="size-4" />}
+            {confirmation ? "Sent to admin" : "Send to admin"}
           </Button>
           <Button className="min-h-11 rounded-full px-5" disabled={busy !== null} onClick={() => void copyShareSummary()} type="button" variant="outline">
             {busy === "share" ? <Loader2 className="size-4 animate-spin" /> : <Copy className="size-4" />}
             Share summary
           </Button>
-          {buyerAccountsEnabled ? (
-            <BuyerPreviewSaveAction confirmationId={confirmation?.id ?? existingConfirmation?.id} onExistingConfirmation={setExistingConfirmation} publicSlug={publicSlug} />
-          ) : (
-            <Button asChild className="min-h-11 rounded-full px-5" type="button" variant="outline">
-              <Link href={`/sign-in?redirect_url=${encodeURIComponent(`/preview/${publicSlug}`)}`}>
-                <LogIn className="size-4" />
-                Sign in to save
-              </Link>
-            </Button>
-          )}
         </div>
 
         <div className="sr-only" role="status" aria-live="polite">

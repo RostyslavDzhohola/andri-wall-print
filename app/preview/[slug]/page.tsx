@@ -3,13 +3,11 @@ import Link from "next/link";
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicPreviewConfirmation } from "@/components/preview/public-preview-confirmation";
-import { PublicPreviewHeaderAction } from "@/components/preview/public-preview-header-action";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicPreview } from "@/lib/convex-public-preview";
-import { readClerkPublishableKey, readClerkSecretKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,18 +17,6 @@ type PublicPreviewPageProps = {
     slug: string;
   }>;
 };
-
-function previewAuthRuntimeAvailable() {
-  return Boolean(readClerkPublishableKey() && readClerkSecretKey());
-}
-
-function PreviewHeaderAction({ publicSlug }: { publicSlug: string }) {
-  if (!previewAuthRuntimeAvailable()) {
-    return null;
-  }
-
-  return <PublicPreviewHeaderAction publicSlug={publicSlug} />;
-}
 
 function ConceptDraftNotice() {
   return (
@@ -50,7 +36,6 @@ function ConceptDraftNotice() {
 export default async function PublicPreviewPage({ params }: PublicPreviewPageProps) {
   const { slug } = await params;
   const preview = await getPublicPreview(slug);
-  const buyerAccountsEnabled = Boolean(readClerkPublishableKey() && readConvexRuntimeUrl());
 
   if (preview.status === "ready") {
     const isConceptDraft = preview.sourceKind === "ai_concept";
@@ -62,12 +47,10 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
         heading="Open on iPhone Safari."
         headingClassName="max-w-[15ch] text-4xl leading-[1.03] sm:max-w-[16ch] md:text-5xl lg:max-w-[15ch]"
         intro="To see the wall preview, open this same link in Safari on an iPhone."
-        headerAction={<PreviewHeaderAction publicSlug={slug} />}
         sideContent={
           <div className="grid gap-3">
             {isConceptDraft ? <ConceptDraftNotice /> : null}
             <PublicPreviewConfirmation
-              buyerAccountsEnabled={buyerAccountsEnabled}
               sample={preview.sample}
               publicSlug={preview.sample.id}
               canSubmit={preview.source === "convex" && !isConceptDraft}

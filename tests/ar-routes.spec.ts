@@ -235,7 +235,7 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
 
   await expect(page.getByRole("heading", { name: "Choose artwork to see on your wall." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Go back" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/dashboard");
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Saved previews" })).toHaveCount(0);
   await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(6);
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Pathways to Success");
@@ -290,7 +290,7 @@ test.describe("mobile gallery layout", () => {
     await page.goto("/gallery");
 
     await expect(page.getByRole("button", { name: "Go back" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/dashboard");
+    await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
     const metrics = await page.evaluate(() => {
       const header = document.querySelector("header");
@@ -671,51 +671,23 @@ test("public preview route renders an unavailable state for missing Convex asset
   await expectNoBannedRenderedTerms(page);
 });
 
-test("admin routes block anonymous dashboard access", async ({ page }) => {
-  await page.goto("/admin");
+test("launch-deleted routes return 404", async ({ page }) => {
+  for (const pathname of [
+    "/admin",
+    "/admin/leads",
+    "/seller",
+    "/seller/new",
+    "/account",
+    "/dashboard",
+    "/builder/not-a-real-token",
+    "/invite/not-a-real-token",
+    "/sign-in",
+    "/sign-up"
+  ]) {
+    const response = await page.goto(pathname);
 
-  await expect(page.getByText(/The admin workspace is unavailable\.|Sign in to Wall Print Pro|Sign in to Wallprintpro/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Client preview links" })).toHaveCount(0);
-  if (await page.getByText("The admin workspace is unavailable.").isVisible()) {
-    await expectNoBannedRenderedTerms(page);
+    expect(response?.status(), `${pathname} should be deleted`).toBe(404);
   }
-});
-
-test("buyer account route shows a setup blocker until account runtime is available", async ({ page }) => {
-  await page.goto("/account");
-
-  await expect(page.getByRole("heading", { name: "Saved previews are unavailable." })).toBeVisible();
-  await expect(page.getByText("Ask Wall Print Pro to refresh the account setup before saving previews.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Client preview links" })).toHaveCount(0);
-  await expect(page.getByText("Admin workspace")).toHaveCount(0);
-  await expectNoBannedRenderedTerms(page);
-});
-
-test("dashboard dispatcher shows a setup blocker until account sign-in is available", async ({ page }) => {
-  await page.goto("/dashboard");
-
-  await expect(page.getByRole("heading", { name: "Account routing is unavailable." })).toBeVisible();
-  await expect(page.getByText("Ask Wall Print Pro to refresh the account setup before opening a dashboard.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open gallery" })).toHaveAttribute("href", "/gallery");
-  await expect(page.getByText("Admin workspace")).toHaveCount(0);
-  await expectNoBannedRenderedTerms(page);
-});
-
-test("invite upload routes show a setup blocker until setup is available", async ({ page }) => {
-  await page.goto("/invite/not-a-real-token");
-
-  await expect(page.getByText("This invite page is unavailable.")).toBeVisible();
-  await expect(page.getByText("Ask the admin to refresh the setup before using this invite link.")).toBeVisible();
-  await expect(page.getByText("Admin workspace")).toHaveCount(0);
-  await expectNoBannedRenderedTerms(page);
-});
-
-test("legacy route aliases redirect to admin and invite language", async ({ page }) => {
-  await page.goto("/seller");
-  await expect(page).toHaveURL(/\/admin$|\/sign-in\?redirect_url=.*%2Fadmin/);
-
-  await page.goto("/builder/not-a-real-token");
-  await expect(page).toHaveURL(/\/invite\/not-a-real-token$/);
 });
 
 test("static Phase 0 asset routes expose expected AR headers and size budgets", async ({ page }) => {

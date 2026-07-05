@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isWallPrintProSellerIdentity } from "@/convex/sellerAuth";
+import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
 import {
   DEFAULT_PREVIEW_BUNDLE_CROP,
   DEFAULT_PREVIEW_BUNDLE_PRINT,

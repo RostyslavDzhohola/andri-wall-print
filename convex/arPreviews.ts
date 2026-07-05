@@ -125,69 +125,47 @@ async function getStorageAssetUrls(
   };
 }
 
-export const getPublicPreview = queryGeneric({
-  args: {
-    slug: v.string()
-  },
-  returns: v.union(publicPreviewValidator, v.null()),
-  handler: async (ctx, args) => {
-    const bundle = await ctx.db
-      .query("previewBundles")
-      .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.slug))
-      .first();
+export async function getPublicPreviewHandler(ctx: any, args: { slug: string }) {
+  const bundle = await ctx.db
+    .query("previewBundles")
+    .withIndex("by_public_slug", (q: any) => q.eq("publicSlug", args.slug))
+    .first();
 
-    if (bundle) {
-      if (bundle.status === "ready") {
-        const assets =
-          bundle.assetUrls ??
-          (bundle.assetStorageIds ? await getStorageAssetUrls(ctx, bundle.assetStorageIds) : { poster: null, glb: null, usdz: null });
+  if (bundle) {
+    if (bundle.status === "ready") {
+      const assets =
+        bundle.assetUrls ??
+        (bundle.assetStorageIds ? await getStorageAssetUrls(ctx, bundle.assetStorageIds) : { poster: null, glb: null, usdz: null });
 
-        if (assets.poster && assets.glb && assets.usdz && bundle.assetMeta) {
-          return {
-            id: bundle.publicSlug,
-            slug: bundle.publicSlug,
-            title: bundle.title,
-            description: bundle.description,
-            print: normalizePreviewBundlePrintDisplay(bundle.print),
-            assets,
-            assetMeta: bundle.assetMeta,
-            sourceKind: bundle.source.kind,
-            status: "ready" as const
-          };
-        }
-
-        if (assets.poster && assets.glb && assets.usdz && bundle.assetUrls) {
-          return {
-            id: bundle.publicSlug,
-            slug: bundle.publicSlug,
-            title: bundle.title,
-            description: bundle.description,
-            print: normalizePreviewBundlePrintDisplay(bundle.print),
-            assets,
-            assetMeta: {
-              poster: { fileName: "sample-poster", contentType: "image/png", byteLength: 0 },
-              glb: { fileName: "sample.glb", contentType: "model/gltf-binary", byteLength: 0 },
-              usdz: { fileName: "sample.usdz", contentType: "model/vnd.usdz+zip", byteLength: 0 }
-            },
-            sourceKind: bundle.source.kind,
-            status: "ready" as const
-          };
-        }
-
+      if (assets.poster && assets.glb && assets.usdz && bundle.assetMeta) {
         return {
           id: bundle.publicSlug,
           slug: bundle.publicSlug,
-          status: "unavailable" as const,
-          reason: "This client preview is not available."
+          title: bundle.title,
+          description: bundle.description,
+          print: normalizePreviewBundlePrintDisplay(bundle.print),
+          assets,
+          assetMeta: bundle.assetMeta,
+          sourceKind: bundle.source.kind,
+          status: "ready" as const
         };
       }
 
-      if ((bundle.status === "uploaded" || bundle.status === "generating") && isFreshPreviewGeneration(bundle)) {
+      if (assets.poster && assets.glb && assets.usdz && bundle.assetUrls) {
         return {
           id: bundle.publicSlug,
           slug: bundle.publicSlug,
-          status: "preparing" as const,
-          reason: "This client preview is being prepared. Check back shortly."
+          title: bundle.title,
+          description: bundle.description,
+          print: normalizePreviewBundlePrintDisplay(bundle.print),
+          assets,
+          assetMeta: {
+            poster: { fileName: "sample-poster", contentType: "image/png", byteLength: 0 },
+            glb: { fileName: "sample.glb", contentType: "model/gltf-binary", byteLength: 0 },
+            usdz: { fileName: "sample.usdz", contentType: "model/vnd.usdz+zip", byteLength: 0 }
+          },
+          sourceKind: bundle.source.kind,
+          status: "ready" as const
         };
       }
 
@@ -199,35 +177,59 @@ export const getPublicPreview = queryGeneric({
       };
     }
 
-    const preview = await ctx.db
-      .query("arPreviews")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-      .first();
-
-    if (!preview) {
-      return null;
+    if ((bundle.status === "uploaded" || bundle.status === "generating") && isFreshPreviewGeneration(bundle)) {
+      return {
+        id: bundle.publicSlug,
+        slug: bundle.publicSlug,
+        status: "preparing" as const,
+        reason: "This client preview is being prepared. Check back shortly."
+      };
     }
 
-    const [poster, glb, usdz] = await Promise.all([
-      ctx.storage.getUrl(preview.assetStorageIds.poster),
-      ctx.storage.getUrl(preview.assetStorageIds.glb),
-      ctx.storage.getUrl(preview.assetStorageIds.usdz)
-    ]);
-
     return {
-      id: preview.slug,
-      slug: preview.slug,
-      title: preview.title,
-      description: preview.description,
-      print: normalizePreviewBundlePrintDisplay(preview.print),
-      assets: {
-        poster,
-        glb,
-        usdz
-      },
-      assetMeta: preview.assetMeta,
-      sourceKind: "sample" as const,
-      status: "ready" as const
+      id: bundle.publicSlug,
+      slug: bundle.publicSlug,
+      status: "unavailable" as const,
+      reason: "This client preview is not available."
     };
   }
+
+  const preview = await ctx.db
+    .query("arPreviews")
+    .withIndex("by_slug", (q: any) => q.eq("slug", args.slug))
+    .first();
+
+  if (!preview) {
+    return null;
+  }
+
+  const [poster, glb, usdz] = await Promise.all([
+    ctx.storage.getUrl(preview.assetStorageIds.poster),
+    ctx.storage.getUrl(preview.assetStorageIds.glb),
+    ctx.storage.getUrl(preview.assetStorageIds.usdz)
+  ]);
+
+  return {
+    id: preview.slug,
+    slug: preview.slug,
+    title: preview.title,
+    description: preview.description,
+    print: normalizePreviewBundlePrintDisplay(preview.print),
+    assets: {
+      poster,
+      glb,
+      usdz
+    },
+    assetMeta: preview.assetMeta,
+    sourceKind: "sample" as const,
+    status: "ready" as const
+  };
+}
+
+export const getPublicPreview = queryGeneric({
+  args: {
+    slug: v.string()
+  },
+  returns: v.union(publicPreviewValidator, v.null()),
+  handler: getPublicPreviewHandler
 });
