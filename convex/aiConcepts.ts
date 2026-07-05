@@ -277,7 +277,11 @@ export const generateConceptDraft = internalAction({
         publicUrl: string;
         status: string;
       };
-    } catch {
+    } catch (error) {
+      console.error("Failed to create preview bundle from AI concept draft.", {
+        draftId: args.draftId,
+        error
+      });
       created = null;
     }
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { canStartHomepageConceptGeneration } from "@/components/promotion/homepage-demo-actions";
+import {
+  canRetryConceptStatusPollFailure,
+  canStartHomepageConceptGeneration,
+  CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES
+} from "@/components/promotion/homepage-demo-actions";
 
 describe("homepage concept generation controls", () => {
   it("blocks double-submit while a generation is in flight", () => {
@@ -21,5 +25,11 @@ describe("homepage concept generation controls", () => {
         email: "BUYER@EXAMPLE.COM"
       })
     ).toBe(true);
+  });
+
+  it("retries transient status polling failures before giving up", () => {
+    expect(canRetryConceptStatusPollFailure({ consecutiveFailures: 1 })).toBe(true);
+    expect(canRetryConceptStatusPollFailure({ consecutiveFailures: CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES })).toBe(true);
+    expect(canRetryConceptStatusPollFailure({ consecutiveFailures: CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES + 1 })).toBe(false);
   });
 });

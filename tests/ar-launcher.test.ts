@@ -38,4 +38,17 @@ describe("AR launcher helpers", () => {
       })
     ).toBe(true);
   });
+
+  it("rejects samples without launchable GLB and USDZ URLs", () => {
+    expect(
+      hasReadyArAssetUrls({
+        ...DEFAULT_AR_SAMPLE,
+        assets: {
+          poster: "/generated-poster.png",
+          glb: "",
+          usdz: ""
+        }
+      })
+    ).toBe(false);
+  });
 });

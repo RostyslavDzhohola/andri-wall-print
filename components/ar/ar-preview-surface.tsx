@@ -163,7 +163,7 @@ export function ArPreviewSurface({
                       {hasReadyArAssets ? (
                         <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
                       ) : (
-                        <Button className="min-h-10 rounded-full px-4" disabled type="button" variant="outline">
+                        <Button className="min-h-10 rounded-full px-4" data-testid="ar-preview-unavailable" disabled type="button" variant="outline">
                           Preview only
                         </Button>
                       )}

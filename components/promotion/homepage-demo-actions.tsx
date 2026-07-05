@@ -52,9 +52,17 @@ type ConceptArtStatusResponse =
 
 const CONCEPT_STATUS_POLL_DELAY_MS = 1_200;
 const CONCEPT_STATUS_MAX_POLLS = 80;
+export const CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES = 3;
 
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+class ConceptStatusPollGiveUpError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConceptStatusPollGiveUpError";
+  }
 }
 
 export function canStartHomepageConceptGeneration(input: {
@@ -63,6 +71,13 @@ export function canStartHomepageConceptGeneration(input: {
   email: string;
 }) {
   return input.status !== "generating" && Boolean(input.prompt.trim()) && isValidLeadEmail(normalizeLeadEmail(input.email));
+}
+
+export function canRetryConceptStatusPollFailure(input: {
+  consecutiveFailures: number;
+  maxConsecutiveFailures?: number;
+}) {
+  return input.consecutiveFailures <= (input.maxConsecutiveFailures ?? CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES);
 }
 
 function startFailureMessage(code: string | undefined, fallback: string) {
@@ -81,36 +96,103 @@ async function readJsonResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+function isTransientPollFailureStatus(status: number) {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function conceptStatusPollFailureMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Concept preview status could not be checked.";
+}
+
+async function fetchConceptStatus(leadRequestId: string) {
+  let response: Response;
+
+  try {
+    response = await fetch(`/api/concept-art?leadRequestId=${encodeURIComponent(leadRequestId)}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    });
+  } catch (error) {
+    return {
+      ok: false as const,
+      message: conceptStatusPollFailureMessage(error)
+    };
+  }
+
+  let result: ConceptArtStatusResponse;
+
+  try {
+    result = await readJsonResponse<ConceptArtStatusResponse>(response);
+  } catch (error) {
+    if (response.ok || isTransientPollFailureStatus(response.status)) {
+      return {
+        ok: false as const,
+        message: conceptStatusPollFailureMessage(error)
+      };
+    }
+
+    throw error;
+  }
+
+  if (!response.ok) {
+    if (isTransientPollFailureStatus(response.status)) {
+      return {
+        ok: false as const,
+        message: result.ok ? "Concept preview status could not be checked." : result.message
+      };
+    }
+
+    throw new Error(result.ok ? "Concept preview status could not be checked." : result.message);
+  }
+
+  if (!result.ok) {
+    throw new Error(result.message);
+  }
+
+  return {
+    ok: true as const,
+    result
+  };
+}
+
 export function HomepageDemoActions() {
   const { selectedBaseSample, selectedSample, showPreviewSample } = useArPreviewSelection();
   const [conceptPrompt, setConceptPrompt] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>("idle");
   const [generationMessage, setGenerationMessage] = useState<string | null>(null);
+  const [lastLeadRequestId, setLastLeadRequestId] = useState<string | null>(null);
+  const [canCheckAgain, setCanCheckAgain] = useState(false);
   const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedBaseSample.id)}`;
 
   const pollConceptStatus = async (leadRequestId: string) => {
+    let consecutiveFetchFailures = 0;
+
     for (let attempt = 0; attempt < CONCEPT_STATUS_MAX_POLLS; attempt += 1) {
       if (attempt > 0) {
         await wait(CONCEPT_STATUS_POLL_DELAY_MS);
       }
 
-      const response = await fetch(`/api/concept-art?leadRequestId=${encodeURIComponent(leadRequestId)}`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json"
-        },
-        cache: "no-store"
-      });
-      const result = await readJsonResponse<ConceptArtStatusResponse>(response);
+      const statusResult = await fetchConceptStatus(leadRequestId);
 
-      if (!response.ok && !result.ok) {
-        throw new Error(result.message);
+      if (!statusResult.ok) {
+        consecutiveFetchFailures += 1;
+
+        if (canRetryConceptStatusPollFailure({ consecutiveFailures: consecutiveFetchFailures })) {
+          setGenerationMessage("Still checking the existing concept preview. Temporary connection issue; retrying...");
+          continue;
+        }
+
+        throw new ConceptStatusPollGiveUpError(
+          `${statusResult.message} Use Check again to resume this same request without submitting a new one.`
+        );
       }
 
-      if (!result.ok) {
-        throw new Error(result.message);
-      }
+      consecutiveFetchFailures = 0;
+      const result = statusResult.result;
 
       if (result.status === "queued" || result.status === "generating") {
         setGenerationMessage(result.message);
@@ -120,7 +202,64 @@ export function HomepageDemoActions() {
       return result;
     }
 
-    throw new Error("Concept preview is still preparing. Leave this page open and check again shortly.");
+    throw new ConceptStatusPollGiveUpError("Concept preview is still preparing. Use Check again to resume this same request shortly.");
+  };
+
+  const applyConceptStatus = (status: Extract<ConceptArtStatusResponse, { ok: true }>) => {
+    const poster = status.assets?.poster;
+
+    if (status.status === "ready" && poster && status.assets?.glb && status.assets?.usdz) {
+      showPreviewSample({
+        id: `concept-${status.draftId}`,
+        title: status.title,
+        description: status.description,
+        print: status.print ?? selectedBaseSample.print,
+        assets: {
+          poster,
+          glb: status.assets.glb,
+          usdz: status.assets.usdz
+        }
+      });
+      setCanCheckAgain(false);
+      setGenerationStatus("ready");
+      setGenerationMessage("Artwork preview is ready for wall placement.");
+      return;
+    }
+
+    if (status.status === "composite_only" && poster) {
+      showPreviewSample({
+        id: `concept-${status.draftId}`,
+        title: status.title,
+        description: status.description,
+        print: status.print ?? selectedBaseSample.print,
+        assets: {
+          poster,
+          glb: "",
+          usdz: ""
+        }
+      });
+      setCanCheckAgain(false);
+      setGenerationStatus("composite_only");
+      setGenerationMessage("leave this open / scan the QR / come back. Wall Print Pro will follow up by email.");
+      return;
+    }
+
+    setCanCheckAgain(false);
+    setGenerationStatus("failed");
+    setGenerationMessage(status.message);
+  };
+
+  const pollAndApplyConceptStatus = async (leadRequestId: string) => {
+    const status = await pollConceptStatus(leadRequestId);
+    applyConceptStatus(status);
+  };
+
+  const handleConceptError = (error: unknown, leadRequestId: string | null) => {
+    const canResume = error instanceof ConceptStatusPollGiveUpError && Boolean(leadRequestId);
+
+    setCanCheckAgain(canResume);
+    setGenerationStatus("failed");
+    setGenerationMessage(error instanceof Error ? error.message : "Artwork generation failed.");
   };
 
   const generateConceptArtwork = async () => {
@@ -134,11 +273,14 @@ export function HomepageDemoActions() {
     if (!canStartHomepageConceptGeneration({ status: generationStatus, prompt, email })) {
       setGenerationStatus("idle");
       setGenerationMessage(!prompt ? "Describe the wall print idea first." : "Enter a valid email address to generate a concept draft.");
+      setCanCheckAgain(false);
       return;
     }
 
     setGenerationStatus("generating");
     setGenerationMessage("Creating artwork and preparing the AR wall preview...");
+    setCanCheckAgain(false);
+    let submittedLeadRequestId: string | null = null;
 
     try {
       const response = await fetch("/api/concept-art", {
@@ -158,48 +300,27 @@ export function HomepageDemoActions() {
         throw new Error(result.ok ? "Artwork generation failed." : startFailureMessage(result.code, result.message));
       }
 
-      const status = await pollConceptStatus(result.leadRequestId);
-      const poster = status.assets?.poster;
-
-      if (status.status === "ready" && poster && status.assets?.glb && status.assets?.usdz) {
-        showPreviewSample({
-          id: `concept-${status.draftId}`,
-          title: status.title,
-          description: status.description,
-          print: status.print ?? selectedBaseSample.print,
-          assets: {
-            poster,
-            glb: status.assets.glb,
-            usdz: status.assets.usdz
-          }
-        });
-        setGenerationStatus("ready");
-        setGenerationMessage("Artwork preview is ready for wall placement.");
-        return;
-      }
-
-      if (status.status === "composite_only" && poster) {
-        showPreviewSample({
-          id: `concept-${status.draftId}`,
-          title: status.title,
-          description: status.description,
-          print: status.print ?? selectedBaseSample.print,
-          assets: {
-            poster,
-            glb: "",
-            usdz: ""
-          }
-        });
-        setGenerationStatus("composite_only");
-        setGenerationMessage("leave this open / scan the QR / come back. Wall Print Pro will follow up by email.");
-        return;
-      }
-
-      setGenerationStatus("failed");
-      setGenerationMessage(status.message);
+      submittedLeadRequestId = result.leadRequestId;
+      setLastLeadRequestId(submittedLeadRequestId);
+      await pollAndApplyConceptStatus(submittedLeadRequestId);
     } catch (error) {
-      setGenerationStatus("failed");
-      setGenerationMessage(error instanceof Error ? error.message : "Artwork generation failed.");
+      handleConceptError(error, submittedLeadRequestId ?? lastLeadRequestId);
+    }
+  };
+
+  const checkExistingConceptAgain = async () => {
+    if (!lastLeadRequestId || generationStatus === "generating") {
+      return;
+    }
+
+    setGenerationStatus("generating");
+    setGenerationMessage("Checking the existing concept preview again...");
+    setCanCheckAgain(false);
+
+    try {
+      await pollAndApplyConceptStatus(lastLeadRequestId);
+    } catch (error) {
+      handleConceptError(error, lastLeadRequestId);
     }
   };
 
@@ -254,6 +375,18 @@ export function HomepageDemoActions() {
             <Sparkles className="size-4" aria-hidden="true" />
             {generationStatus === "generating" ? "Creating art" : "Generate concept"}
           </Button>
+          {canCheckAgain && lastLeadRequestId ? (
+            <Button
+              className="min-h-10 rounded-full px-4"
+              data-testid="homepage-concept-check-again"
+              disabled={generationStatus === "generating"}
+              onClick={() => void checkExistingConceptAgain()}
+              type="button"
+              variant="outline"
+            >
+              Check again
+            </Button>
+          ) : null}
           <span className="text-xs font-medium text-muted-foreground">Selected: {selectedBaseSample.title}</span>
         </div>
         {generationMessage ? (

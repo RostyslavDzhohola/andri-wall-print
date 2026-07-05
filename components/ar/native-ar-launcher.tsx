@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getFixedScaleQuickLookHref } from "@/lib/ar-launcher";
+import { getFixedScaleQuickLookHref, hasReadyArAssetUrls } from "@/lib/ar-launcher";
 import type { ArSample } from "@/lib/ar-sample";
 import { resolveClientPreviewUrl } from "@/lib/client-preview-url";
 import { cn } from "@/lib/utils";
@@ -161,7 +161,8 @@ function getArActionLabel(diagnostics: ArDiagnostics | null, accessNotice: ArAcc
 }
 
 export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: NativeArLauncherProps) {
-  const quickLookUrl = getFixedScaleQuickLookHref(sample.assets.usdz);
+  const hasReadyArAssets = hasReadyArAssetUrls(sample);
+  const quickLookUrl = hasReadyArAssets ? getFixedScaleQuickLookHref(sample.assets.usdz) : "#";
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
   const launchFallbackTimerRef = useRef<number | null>(null);
   const launchFallbackCleanupRef = useRef<(() => void) | null>(null);
@@ -223,6 +224,10 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
   };
 
   useEffect(() => {
+    if (!hasReadyArAssets) {
+      return;
+    }
+
     const modelViewer = modelViewerRef.current;
 
     if (!modelViewer) {
@@ -235,9 +240,13 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     modelViewer.setAttribute("ios-src", sample.assets.usdz);
     modelViewer.setAttribute("poster", sample.assets.poster);
     modelViewer.setAttribute("src", sample.assets.glb);
-  }, [sample.assets.glb, sample.assets.poster, sample.assets.usdz, sample.title]);
+  }, [hasReadyArAssets, sample.assets.glb, sample.assets.poster, sample.assets.usdz, sample.title]);
 
   useEffect(() => {
+    if (!hasReadyArAssets) {
+      return;
+    }
+
     const readDiagnostics = () => {
       const modelViewer = modelViewerRef.current;
 
@@ -250,11 +259,23 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     return () => {
       timers.forEach(window.clearTimeout);
     };
-  }, [onDiagnosticsChange, sample.id]);
+  }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
 
   useEffect(() => clearPendingLaunchFallback, []);
 
   const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!hasReadyArAssets) {
+      event.preventDefault();
+      setArError(null);
+      setDialogNotice({
+        message: "Preview only.",
+        title: "Wall placement is not ready",
+        description: "This preview has a poster image, but wall-placement files are not available yet.",
+        blockLaunch: true
+      });
+      return;
+    }
+
     const modelViewer = modelViewerRef.current;
     const currentDiagnostics = getBrowserDeviceDiagnostics(modelViewer);
     const currentAccessNotice = getArAccessNotice(currentDiagnostics);
@@ -330,24 +351,30 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
   return (
     <div className="grid gap-2 sm:justify-items-end">
-      <model-viewer
-        alt={`${sample.title} wall print`}
-        ar
-        ar-modes="quick-look scene-viewer"
-        ar-placement="wall"
-        ar-scale="fixed"
-        aria-hidden="true"
-        data-testid="ar-launcher-model"
-        ios-src={sample.assets.usdz}
-        poster={sample.assets.poster}
-        ref={modelViewerRef}
-        reveal="manual"
-        src={sample.assets.glb}
-        tabIndex={-1}
-        className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
-      />
+      {hasReadyArAssets ? (
+        <model-viewer
+          alt={`${sample.title} wall print`}
+          ar
+          ar-modes="quick-look scene-viewer"
+          ar-placement="wall"
+          ar-scale="fixed"
+          aria-hidden="true"
+          data-testid="ar-launcher-model"
+          ios-src={sample.assets.usdz}
+          poster={sample.assets.poster}
+          ref={modelViewerRef}
+          reveal="manual"
+          src={sample.assets.glb}
+          tabIndex={-1}
+          className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
+        />
+      ) : null}
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        {showSendToIPhone ? (
+        {!hasReadyArAssets ? (
+          <Button className="min-h-10 rounded-full px-4" data-testid="ar-preview-unavailable" disabled type="button" variant="outline">
+            Preview only
+          </Button>
+        ) : showSendToIPhone ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
