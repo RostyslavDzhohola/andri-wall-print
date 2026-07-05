@@ -22,10 +22,10 @@ describe("lead request presentation", () => {
   it("uses the Convex result message before falling back to a draft status label", () => {
     expect(
       formatLeadRequestResultMessage({
-        message: "Request saved. The concept draft is being prepared for seller review.",
+        message: "Request saved. We'll review it and text you to schedule your estimate.",
         aiDraftStatus: "queued"
       })
-    ).toBe("Request saved. The concept draft is being prepared for seller review.");
+    ).toBe("Request saved. We'll review it and text you to schedule your estimate.");
 
     expect(formatLeadRequestResultMessage({ aiDraftStatus: "rate_limited" })).toBe("Daily concept draft limit reached");
   });

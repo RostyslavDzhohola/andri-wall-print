@@ -3,7 +3,7 @@
 import { useMutation } from "convex/react";
 import { ArrowRight, CheckCircle2, ImagePlus, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 
 import {
   PrintSizeFields,
@@ -20,7 +20,8 @@ import { api } from "@/convex/_generated/api";
 import {
   fingerprintBuilderUpload,
   normalizeBuilderUploadToPng,
-  validateBuilderSourceUpload
+  validateBuilderSourceUpload,
+  validatePublicUploadFile
 } from "@/lib/builder-upload-normalization";
 import {
   LEAD_CONCEPT_PROMPT_MAX_LENGTH,
@@ -82,6 +83,7 @@ export function PublicRequestForm({
   const [conceptPrompt, setConceptPrompt] = useState(defaultConceptPrompt ?? "");
   const [reserveInterest, setReserveInterest] = useState(defaultIntent === "reserve");
   const [file, setFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [printSize, setPrintSize] = useState<PrintSizeFieldsValue>(() => printSizeFieldsValueFromPrint(DEFAULT_PREVIEW_BUNDLE_PRINT));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +105,34 @@ export function PublicRequestForm({
       (!phoneEntered || phoneValid) &&
       printValidation.ok
   );
+
+  const handleFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0] ?? null;
+    event.target.value = "";
+
+    if (!selected) {
+      setFile(null);
+      setUploadError(null);
+      return;
+    }
+
+    let validation: Awaited<ReturnType<typeof validatePublicUploadFile>>;
+
+    try {
+      validation = await validatePublicUploadFile(selected);
+    } catch {
+      validation = { ok: false, reason: "Could not read this image. Choose a JPEG, PNG, or WebP file." };
+    }
+
+    if (!validation.ok) {
+      setFile(null);
+      setUploadError(validation.reason);
+      return;
+    }
+
+    setFile(selected);
+    setUploadError(null);
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -176,6 +206,7 @@ export function PublicRequestForm({
       })) as SubmissionResult;
       setResult(saved);
       setFile(null);
+      setUploadError(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Request could not be saved.");
     } finally {
@@ -293,9 +324,14 @@ export function PublicRequestForm({
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"
           id="lead-upload"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onChange={handleFileSelection}
           type="file"
         />
+        {uploadError ? (
+          <p className="text-sm font-medium text-destructive" data-testid="request-upload-error" role="alert">
+            {uploadError} Accepted formats: JPEG, PNG, or WebP.
+          </p>
+        ) : null}
       </div>
 
       <label className="flex items-start gap-3 rounded-lg border bg-muted/25 p-3 text-sm">
@@ -311,7 +347,7 @@ export function PublicRequestForm({
       {!aiEnabled && conceptPrompt.trim() ? (
         <Alert>
           <Sparkles className="size-4" />
-          <AlertDescription>Concept drafting is offline in this environment. Your request will still be saved for seller review.</AlertDescription>
+          <AlertDescription>Concept drafting is offline in this environment. Your request will still be saved and we'll follow up.</AlertDescription>
         </Alert>
       ) : null}
 

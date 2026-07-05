@@ -258,7 +258,7 @@ export function selectConceptGenerationGate(input: {
     ok: true,
     code: "QUEUED",
     dayKey,
-    message: "Request saved. The concept draft is being prepared for seller review."
+    message: "Request saved. We'll review it and text you to schedule your estimate."
   };
 }
 
@@ -687,7 +687,7 @@ export const submitLeadRequest = mutation({
     });
     let draftStatus: AiConceptDraftStatus | undefined;
     let code: string | undefined;
-    let message = "Request saved for seller review.";
+    let message = "Request saved. We'll review it and text you to schedule your estimate.";
 
     if (normalized.conceptPrompt) {
       if (!normalized.normalizedContactEmail || !isValidLeadEmail(normalized.normalizedContactEmail)) {
@@ -719,7 +719,7 @@ export const submitLeadRequest = mutation({
           createdAt: now
         });
         code = "DISABLED";
-        message = "Request saved for seller review.";
+        message = "Request saved. We'll review it and text you to schedule your estimate.";
       } else {
         const outcome = await queueConceptDraftForLead(ctx, {
           leadRequestId,

@@ -7,6 +7,33 @@ import {
 } from "./preview-bundle-contract";
 import { validatePublicUploadImageBytes } from "./upload-image-validation";
 
+export type PublicUploadFileValidation = { ok: true; reason: null } | { ok: false; reason: string };
+
+/**
+ * Byte-level validation for a chosen upload file, safe to run at file-selection time.
+ * Reuses the reviewed sniffing stack so a magic-byte lie (e.g. GIF bytes named .png)
+ * or an under-minimum-dimension image is rejected before the file is accepted into form state.
+ */
+export async function validatePublicUploadFile(file: File): Promise<PublicUploadFileValidation> {
+  const sourceValidation = validateBuilderSourceUpload({
+    contentType: file.type,
+    byteLength: file.size
+  });
+
+  if (!sourceValidation.ok) {
+    return { ok: false, reason: sourceValidation.reason ?? "Upload could not be used." };
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const byteValidation = validatePublicUploadImageBytes(bytes);
+
+  if (!byteValidation.ok) {
+    return { ok: false, reason: byteValidation.reason };
+  }
+
+  return { ok: true, reason: null };
+}
+
 export const BUILDER_UPLOAD_SOURCE_CONTENT_TYPES = PREVIEW_BUNDLE_SOURCE_CONTENT_TYPES;
 export const BUILDER_UPLOAD_MAX_SOURCE_BYTES = PREVIEW_BUNDLE_MAX_SOURCE_BYTES;
 export const BUILDER_UPLOAD_MAX_LONG_EDGE_PX = 2048;

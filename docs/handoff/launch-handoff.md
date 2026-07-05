@@ -47,6 +47,7 @@ Use `docs/handoff/stripe-reserve-sop.md` as the client operating procedure for t
 - Set env vars in Vercel and Convex: `NEXT_PUBLIC_SITE_URL`, `CONVEX_URL`, `NEXT_PUBLIC_CONVEX_URL`, `WALL_PRINT_PRO_RESERVE_URL`, `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`, `WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, and `OPENAI_API_KEY` where generation runs.
 - Day-4 production-device gate: on the production domain, test real iPhone Safari Quick Look and Android Chrome Scene Viewer. Include generated concept AR, gallery AR, Convex-storage asset URL headers, MIME types, and file sizes.
 - Payment Link phone round-trip: on a phone, open the Stripe Payment Link, pay in test mode or live/refund, land on `/reserved?session_id=...`, confirm the receipt reference appears, then reopen `/reserved` from the Stripe email link without `session_id`.
+- During the Payment Link phone round-trip, confirm a `reserved_visit` funnel event appears in the Convex dashboard (data → `funnelEvents`).
 - Share-surface unfurl checklist: Facebook personal post, Facebook business page, Google Business Profile website link, and Instagram bio.
 - Google Search Console: verify the production domain and submit the sitemap.
 - Google Business Profile: link the production website and confirm the displayed NAP matches `lib/local-business.ts`.
