@@ -5,6 +5,7 @@ import {
   validatePreviewBundleUpload,
   validatePreviewSourceUpload
 } from "./preview-bundle-contract";
+import { validatePublicUploadImageBytes } from "./upload-image-validation";
 
 export const BUILDER_UPLOAD_SOURCE_CONTENT_TYPES = PREVIEW_BUNDLE_SOURCE_CONTENT_TYPES;
 export const BUILDER_UPLOAD_MAX_SOURCE_BYTES = PREVIEW_BUNDLE_MAX_SOURCE_BYTES;
@@ -266,8 +267,15 @@ export async function fingerprintBuilderUpload(file: File) {
 }
 
 export async function normalizeBuilderUploadToPng(file: File): Promise<NormalizedBuilderUpload> {
+  const sourceBytes = new Uint8Array(await file.arrayBuffer());
+  const byteValidation = validatePublicUploadImageBytes(sourceBytes);
+
+  if (!byteValidation.ok) {
+    throw new Error(byteValidation.reason);
+  }
+
   const sourceValidation = validateBuilderSourceUpload({
-    contentType: file.type,
+    contentType: byteValidation.contentType,
     byteLength: file.size
   });
 
@@ -304,7 +312,7 @@ export async function normalizeBuilderUploadToPng(file: File): Promise<Normalize
       heightPx: prepared.height,
       originalWidthPx: original.width,
       originalHeightPx: original.height,
-      originalContentType: file.type,
+      originalContentType: byteValidation.contentType,
       originalByteLength: file.size,
       wasResized: normalized.wasResized || prepared.width !== original.width || prepared.height !== original.height
     };

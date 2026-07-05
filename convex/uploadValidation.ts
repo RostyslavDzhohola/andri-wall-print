@@ -1,6 +1,32 @@
 import { ConvexError } from "convex/values";
 
 import { validatePreviewBundleUpload } from "../lib/preview-bundle-contract";
+import { validatePreparedPngTextureBytes } from "../lib/upload-image-validation";
+
+export {
+  PREPARED_PNG_BYTE_LENGTH_MISMATCH_REASON,
+  PREPARED_PNG_DIMENSIONS_UNVERIFIED_REASON,
+  PREPARED_PNG_INVALID_REASON,
+  PREPARED_PNG_TOO_MANY_PIXELS_REASON,
+  PREPARED_PNG_TOO_SMALL_REASON,
+  PREPARED_PNG_TOO_WIDE_REASON,
+  PUBLIC_UPLOAD_ACCEPTED_FORMATS_LABEL,
+  PUBLIC_UPLOAD_DIMENSIONS_UNVERIFIED_REASON,
+  PUBLIC_UPLOAD_MALFORMED_REASON,
+  PUBLIC_UPLOAD_MAX_DIMENSION_PX,
+  PUBLIC_UPLOAD_MAX_TOTAL_PIXELS,
+  PUBLIC_UPLOAD_MIN_DIMENSION_PX,
+  PUBLIC_UPLOAD_SIZE_UNVERIFIED_REASON,
+  PUBLIC_UPLOAD_TOO_MANY_PIXELS_REASON,
+  PUBLIC_UPLOAD_TOO_SMALL_REASON,
+  PUBLIC_UPLOAD_TOO_WIDE_REASON,
+  PUBLIC_UPLOAD_UNSUPPORTED_REASON,
+  validatePreparedPngTextureBytes,
+  validatePublicUploadImageBytes,
+  type SniffedUploadImage,
+  type SniffedUploadImageFormat,
+  type UploadImageByteValidation
+} from "../lib/upload-image-validation";
 
 type StoredPreviewUploadInput = {
   sourceStorageId: string;
@@ -33,6 +59,24 @@ function throwInvalidUpload(message: string): never {
   });
 }
 
+async function validateStoredUploadBytesIfReadable(ctx: any, sourceStorageId: string, expectedByteLength: number) {
+  if (typeof ctx.storage?.get !== "function") {
+    return;
+  }
+
+  const blob = await ctx.storage.get(sourceStorageId);
+
+  if (!blob) {
+    throwInvalidUpload("Uploaded artwork was not found. Choose the file again.");
+  }
+
+  const validation = validatePreparedPngTextureBytes(new Uint8Array(await blob.arrayBuffer()), expectedByteLength);
+
+  if (!validation.ok) {
+    throwInvalidUpload(validation.reason);
+  }
+}
+
 export async function validateStoredPreviewUpload(ctx: any, input: StoredPreviewUploadInput) {
   const metadata = await ctx.db.system.get("_storage", input.sourceStorageId);
 
@@ -54,6 +98,8 @@ export async function validateStoredPreviewUpload(ctx: any, input: StoredPreview
   if (input.contentType !== contentType || input.byteLength !== byteLength) {
     throwInvalidUpload("Uploaded artwork metadata did not match the stored file. Choose the file again.");
   }
+
+  await validateStoredUploadBytesIfReadable(ctx, input.sourceStorageId, byteLength);
 
   const sourceFingerprint = normalizeUploadSourceFingerprint(input.sourceFingerprint);
   const storedFingerprint = normalizeUploadSourceFingerprint(metadata.sha256);

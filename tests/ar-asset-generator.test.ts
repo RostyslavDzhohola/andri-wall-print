@@ -2,15 +2,45 @@ import { describe, expect, it } from "vitest";
 
 import { assertPngTextureBytes, generateFlatPrintAssets, makeGlbFlatPrint, makeUsdzFlatPrint } from "@/lib/ar-asset-generator";
 
-const ONE_BY_ONE_PNG = Uint8Array.from([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00,
-  0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0a,
-  0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4,
-  0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
-]);
+function bytesFromAscii(value: string) {
+  return Uint8Array.from(Array.from(value, (character) => character.charCodeAt(0)));
+}
+
+function concatBytes(...parts: Uint8Array[]) {
+  const output = new Uint8Array(parts.reduce((total, part) => total + part.byteLength, 0));
+  let offset = 0;
+
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.byteLength;
+  }
+
+  return output;
+}
+
+function u32be(value: number) {
+  return Uint8Array.from([(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff]);
+}
+
+function makePng(widthPx: number, heightPx: number) {
+  return concatBytes(
+    Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    u32be(13),
+    bytesFromAscii("IHDR"),
+    u32be(widthPx),
+    u32be(heightPx),
+    Uint8Array.from([8, 6, 0, 0, 0]),
+    u32be(0),
+    u32be(0),
+    bytesFromAscii("IEND"),
+    u32be(0)
+  );
+}
+
+const VALID_PNG = makePng(128, 128);
 
 const INPUT = {
-  textureBytes: ONE_BY_ONE_PNG,
+  textureBytes: VALID_PNG,
   textureFileName: "proof.png",
   textureContentType: "image/png" as const,
   title: "Client Proof",
@@ -117,7 +147,7 @@ describe("TypeScript AR asset generator", () => {
   });
 
   it("rejects forged upload metadata before generating public AR assets", () => {
-    expect(() => assertPngTextureBytes(ONE_BY_ONE_PNG, ONE_BY_ONE_PNG.byteLength - 1)).toThrow(
+    expect(() => assertPngTextureBytes(VALID_PNG, VALID_PNG.byteLength - 1)).toThrow(
       "Uploaded artwork byte length does not match the stored file. Choose the file again."
     );
   });

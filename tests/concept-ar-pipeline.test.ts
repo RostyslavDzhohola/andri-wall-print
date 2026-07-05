@@ -1,15 +1,44 @@
 import { describe, expect, it } from "vitest";
 
 import { generateAiConceptArAssets } from "@/convex/aiConcepts";
-import { AR_ASSET_SIZE_BUDGET_BYTES } from "@/lib/ar-launcher";
-import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
+import { DEFAULT_PREVIEW_BUNDLE_PRINT, PREVIEW_BUNDLE_MAX_GENERATOR_TEXTURE_BYTES } from "@/lib/preview-bundle-contract";
 
-const ONE_BY_ONE_PNG = Uint8Array.from([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00,
-  0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0a,
-  0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4,
-  0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
-]);
+function bytesFromAscii(value: string) {
+  return Uint8Array.from(Array.from(value, (character) => character.charCodeAt(0)));
+}
+
+function concatBytes(...parts: Uint8Array[]) {
+  const output = new Uint8Array(parts.reduce((total, part) => total + part.byteLength, 0));
+  let offset = 0;
+
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.byteLength;
+  }
+
+  return output;
+}
+
+function u32be(value: number) {
+  return Uint8Array.from([(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff]);
+}
+
+function makePng(widthPx: number, heightPx: number) {
+  return concatBytes(
+    Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    u32be(13),
+    bytesFromAscii("IHDR"),
+    u32be(widthPx),
+    u32be(heightPx),
+    Uint8Array.from([8, 6, 0, 0, 0]),
+    u32be(0),
+    u32be(0),
+    bytesFromAscii("IEND"),
+    u32be(0)
+  );
+}
+
+const VALID_PNG = makePng(128, 128);
 
 function generate(textureBytes: Uint8Array) {
   return generateAiConceptArAssets({
@@ -25,7 +54,7 @@ function generate(textureBytes: Uint8Array) {
 
 describe("AI concept AR asset chain", () => {
   it("turns a valid PNG into GLB and USDZ assets with ready status", () => {
-    const result = generate(ONE_BY_ONE_PNG);
+    const result = generate(VALID_PNG);
 
     expect(result.status).toBe("ready");
 
@@ -39,7 +68,7 @@ describe("AI concept AR asset chain", () => {
       poster: {
         fileName: "client-concept.png",
         contentType: "image/png",
-        byteLength: ONE_BY_ONE_PNG.byteLength
+        byteLength: VALID_PNG.byteLength
       },
       glb: {
         fileName: "client-concept.glb",
@@ -64,8 +93,8 @@ describe("AI concept AR asset chain", () => {
   });
 
   it("keeps oversized poster bytes and returns composite_only", () => {
-    const oversized = new Uint8Array(AR_ASSET_SIZE_BUDGET_BYTES.poster + 1);
-    oversized.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+    const oversized = new Uint8Array(PREVIEW_BUNDLE_MAX_GENERATOR_TEXTURE_BYTES + 1);
+    oversized.set(VALID_PNG, 0);
     const result = generate(oversized);
 
     expect(result.status).toBe("composite_only");
@@ -75,6 +104,6 @@ describe("AI concept AR asset chain", () => {
     }
 
     expect(result.posterBytes.byteLength).toBe(oversized.byteLength);
-    expect(result.reason).toBe(`Generated poster exceeds ${AR_ASSET_SIZE_BUDGET_BYTES.poster} bytes.`);
+    expect(result.reason).toBe("Prepared upload must be 4 MB or smaller.");
   });
 });

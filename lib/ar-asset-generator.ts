@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 
 import { AR_ASSET_SIZE_BUDGET_BYTES, AR_SAMPLE_TOTAL_SIZE_BUDGET_BYTES, type ArAssetKind } from "./ar-launcher";
 import { formatDecimalFeetFromMeters } from "./preview-bundle-contract";
+import { validatePreparedPngTextureBytes } from "./upload-image-validation";
 
 export type FlatPrintSizeGuideOptions = {
   enabled: boolean;
@@ -128,20 +129,10 @@ function makeSizeGuideGeometry(input: FlatPrintAssetInput): SizeGuideGeometry {
 }
 
 export function assertPngTextureBytes(textureBytes: Uint8Array, expectedByteLength?: number) {
-  const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  const validation = validatePreparedPngTextureBytes(textureBytes, expectedByteLength);
 
-  if (expectedByteLength !== undefined && textureBytes.byteLength !== expectedByteLength) {
-    throw new Error("Uploaded artwork byte length does not match the stored file. Choose the file again.");
-  }
-
-  if (textureBytes.byteLength < pngSignature.length) {
-    throw new Error("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
-  }
-
-  for (let index = 0; index < pngSignature.length; index += 1) {
-    if (textureBytes[index] !== pngSignature[index]) {
-      throw new Error("Uploaded artwork is not a valid prepared PNG image. Choose the file again.");
-    }
+  if (!validation.ok) {
+    throw new Error(validation.reason);
   }
 }
 
