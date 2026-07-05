@@ -21,6 +21,7 @@ type ArPreviewSurfaceProps = {
   brandName?: string;
   headerAction?: ReactNode;
   headingClassName?: string;
+  eyebrow?: ReactNode;
   sideContent?: ReactNode;
   showPrintSizeGuide?: boolean;
   afterContent?: ReactNode;
@@ -52,6 +53,7 @@ export function ArPreviewSurface({
   brandName = "Wall Print Pro",
   headerAction,
   headingClassName,
+  eyebrow,
   sideContent,
   showPrintSizeGuide = false,
   afterContent
@@ -91,13 +93,14 @@ export function ArPreviewSurface({
           </header>
 
           <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] lg:items-center">
-            <section className="grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
+            <section className="ar-hero-reveal grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
+              {eyebrow ? <div>{eyebrow}</div> : null}
               <h1 className={cn("max-w-none text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl lg:max-w-[9ch]", headingClassName)}>{heading}</h1>
               {intro ? <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p> : null}
               {sideContent ? <div className="max-w-lg">{sideContent}</div> : null}
             </section>
 
-            <section className="relative flex flex-col overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
+            <section className="ar-art-card relative flex flex-col overflow-hidden rounded-lg border bg-secondary shadow-[0_30px_90px_rgba(35,31,25,0.18)] md:min-h-[72vh]">
               <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.42)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.42)_1px,transparent_1px)] bg-[size:46px_46px]" />
               <img
                 alt={`${selectedSample.title} wall print`}

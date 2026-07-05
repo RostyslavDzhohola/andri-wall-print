@@ -1,6 +1,6 @@
 "use client";
 
-import { Images, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, Images, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -9,8 +9,24 @@ import type { ArSample } from "@/lib/ar-sample";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QrCode } from "@/components/ui/qr-code";
 import { Textarea } from "@/components/ui/textarea";
 import { isValidLeadEmail, LEAD_CONCEPT_PROMPT_MAX_LENGTH, normalizeLeadEmail } from "@/lib/lead-request-contract";
+import {
+  HOME_AT_CAPACITY_BODY,
+  HOME_AT_CAPACITY_TITLE,
+  HOME_COMPOSITE_ONLY_BODY,
+  HOME_ENTRY_CHOOSE,
+  HOME_ENTRY_DESCRIBE,
+  HOME_ENTRY_UPLOAD,
+  HOME_GENERATION_LICENSING_NOTE,
+  HOME_GENERATION_LOADING,
+  HOME_SEE_ON_WALL_CTA,
+  HOME_UPLOAD_ACCEPTED_FORMATS
+} from "@/lib/product-copy";
+import { cn } from "@/lib/utils";
+
+type HomepageEntry = "choose" | "upload" | "describe";
 
 type GenerationStatus = "idle" | "generating" | "ready" | "composite_only" | "failed";
 
@@ -92,6 +108,16 @@ function startFailureMessage(code: string | undefined, fallback: string) {
   return fallback;
 }
 
+// Detects the daily-cap / rate-limit "come back tomorrow" outcome so the failed
+// state can render the warm at-capacity card instead of a hard error.
+export function isAtCapacityFailureMessage(message: string | null | undefined) {
+  if (!message) {
+    return false;
+  }
+
+  return message.startsWith("At capacity today.") || message.startsWith("Try tomorrow.");
+}
+
 async function readJsonResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
@@ -166,7 +192,10 @@ export function HomepageDemoActions() {
   const [generationMessage, setGenerationMessage] = useState<string | null>(null);
   const [lastLeadRequestId, setLastLeadRequestId] = useState<string | null>(null);
   const [canCheckAgain, setCanCheckAgain] = useState(false);
+  const [activeEntry, setActiveEntry] = useState<HomepageEntry>("describe");
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedBaseSample.id)}`;
+  const uploadHref = "/request?intent=concept#lead-upload-section";
 
   const pollConceptStatus = async (leadRequestId: string) => {
     let consecutiveFetchFailures = 0;
@@ -240,7 +269,8 @@ export function HomepageDemoActions() {
       });
       setCanCheckAgain(false);
       setGenerationStatus("composite_only");
-      setGenerationMessage("leave this open / scan the QR / come back. Wall Print Pro will follow up by email.");
+      setShareUrl(status.publicPreviewUrl ?? null);
+      setGenerationMessage(HOME_COMPOSITE_ONLY_BODY);
       return;
     }
 
@@ -278,7 +308,8 @@ export function HomepageDemoActions() {
     }
 
     setGenerationStatus("generating");
-    setGenerationMessage("Creating artwork and preparing the AR wall preview...");
+    setGenerationMessage(HOME_GENERATION_LOADING);
+    setShareUrl(null);
     setCanCheckAgain(false);
     let submittedLeadRequestId: string | null = null;
 
@@ -324,77 +355,190 @@ export function HomepageDemoActions() {
     }
   };
 
+  const isGenerating = generationStatus === "generating";
+  const atCapacity = generationStatus === "failed" && isAtCapacityFailureMessage(generationMessage);
+  const entries: { key: HomepageEntry; label: string; icon: typeof Images }[] = [
+    { key: "choose", label: HOME_ENTRY_CHOOSE, icon: Images },
+    { key: "upload", label: HOME_ENTRY_UPLOAD, icon: Upload },
+    { key: "describe", label: HOME_ENTRY_DESCRIBE, icon: Sparkles }
+  ];
+
+  const handleEntryKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex = entries.findIndex((entry) => entry.key === activeEntry);
+    const delta = event.key === "ArrowRight" ? 1 : -1;
+    const next = entries[(currentIndex + delta + entries.length) % entries.length];
+    setActiveEntry(next.key);
+  };
+
   return (
     <div className="grid gap-4" data-testid="homepage-demo-actions">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Button asChild className="min-h-11 rounded-full px-5" size="lg">
-          <Link data-testid="homepage-selected-design-handoff" href={selectedDesignHref}>
-            <Images className="size-4" aria-hidden="true" />
-            Choose design
-          </Link>
-        </Button>
-        <Button asChild className="min-h-11 rounded-full px-5" size="lg" variant="outline">
-          <Link href="/request?intent=concept#lead-upload-section">
-            <Upload className="size-4" aria-hidden="true" />
-            Upload art/logo
-          </Link>
-        </Button>
+      {/* Three-entry chooser — arrow-key navigable segmented control. */}
+      <div
+        aria-label="How would you like to start?"
+        className="grid grid-cols-3 gap-1 rounded-full border bg-card/80 p-1 shadow-sm"
+        onKeyDown={handleEntryKeyDown}
+        role="tablist"
+      >
+        {entries.map((entry) => {
+          const Icon = entry.icon;
+          const selected = activeEntry === entry.key;
+
+          return (
+            <button
+              aria-selected={selected}
+              className={cn(
+                "flex min-h-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                selected ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+              data-testid={`homepage-entry-${entry.key}`}
+              key={entry.key}
+              onClick={() => setActiveEntry(entry.key)}
+              role="tab"
+              tabIndex={selected ? 0 : -1}
+              type="button"
+            >
+              <Icon className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{entry.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="grid gap-2 rounded-lg border bg-card/80 p-3 shadow-sm">
-        <div className="grid gap-2">
-          <Label htmlFor="homepage-concept-email">Email</Label>
-          <Input
-            id="homepage-concept-email"
-            inputMode="email"
-            onChange={(event) => setContactEmail(event.target.value)}
-            placeholder="you@example.com"
-            type="email"
-            value={contactEmail}
-          />
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor="homepage-concept">Describe idea</Label>
-          <Textarea
-            id="homepage-concept"
-            maxLength={LEAD_CONCEPT_PROMPT_MAX_LENGTH}
-            onChange={(event) => setConceptPrompt(event.target.value)}
-            placeholder="Logo wall, Chicago skyline, kids area mural..."
-            rows={3}
-            value={conceptPrompt}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            className="min-h-10 rounded-full px-4"
-            data-testid="homepage-concept-generate"
-            disabled={generationStatus === "generating"}
-            onClick={() => void generateConceptArtwork()}
-            type="button"
-          >
-            <Sparkles className="size-4" aria-hidden="true" />
-            {generationStatus === "generating" ? "Creating art" : "Generate concept"}
-          </Button>
-          {canCheckAgain && lastLeadRequestId ? (
-            <Button
-              className="min-h-10 rounded-full px-4"
-              data-testid="homepage-concept-check-again"
-              disabled={generationStatus === "generating"}
-              onClick={() => void checkExistingConceptAgain()}
-              type="button"
-              variant="outline"
-            >
-              Check again
-            </Button>
-          ) : null}
-          <span className="text-xs font-medium text-muted-foreground">Selected: {selectedBaseSample.title}</span>
-        </div>
-        {generationMessage ? (
-          <p className="text-xs font-medium text-muted-foreground" data-testid="homepage-concept-status">
-            {generationMessage}
+      {/* Choose design — hand off to the gallery with the selected base sample. */}
+      {activeEntry === "choose" ? (
+        <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Start from a Chicago design and place it on your wall in AR. Currently selected:{" "}
+            <span className="font-semibold text-foreground">{selectedBaseSample.title}</span>.
           </p>
-        ) : null}
-      </div>
+          <Button asChild className="min-h-11 w-fit rounded-full px-5" size="lg">
+            <Link data-testid="homepage-selected-design-handoff" href={selectedDesignHref}>
+              <Images className="size-4" aria-hidden="true" />
+              {HOME_SEE_ON_WALL_CTA}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        </div>
+      ) : null}
+
+      {/* Upload art/logo — hand off to the contact-gated upload flow. */}
+      {activeEntry === "upload" ? (
+        <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Upload your own art or logo and see it printed on your wall. {HOME_UPLOAD_ACCEPTED_FORMATS}
+          </p>
+          <Button asChild className="min-h-11 w-fit rounded-full px-5" size="lg">
+            <Link data-testid="homepage-upload-handoff" href={uploadHref}>
+              <Upload className="size-4" aria-hidden="true" />
+              {HOME_SEE_ON_WALL_CTA}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        </div>
+      ) : null}
+
+      {/* Describe idea — email-gated concept generation. */}
+      {activeEntry === "describe" ? (
+        <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
+          {atCapacity ? (
+            <div
+              className="grid gap-2 rounded-md border border-status-warning-border bg-status-warning p-4 text-status-warning-foreground"
+              data-testid="homepage-at-capacity"
+            >
+              <p className="text-sm font-semibold">{HOME_AT_CAPACITY_TITLE}</p>
+              <p className="text-sm leading-6">{HOME_AT_CAPACITY_BODY}</p>
+            </div>
+          ) : null}
+
+          <div className="grid gap-2">
+            <Label htmlFor="homepage-concept-email">Email</Label>
+            <Input
+              id="homepage-concept-email"
+              inputMode="email"
+              onChange={(event) => setContactEmail(event.target.value)}
+              placeholder="you@example.com"
+              type="email"
+              value={contactEmail}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="homepage-concept">Describe your wall-print idea</Label>
+            <Textarea
+              id="homepage-concept"
+              maxLength={LEAD_CONCEPT_PROMPT_MAX_LENGTH}
+              onChange={(event) => setConceptPrompt(event.target.value)}
+              placeholder="Logo wall, Chicago skyline, kids area mural..."
+              rows={3}
+              value={conceptPrompt}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              className="min-h-11 rounded-full px-5"
+              data-testid="homepage-concept-generate"
+              disabled={isGenerating}
+              onClick={() => void generateConceptArtwork()}
+              size="lg"
+              type="button"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              {isGenerating ? "Drafting concept" : HOME_SEE_ON_WALL_CTA}
+              {isGenerating ? null : <ArrowRight className="size-4" aria-hidden="true" />}
+            </Button>
+            {canCheckAgain && lastLeadRequestId ? (
+              <Button
+                className="min-h-11 rounded-full px-4"
+                data-testid="homepage-concept-check-again"
+                disabled={isGenerating}
+                onClick={() => void checkExistingConceptAgain()}
+                size="lg"
+                type="button"
+                variant="outline"
+              >
+                Check again
+              </Button>
+            ) : null}
+          </div>
+
+          {isGenerating ? (
+            <div
+              className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground"
+              data-testid="homepage-generation-progress"
+            >
+              <Sparkles className="size-4 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+              {HOME_GENERATION_LOADING}
+            </div>
+          ) : null}
+
+          {generationStatus === "composite_only" ? (
+            <div
+              className="flex items-start gap-3 rounded-md border border-status-ready-border bg-status-ready p-3 text-status-ready-foreground"
+              data-testid="homepage-composite-share"
+            >
+              <QrCode value={shareUrl ?? selectedDesignHref} title="Scan to open this concept on your phone" />
+              <p className="text-sm leading-6">{HOME_COMPOSITE_ONLY_BODY}</p>
+            </div>
+          ) : null}
+
+          {generationMessage && !isGenerating && !atCapacity && generationStatus !== "composite_only" ? (
+            <p className="text-sm font-medium text-muted-foreground" data-testid="homepage-concept-status">
+              {generationMessage}
+            </p>
+          ) : (
+            <span className="sr-only" data-testid="homepage-concept-status">
+              {generationMessage ?? ""}
+            </span>
+          )}
+
+          <p className="text-xs leading-5 text-muted-foreground">{HOME_GENERATION_LICENSING_NOTE}</p>
+        </div>
+      ) : null}
 
       <div className="rounded-lg border bg-muted/35 p-3 text-sm leading-6" data-testid="homepage-proof-note">
         Proof on screen: <span className="font-semibold">{selectedSample.title}</span>

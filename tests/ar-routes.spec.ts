@@ -81,32 +81,42 @@ async function expectWallPlacementEntryPoint(page: Page, expectedQuickLookHref?:
 test("homepage renders a static artwork presentation with native AR assets", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Choose artwork, upload yours, or describe the wall you want." })).toBeVisible();
-  await expect(page.getByText("Start with real Wall Print Pro proof, then send the idea")).toBeVisible();
+  // Approved C2 homepage: trust/education build, generation is the headline.
+  await expect(page.getByRole("heading", { name: "Not wallpaper. Not vinyl. Printed straight onto your wall." })).toBeVisible();
+  await expect(page.getByText("Custom wall printing in Chicago.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
-  await expect(page.getByRole("link", { name: "Request", exact: true })).toHaveAttribute("href", "/request");
-  await expect(page.getByRole("link", { name: "Choose design" })).toHaveAttribute("href", "/gallery?designId=chicago-final-1");
-  await expect(page.getByRole("link", { name: "Upload art/logo" })).toHaveAttribute("href", "/request?intent=concept#lead-upload-section");
-  await expect(page.getByRole("button", { name: "Generate concept" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Our work" })).toHaveAttribute("href", "/work");
+  await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
+  // Three-entry chooser: describe is the default active entry; email + prompt visible.
+  await expect(page.getByTestId("homepage-entry-choose")).toBeVisible();
+  await expect(page.getByTestId("homepage-entry-upload")).toBeVisible();
+  await expect(page.getByTestId("homepage-entry-describe")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("homepage-concept-generate")).toBeVisible();
   await expect(page.getByLabel("Email")).toHaveAttribute("type", "email");
-  await page.getByLabel("Describe idea").fill("Gold leaf logo wall");
-  await expect(page.getByLabel("Describe idea")).toHaveValue("Gold leaf logo wall");
+  await page.getByLabel("Describe your wall-print idea").fill("Gold leaf logo wall");
+  await expect(page.getByLabel("Describe your wall-print idea")).toHaveValue("Gold leaf logo wall");
   await expect(page.getByTestId("homepage-proof-note")).toContainText("Pathways to Success");
+  // Binding D10 licensing note appears where generation appears.
+  await expect(page.getByText("printability confirmed at your estimate")).toBeVisible();
+  // Choose-design entry reveals the gallery handoff with the selected sample.
+  await page.getByTestId("homepage-entry-choose").click();
+  await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/gallery?designId=chicago-final-1");
+  // Upload entry reveals the contact-gated upload handoff.
+  await page.getByTestId("homepage-entry-upload").click();
+  await expect(page.getByTestId("homepage-upload-handoff")).toHaveAttribute("href", "/request?intent=concept#lead-upload-section");
+  await page.getByTestId("homepage-entry-describe").click();
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Request wall preview" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Try artwork" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Reserve interest" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Call" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/dashboard");
-  await expect(page.getByRole("link", { name: "Create preview" })).toHaveCount(0);
-  await expect(page.getByText("Home and business walls")).toHaveCount(0);
-  await expect(page.getByText("Seller-reviewed visuals")).toHaveCount(0);
-  await expect(page.getByText("Human follow-up before quote")).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toBeVisible();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
-  await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/gallery?designId=chicago-final-2");
   await expect(page.getByTestId("homepage-proof-note")).toContainText("Lakefront Day");
+  // Selection propagates to the choose-design handoff.
+  await page.getByTestId("homepage-entry-choose").click();
+  await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/gallery?designId=chicago-final-2");
+  await page.getByTestId("homepage-entry-describe").click();
   await page.getByTestId("previous-artwork").click();
   await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
   await expect(page.getByTestId("artwork-width-guide")).toHaveCount(0);
@@ -126,15 +136,19 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText("The gallery uses real GLB/USDZ wall-placement assets.")).toHaveCount(0);
   await expect(page.getByText("Camera not started")).toHaveCount(0);
   await expect(page.getByText("Picture mode")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Built for the first wall-print conversation." })).toHaveCount(0);
   await expect(page.getByTestId("sales-pilot-proof")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Our work in the Chicago area" })).toBeVisible();
-  await expect(page.getByText("Short clips from finished walls help leads connect the preview with the finished space.")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Turn the artwork into a wall demo before the estimate." })).toBeVisible();
+  // C2 hierarchy sections.
+  await expect(page.getByRole("heading", { name: "Wall printing vs. everything else" })).toBeVisible();
+  await expect(page.getByTestId("home-comparison")).toBeVisible();
+  await expect(page.getByText("Yes — only us")).toBeVisible();
+  await expect(page.getByTestId("home-testimonial")).toBeVisible();
+  await expect(page.getByTestId("home-reserve-strip")).toBeVisible();
+  await expect(page.getByTestId("home-reserve-cta")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recent Chicago wall prints" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "From idea to installed in three steps." })).toBeVisible();
   await expect(page.getByText("Bring the art")).toBeVisible();
-  await expect(page.getByText("Send the request")).toBeVisible();
-  await expect(page.getByText("Review the draft")).toBeVisible();
-  await expect(page.getByTestId("sales-pilot-process")).toBeVisible();
+  await expect(page.getByTestId("home-process")).toBeVisible();
+  await expect(page.getByTestId("home-footer")).toBeVisible();
   await expect(page.getByTestId("work-video")).toHaveCount(3);
   await expect(page.getByTestId("work-video").first()).not.toHaveAttribute("controls", "");
   await expect(page.getByTestId("work-video").first()).toHaveAttribute("muted", "");
@@ -200,7 +214,7 @@ test("homepage concept flow polls until generated AR assets are ready", async ({
 
   await page.goto("/");
   await page.getByLabel("Email").fill("buyer@example.com");
-  await page.getByLabel("Describe idea").fill("Chicago skyline for a school lobby");
+  await page.getByLabel("Describe your wall-print idea").fill("Chicago skyline for a school lobby");
   await page.getByTestId("homepage-concept-generate").click();
 
   await expect(page.getByTestId("homepage-concept-status")).toContainText("Artwork preview is ready for wall placement.");
@@ -255,6 +269,7 @@ test("homepage selected design opens the public gallery before the request gate"
   await page.goto("/");
   await page.getByTestId("next-artwork").click();
 
+  await page.getByTestId("homepage-entry-choose").click();
   await page.getByTestId("homepage-selected-design-handoff").click();
 
   await expect(page).toHaveURL(/\/gallery\?designId=chicago-final-2$/);
@@ -644,7 +659,7 @@ test("public preview route renders a ready seeded artwork", async ({ page }) => 
 
   await page.getByRole("link", { name: "Wall Print Pro" }).click();
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { name: "Choose artwork, upload yours, or describe the wall you want." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Not wallpaper. Not vinyl. Printed straight onto your wall." })).toBeVisible();
 });
 
 test("public preview route renders an unavailable state for missing Convex assets", async ({ page }) => {
