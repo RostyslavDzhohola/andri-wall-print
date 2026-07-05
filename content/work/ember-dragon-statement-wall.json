@@ -1,0 +1,17 @@
+{
+  "slug": "ember-dragon-statement-wall",
+  "title": "Ember Dragon statement wall",
+  "neighborhood": "Wicker Park",
+  "area": "Chicago, IL",
+  "size": "45 x 90 cm",
+  "surface": "Interior gallery wall, matte finish",
+  "story": "A Wicker Park apartment wanted one bold piece to anchor a bare hallway wall. We printed the Ember Dragon artwork, a high-detail cinematic dragon, at 45 by 90 cm on a matte stock that keeps the fine scale-work sharp up close, which is exactly how people see it in a narrow hallway. Proof that a custom wall print does not have to be a cityscape to feel like it belongs in the space.",
+  "photos": [
+    {
+      "src": "/artworks/dragon-wall-print.png",
+      "alt": "High-detail cinematic dragon wall print installed as a statement piece on an interior hallway wall"
+    }
+  ],
+  "needsClientConfirmation": true,
+  "clientConfirmationNote": "PLACEHOLDER: neighborhood (Wicker Park), surface, size, and story are plausible stand-ins built around a real repo artwork asset. Real client, address/neighborhood, install photography, and the true story are a launch gate the human must confirm."
+}

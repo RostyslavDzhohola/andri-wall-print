@@ -1,0 +1,21 @@
+{
+  "slug": "lakefront-day-mural",
+  "title": "Lakefront Day vertical wall print",
+  "neighborhood": "Lincoln Park",
+  "area": "Chicago, IL",
+  "size": "36 x 60 in",
+  "surface": "Interior accent wall, satin finish",
+  "story": "A Lincoln Park condo owner wanted the summer lakefront on their living-room accent wall year round: the skyline, the trail, sailboats out on the water. We printed the Lakefront Day artwork as a tall 36 by 60 inch panel to fit the narrow wall between two windows. The satin finish holds color depth on the water and sky without going glossy in the afternoon light.",
+  "photos": [
+    {
+      "src": "/artworks/chicago-final-2.png",
+      "alt": "Vertical Chicago lakefront wall print showing the skyline, lakefront trail, and sailboats on a summer day"
+    },
+    {
+      "src": "/work-videos/wall-print-2-poster.jpg",
+      "alt": "Tall custom wall mural installed on an interior accent wall between two windows"
+    }
+  ],
+  "needsClientConfirmation": true,
+  "clientConfirmationNote": "PLACEHOLDER: neighborhood (Lincoln Park), surface, and story details are plausible stand-ins. Real client, address/neighborhood, install photography, and the true story are a launch gate the human must confirm."
+}
