@@ -42,7 +42,6 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
 
     return (
       <ArPreviewSurface
-        brandName="Wall Print Pro"
         samples={[preview.sample]}
         heading="Open on iPhone Safari."
         headingClassName="max-w-[15ch] text-4xl leading-[1.03] sm:max-w-[16ch] md:text-5xl lg:max-w-[15ch]"

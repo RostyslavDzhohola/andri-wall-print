@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, MessageSquareText, Phone } from "lucide-react";
 
-import { BrandMark } from "@/components/brand/brand-mark";
 import { ReservedVisitLogger } from "@/components/reserved/reserved-visit-logger";
 import { Button } from "@/components/ui/button";
 import { readWallPrintProPublicContactUrl, readWallPrintProPublicPhone } from "@/lib/runtime-env";
@@ -55,9 +54,7 @@ export default async function ReservedPage({ searchParams }: ReservedPageProps) 
       <ReservedVisitLogger sessionId={sessionId} />
 
       <section className="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
-        <BrandMark ariaLabel="Wall Print Pro homepage" className="text-base sm:text-lg" />
-
-        <header className="mt-10 max-w-2xl">
+        <header className="max-w-2xl">
           <p className="text-sm font-medium text-primary">Deposit received · slot reserved</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             {RESERVED_DEPOSIT_HEADLINE}

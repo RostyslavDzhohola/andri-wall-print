@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { GalleryHorizontal } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicRequestForm } from "@/components/request/public-request-form";
@@ -51,19 +50,7 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-4 md:px-6">
-        <header className="flex items-center justify-between gap-4 pt-1 sm:pt-0">
-          <BrandMark ariaLabel="Wall Print Pro homepage" className="min-w-0 text-base sm:text-lg" textClassName="truncate" />
-          <div className="flex shrink-0 items-center gap-3">
-            <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" size="lg" variant="ghost">
-              <Link href="/gallery">
-                <GalleryHorizontal className="size-4" />
-                Gallery
-              </Link>
-            </Button>
-          </div>
-        </header>
-
+      <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 pb-4 md:px-6">
         <div className="grid flex-1 gap-4 md:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] md:items-start">
           <div className="grid content-start gap-5 py-3 md:py-6">
             <div className="grid gap-4">

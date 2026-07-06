@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 
 import { NativeArLauncher, type ArDiagnostics } from "@/components/ar/native-ar-launcher";
-import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,8 +17,6 @@ type ArPreviewSurfaceProps = {
   samples?: ArSample[];
   heading: string;
   intro?: string;
-  brandName?: string;
-  headerAction?: ReactNode;
   headingClassName?: string;
   eyebrow?: ReactNode;
   sideContent?: ReactNode;
@@ -50,8 +47,6 @@ export function ArPreviewSurface({
   samples = AR_SAMPLES,
   heading,
   intro,
-  brandName = "Wall Print Pro",
-  headerAction,
   headingClassName,
   eyebrow,
   sideContent,
@@ -86,12 +81,7 @@ export function ArPreviewSurface({
           strategy="afterInteractive"
           type="module"
         />
-        <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-4 md:px-6">
-          <header className="flex items-center justify-between gap-4 pt-1 sm:pt-0">
-            <BrandMark ariaLabel={`${brandName} homepage`} className="min-w-0 text-base sm:text-lg" label={brandName} textClassName="truncate" />
-            {headerAction ? <div className="flex shrink-0 items-center gap-3">{headerAction}</div> : null}
-          </header>
-
+        <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 pb-4 md:px-6">
           <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] lg:items-center">
             <section className="ar-hero-reveal grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
               {eyebrow ? <div>{eyebrow}</div> : null}

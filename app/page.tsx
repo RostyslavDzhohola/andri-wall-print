@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check, GalleryHorizontal, MessageCircle } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { HomepageDemoActions } from "@/components/promotion/homepage-demo-actions";
@@ -15,7 +15,6 @@ import {
   HOME_FOOTER_TAGLINE,
   HOME_HEADLINE,
   HOME_LOCATION_BADGE,
-  HOME_NAV_RESERVE_CTA,
   HOME_PORTFOLIO_TEASER_CTA,
   HOME_PROCESS_HEADING,
   HOME_PROCESS_STEPS,
@@ -28,19 +27,9 @@ import {
   HOME_WORK_HEADING,
   HOME_WORK_SUBHEAD
 } from "@/lib/product-copy";
-import { readWallPrintProReserveUrl } from "@/lib/runtime-env";
+import { resolveReserveHref } from "@/lib/reserve-url";
 import { loadWorkJobs } from "@/lib/work-content";
 import { cn } from "@/lib/utils";
-
-// LAUNCH GATE: real Stripe Payment Link for the $100 print-job-slot deposit.
-// The env override (WALL_PRINT_PRO_RESERVE_URL) wins when set; this placeholder
-// is a dead Stripe-shaped URL on purpose — the site must not ship to indexing
-// until the client's real Payment Link replaces it (see docs/handoff).
-const PLACEHOLDER_RESERVE_URL = "https://buy.stripe.com/REPLACE_WITH_REAL_PAYMENT_LINK";
-
-function resolveReserveHref() {
-  return readWallPrintProReserveUrl()?.trim() || PLACEHOLDER_RESERVE_URL;
-}
 
 function ChicagoBadge() {
   return (
@@ -299,44 +288,13 @@ export default function Home() {
     <>
       <LocalBusinessJsonLd />
       <ArPreviewSurface
-        brandName="Wall Print Pro"
         heading={HOME_HEADLINE}
         headingClassName="text-[2.5rem] max-w-3xl sm:max-w-3xl md:max-w-4xl lg:max-w-[16ch]"
         intro={HOME_SUBHEAD}
         eyebrow={<ChicagoBadge />}
-        headerAction={
-          <>
-            <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" size="lg" variant="ghost">
-              <Link href="/gallery">
-                <GalleryHorizontal className="size-4" />
-                <span className="sr-only sm:not-sr-only">Gallery</span>
-              </Link>
-            </Button>
-            <Button asChild className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" size="lg" variant="ghost">
-              <Link href="/work">
-                <MessageCircle className="size-4" />
-                <span className="sr-only sm:not-sr-only">Our work</span>
-              </Link>
-            </Button>
-            <Button asChild className="min-h-10 rounded-full px-4 sm:min-h-11 sm:px-5" size="lg">
-              <Link data-testid="home-nav-reserve" href={reserveHref}>
-                {HOME_NAV_RESERVE_CTA}
-              </Link>
-            </Button>
-          </>
-        }
         sideContent={<HomepageDemoActions />}
         afterContent={<HomeSections reserveHref={reserveHref} />}
       />
-      {/* Sticky bottom reserve bar (mobile only) — the 375px sticky CTA per spec. */}
-      <div className="sticky bottom-0 z-40 border-t bg-background/95 px-4 py-3 shadow-[0_-8px_30px_rgba(35,31,25,.10)] backdrop-blur md:hidden">
-        <Button asChild className="min-h-11 w-full rounded-full" size="lg">
-          <Link data-testid="home-sticky-reserve" href={reserveHref}>
-            {HOME_NAV_RESERVE_CTA}
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
-      </div>
     </>
   );
 }

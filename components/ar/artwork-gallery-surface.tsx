@@ -7,7 +7,6 @@ import Script from "next/script";
 import { useRef, useState } from "react";
 
 import { NativeArLauncher, type ArDiagnostics } from "@/components/ar/native-ar-launcher";
-import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { AR_SAMPLES, DEFAULT_AR_SAMPLE, type ArSample } from "@/lib/ar-sample";
 import { formatPreviewBundlePrintArea, formatPreviewBundlePrintDimensions } from "@/lib/preview-bundle-contract";
@@ -81,16 +80,13 @@ export function ArtworkGallerySurface({
         strategy="afterInteractive"
         type="module"
       />
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 py-4 md:px-6">
-        <header className="flex items-center justify-between gap-4 pt-1 sm:pt-0">
-          <BrandMark ariaLabel="Wall Print Pro homepage" className="min-w-0 text-base sm:text-lg" textClassName="truncate" />
-          <div className="flex shrink-0 items-center gap-2">
-            <Button aria-label="Go back" className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" onClick={goBack} type="button" variant="ghost">
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Back</span>
-            </Button>
-          </div>
-        </header>
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-4 md:px-6">
+        <div>
+          <Button aria-label="Go back" className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" onClick={goBack} type="button" variant="ghost">
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back</span>
+          </Button>
+        </div>
 
         <div className="grid gap-2">
           <p className="text-sm font-semibold uppercase text-primary">Gallery</p>

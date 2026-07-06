@@ -235,6 +235,10 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
 
   await expect(page.getByRole("heading", { name: "Choose artwork to see on your wall." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Go back" })).toBeVisible();
+  // Shared site chrome renders on the gallery route: brand + nav + reserve CTA.
+  await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
+  await expect(page.getByRole("link", { name: "Our work" })).toHaveAttribute("href", "/work");
+  await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Saved previews" })).toHaveCount(0);
   await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(6);
@@ -619,6 +623,31 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByTestId("share-to-phone")).toContainText("Send to iPhone");
     });
   });
+});
+
+test("shared site header + reserve CTA render on the Our work routes", async ({ page }) => {
+  await page.goto("/work");
+
+  await expect(page.getByRole("link", { name: "Wall Print Pro" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
+  await expect(page.getByRole("link", { name: "Our work" }).first()).toHaveAttribute("href", "/work");
+  await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
+
+  await page.goto("/work/pathways-to-success-mural");
+  await expect(page.getByRole("link", { name: "Wall Print Pro" })).toHaveAttribute("href", "/");
+  await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
+});
+
+test("/reserved keeps the shared header but swaps the CTA for a confirmation chip", async ({ page }) => {
+  await page.goto("/reserved");
+
+  await expect(page.getByRole("link", { name: "Wall Print Pro" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
+  // The paying customer is never shown a reserve CTA again.
+  await expect(page.getByTestId("home-nav-reserve")).toHaveCount(0);
+  await expect(page.getByTestId("site-reserve-confirmation")).toContainText("Spot reserved");
+  // No competing sticky reserve bar on the confirmation page either.
+  await expect(page.getByTestId("home-sticky-reserve")).toHaveCount(0);
 });
 
 test("old picture mode route is removed", async ({ page }) => {
