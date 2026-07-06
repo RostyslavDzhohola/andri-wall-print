@@ -1,9 +1,5 @@
 Never use npm. Use pnpm for installs, scripts, lockfiles, and docs. Convex CLI work is the exception: use `npx convex dev` for Convex dev sync/watch commands.
 
-Convex deploy rule:
-- The Convex deployment does not update itself. After ANY change under `convex/` (functions, schema) or to `lib/` modules imported by Convex functions, push it with `npx convex dev --once` before testing — otherwise the app calls stale or missing functions and features fail with misleading "unavailable" errors.
-- During longer local sessions, prefer keeping `npx convex dev` running in watch mode; it re-pushes automatically on every change.
-
 Terminology:
 - "You" means Codex, the builder, or other AI agents.
 - "Seller" means the Wall Print Pro business and its people.
