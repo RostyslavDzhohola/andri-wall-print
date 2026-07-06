@@ -25,12 +25,12 @@ describe("request page defaults", () => {
   });
 
   it("turns a valid design id into editable request context", () => {
-    expect(resolveRequestPageDefaults({ designId: "dragon-wall-print" })).toMatchObject({
+    expect(resolveRequestPageDefaults({ designId: "chicago-final-2" })).toMatchObject({
       defaultIntent: "concept",
-      defaultConceptPrompt: expect.stringContaining("Ember Dragon"),
+      defaultConceptPrompt: expect.stringContaining("Lakefront Day"),
       defaultDesignContext: {
-        id: "dragon-wall-print",
-        title: "Ember Dragon"
+        id: "chicago-final-2",
+        title: "Lakefront Day"
       }
     });
   });

@@ -8,7 +8,7 @@ describe("gallery page defaults", () => {
   });
 
   it("uses the first supplied design id when the query param is repeated", () => {
-    expect(resolveGalleryInitialDesignId({ designId: ["dragon-wall-print", "chicago-final-1"] })).toBe("dragon-wall-print");
+    expect(resolveGalleryInitialDesignId({ designId: ["chicago-final-3", "chicago-final-1"] })).toBe("chicago-final-3");
   });
 
   it("ignores unknown design ids instead of falling back from user input", () => {

@@ -9,28 +9,18 @@ function publicPath(pathname: string) {
 }
 
 describe("AR_SAMPLES", () => {
-  it("keeps client proofs first, followed by the original fixed-size samples", () => {
+  it("keeps only client-approved Chicago proofs in the gallery", () => {
     expect(AR_SAMPLES.map((sample) => sample.id)).toEqual([
       "chicago-final-1",
       "chicago-final-2",
-      "chicago-final-3",
-      "dragon-wall-print",
-      "elven-wall-print",
-      "cyberpunk-wall-print"
+      "chicago-final-3"
     ]);
 
-    expect(AR_SAMPLES.slice(0, 3).map((sample) => sample.print.label)).toEqual([
+    expect(AR_SAMPLES.map((sample) => sample.print.label)).toEqual([
       "5 ft x 4.2 ft",
       "3 ft x 5 ft",
       "4 ft x 5 ft"
     ]);
-
-    for (const sample of AR_SAMPLES.slice(3)) {
-      expect(sample.print.aspectRatio).toBe("45:90");
-      expect(sample.print.widthMeters).toBe(0.45);
-      expect(sample.print.heightMeters).toBe(0.9);
-      expect(sample.print.label).toBe("1.5 ft x 3 ft");
-    }
   });
 
   it("keeps the first client print as the default sample", () => {

@@ -233,7 +233,7 @@ test("homepage concept flow polls until generated AR assets are ready", async ({
 test("gallery route lets users choose existing artwork for wall placement", async ({ page }) => {
   await page.goto("/gallery");
 
-  await expect(page.getByRole("heading", { name: "Choose artwork to see on your wall." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gallery" })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Go back" })).toBeVisible();
   // Shared site chrome renders on the gallery route: brand + nav + reserve CTA.
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
@@ -241,31 +241,31 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Saved previews" })).toHaveCount(0);
-  await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(6);
-  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Pathways to Success");
+  await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(3);
+  await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/Pathways to Success|Lakefront Day|River Train Crossing/);
+  await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/Chicago skyline|Chicago lakefront|Chicago train/);
+  await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/\d+(?:\.\d+)?\s*ft/);
+  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveCount(0);
+  await expect(page.getByTestId("gallery-selected-print-size")).toHaveCount(0);
+  await expect(page.getByTestId("gallery-selected-print-area")).toHaveCount(0);
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-1.png");
-  await expect(page.getByTestId("gallery-selected-print-size")).toHaveText("5 ft x 4.2 ft");
   await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-1");
   await expect(page.getByText("Try this artwork")).toHaveCount(0);
   await expect(page.getByText("Selected", { exact: true })).toHaveCount(0);
   await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
 
   await page.getByTestId("gallery-next-artwork").click();
-  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Lakefront Day");
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
-  await expect(page.getByTestId("gallery-selected-print-size")).toHaveText("3 ft x 5 ft");
   await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
 
   await page.getByTestId("gallery-previous-artwork").click();
-  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Pathways to Success");
+  await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-1.png");
 
-  await page.getByRole("button", { name: /Ember Dragon/ }).click();
+  await page.locator('[data-artwork-id="chicago-final-3"]').click();
 
-  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Ember Dragon");
-  await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/dragon-wall-print.png");
-  await expect(page.getByTestId("gallery-selected-print-size")).toHaveText("1.5 ft x 3 ft");
-  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=dragon-wall-print");
-  await expect(page.locator('[data-artwork-id="dragon-wall-print"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-3.png");
+  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-3");
+  await expect(page.locator('[data-artwork-id="chicago-final-3"]')).toHaveAttribute("aria-pressed", "true");
   await expectNoBannedRenderedTerms(page);
 });
 
@@ -277,8 +277,9 @@ test("homepage selected design opens the public gallery before the request gate"
   await page.getByTestId("homepage-selected-design-handoff").click();
 
   await expect(page).toHaveURL(/\/gallery\?designId=chicago-final-2$/);
-  await expect(page.getByRole("heading", { name: "Choose artwork to see on your wall." })).toBeVisible();
-  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Lakefront Day");
+  await expect(page.getByRole("heading", { name: "Gallery" })).toHaveCount(1);
+  await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
+  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveCount(0);
   await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
 });
@@ -298,20 +299,20 @@ test.describe("mobile gallery layout", () => {
 
     const metrics = await page.evaluate(() => {
       const header = document.querySelector("header");
-      const heading = document.querySelector("h1");
+      const list = document.querySelector('[data-testid="gallery-artwork-list"]');
 
-      if (!header || !heading) {
-        throw new Error("Expected gallery header elements were not rendered.");
+      if (!header || !list) {
+        throw new Error("Expected gallery elements were not rendered.");
       }
 
       const headerRect = header.getBoundingClientRect();
-      const headingRect = heading.getBoundingClientRect();
+      const listRect = list.getBoundingClientRect();
 
       return {
         headerLeft: headerRect.left,
         headerRight: headerRect.right,
-        headingLeft: headingRect.left,
-        headingRight: headingRect.right,
+        listLeft: listRect.left,
+        listRight: listRect.right,
         scrollWidth: document.documentElement.scrollWidth,
         viewportWidth: window.innerWidth
       };
@@ -319,8 +320,8 @@ test.describe("mobile gallery layout", () => {
 
     expect(metrics.headerLeft).toBeGreaterThanOrEqual(12);
     expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
-    expect(metrics.headingLeft).toBeGreaterThanOrEqual(12);
-    expect(metrics.headingRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
+    expect(metrics.listLeft).toBeGreaterThanOrEqual(12);
+    expect(metrics.listRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
   });
 });

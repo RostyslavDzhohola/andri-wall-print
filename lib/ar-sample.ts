@@ -1,6 +1,5 @@
 import {
   formatDecimalFeetFromMeters,
-  makePreviewBundlePrintFromCentimeters,
   makePreviewBundlePrintFromDimensions,
   type PreviewBundlePrint
 } from "./preview-bundle-contract";
@@ -18,8 +17,6 @@ export type ArSample = {
     poster: ArAssetPath;
   };
 };
-
-const PRINT_SIZE: ArSample["print"] = makePreviewBundlePrintFromCentimeters(45, 90);
 
 export const AR_SAMPLES: ArSample[] = [
   {
@@ -53,39 +50,6 @@ export const AR_SAMPLES: ArSample[] = [
       glb: "/ar/chicago-final-3.glb",
       usdz: "/ar/chicago-final-3.usdz",
       poster: "/artworks/chicago-final-3.png"
-    }
-  },
-  {
-    id: "dragon-wall-print",
-    title: "Ember Dragon",
-    description: "A high-detail cinematic dragon artwork for proving native AR wall placement.",
-    print: PRINT_SIZE,
-    assets: {
-      glb: "/ar/dragon-wall-print.glb",
-      usdz: "/ar/dragon-wall-print.usdz",
-      poster: "/artworks/dragon-wall-print.png"
-    }
-  },
-  {
-    id: "elven-wall-print",
-    title: "Moonlit Elven Portrait",
-    description: "An original high-fantasy portrait with luminous forest detail and silver ceremonial styling.",
-    print: PRINT_SIZE,
-    assets: {
-      glb: "/ar/elven-wall-print.glb",
-      usdz: "/ar/elven-wall-print.usdz",
-      poster: "/artworks/elven-wall-print.png"
-    }
-  },
-  {
-    id: "cyberpunk-wall-print",
-    title: "Neon Rain City",
-    description: "A neon rain-soaked city scene built for a bold sci-fi wall print.",
-    print: PRINT_SIZE,
-    assets: {
-      glb: "/ar/cyberpunk-wall-print.glb",
-      usdz: "/ar/cyberpunk-wall-print.usdz",
-      poster: "/artworks/cyberpunk-wall-print.png"
     }
   }
 ];

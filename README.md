@@ -58,9 +58,6 @@ The current demo uses checked-in static samples with real-size GLB/USDZ planes:
   - Chicago Final 1, 152 x 127 cm: `/ar/chicago-final-1.glb`, `/ar/chicago-final-1.usdz`, `/artworks/chicago-final-1.png`.
   - Chicago Final 2, 91 x 152 cm: `/ar/chicago-final-2.glb`, `/ar/chicago-final-2.usdz`, `/artworks/chicago-final-2.png`.
   - Chicago Final 3, 122 x 152 cm: `/ar/chicago-final-3.glb`, `/ar/chicago-final-3.usdz`, `/artworks/chicago-final-3.png`.
-  - Dragon Wall Print, 45 x 90 cm: `/ar/dragon-wall-print.glb`, `/ar/dragon-wall-print.usdz`, `/artworks/dragon-wall-print.png`.
-  - Elven Portrait, 45 x 90 cm: `/ar/elven-wall-print.glb`, `/ar/elven-wall-print.usdz`, `/artworks/elven-wall-print.png`.
-  - Cyberpunk Skyline, 45 x 90 cm: `/ar/cyberpunk-wall-print.glb`, `/ar/cyberpunk-wall-print.usdz`, `/artworks/cyberpunk-wall-print.png`.
 
 Open the deployed URL on iPhone Safari or Android Chrome. Cycle through the pictures, then tap `Place on wall`. On supported phones, this opens the native AR viewer so you can point at a wall and place the selected print.
 
