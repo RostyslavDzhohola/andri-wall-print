@@ -45,7 +45,10 @@ const DEFAULT_OPENAI_IMAGE_QUALITY: OpenAiImageQuality = "auto";
 const GPT_IMAGE_2_WALL_LONG_EDGE_PX = 1536;
 const GPT_IMAGE_2_MIN_PIXELS = 655_360;
 const GPT_IMAGE_2_MAX_ASPECT_RATIO = 3;
-const DEFAULT_TIMEOUT_MS = 45_000;
+// gpt-image-2 regularly needs 45-90s for a full-quality render; Convex Node
+// actions allow minutes and the UI polls asynchronously, so a tight budget
+// only turns slow successes into timeouts.
+const DEFAULT_TIMEOUT_MS = 120_000;
 
 function safeMetadata(value: unknown) {
   try {

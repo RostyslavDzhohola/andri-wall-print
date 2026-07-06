@@ -33,10 +33,10 @@ import { loadWorkJobs } from "@/lib/work-content";
 import { cn } from "@/lib/utils";
 
 // LAUNCH GATE: real Stripe Payment Link for the $100 print-job-slot deposit.
-// The env override (WALL_PRINT_PRO_RESERVE_URL) wins when set; until then this
-// placeholder routes the reserve intent through the existing request flow so the
-// funnel stays functional in every environment.
-const PLACEHOLDER_RESERVE_URL = "/request?intent=reserve";
+// The env override (WALL_PRINT_PRO_RESERVE_URL) wins when set; this placeholder
+// is a dead Stripe-shaped URL on purpose — the site must not ship to indexing
+// until the client's real Payment Link replaces it (see docs/handoff).
+const PLACEHOLDER_RESERVE_URL = "https://buy.stripe.com/REPLACE_WITH_REAL_PAYMENT_LINK";
 
 function resolveReserveHref() {
   return readWallPrintProReserveUrl()?.trim() || PLACEHOLDER_RESERVE_URL;
