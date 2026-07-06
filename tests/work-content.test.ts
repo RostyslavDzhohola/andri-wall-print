@@ -1,12 +1,17 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { loadWorkJobs, parseWorkJob, type WorkJob } from "@/lib/work-content";
 
 describe("work content loader", () => {
-  it("parses exactly 5 valid jobs from content/work", () => {
+  it("parses every job file in content/work (minimum 3 per launch cut line)", () => {
     const jobs = loadWorkJobs();
+    const contentFiles = readdirSync(join(process.cwd(), "content", "work")).filter((f) => f.endsWith(".json"));
 
-    expect(jobs).toHaveLength(5);
+    expect(jobs.length).toBe(contentFiles.length);
+    expect(jobs.length).toBeGreaterThanOrEqual(3);
 
     for (const job of jobs) {
       expect(job.slug).toMatch(/^[a-z0-9-]+$/);
