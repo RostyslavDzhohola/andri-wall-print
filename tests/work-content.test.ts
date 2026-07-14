@@ -24,6 +24,7 @@ describe("work content loader", () => {
       expect(job.photos.length).toBeGreaterThan(0);
       for (const photo of job.photos) {
         expect(photo.src.startsWith("/")).toBe(true);
+        expect(photo.src).toMatch(/^\/work-videos\//);
         expect(photo.alt.length).toBeGreaterThan(0);
       }
       expect(typeof job.needsClientConfirmation).toBe("boolean");

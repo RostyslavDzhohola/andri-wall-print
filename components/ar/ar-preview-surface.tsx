@@ -82,8 +82,8 @@ export function ArPreviewSurface({
           type="module"
         />
         <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 pb-4 md:px-6">
-          <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] lg:items-center">
-            <section className="ar-hero-reveal grid content-center gap-4 py-3 md:py-8 lg:min-h-[72vh]">
+          <div className="grid flex-1 gap-4 md:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] md:items-center">
+            <section className="ar-hero-reveal grid content-center gap-4 py-3 md:min-h-[72vh] md:py-8">
               {eyebrow ? <div>{eyebrow}</div> : null}
               <h1 className={cn("max-w-none text-4xl font-semibold leading-[0.95] text-balance sm:max-w-[12ch] md:text-6xl lg:max-w-[9ch]", headingClassName)}>{heading}</h1>
               {intro ? <p className="max-w-lg text-base leading-7 text-muted-foreground">{intro}</p> : null}
@@ -106,9 +106,19 @@ export function ArPreviewSurface({
               />
               <Card className="relative z-20 mx-3 mb-3 mt-4 bg-card/95 py-3 shadow-lg backdrop-blur" data-testid="artwork-controls">
                 <CardContent className="px-3">
-                  <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 sm:grid-cols-[auto_1fr_auto]">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="order-1 ml-auto sm:order-2">
+                      {hasReadyArAssets ? (
+                        <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
+                      ) : (
+                        <Button className="min-h-10 rounded-full px-4" data-testid="ar-preview-unavailable" disabled type="button" variant="outline">
+                          Preview only
+                        </Button>
+                      )}
+                    </div>
+
                     {hasMultipleSamples ? (
-                      <div className="flex items-center justify-start gap-2">
+                      <div className="order-2 flex items-center justify-start gap-2 sm:order-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -142,25 +152,7 @@ export function ArPreviewSurface({
                           <TooltipContent>Next picture</TooltipContent>
                         </Tooltip>
                       </div>
-                    ) : (
-                      <div className="hidden sm:block" />
-                    )}
-
-                    <div className={cn("min-w-0", hasMultipleSamples ? "text-left" : "col-span-2 text-center sm:col-span-1 sm:text-left")}>
-                      <div className="truncate text-base font-semibold" data-testid="selected-artwork-title">
-                        {selectedSample.title}
-                      </div>
-                    </div>
-
-                    <div className="col-span-2 sm:col-span-1 sm:justify-self-end">
-                      {hasReadyArAssets ? (
-                        <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
-                      ) : (
-                        <Button className="min-h-10 rounded-full px-4" data-testid="ar-preview-unavailable" disabled type="button" variant="outline">
-                          Preview only
-                        </Button>
-                      )}
-                    </div>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>

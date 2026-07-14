@@ -86,7 +86,7 @@ export function wallPreviewIssueMessage() {
 // ---------------------------------------------------------------------------
 
 export const HOME_NAV_RESERVE_CTA = "Reserve a spot — $100";
-export const HOME_LOCATION_BADGE = "Chicago · wall prints from $600";
+export const HOME_LOCATION_BADGE = "Chicago · wall prints from $500";
 
 // Chicago local-SEO woven in naturally (human-first, no stuffing).
 export const HOME_HEADLINE = "Not wallpaper. Not vinyl. Printed straight onto your wall.";
@@ -99,12 +99,11 @@ export const HOME_SUBHEAD =
 export const HOME_ENTRY_CHOOSE = "Designs";
 export const HOME_ENTRY_UPLOAD = "Your art";
 export const HOME_ENTRY_DESCRIBE = "Describe";
-export const HOME_SEE_ON_WALL_CTA = "See it on your wall";
+export const HOME_OPEN_GALLERY_CTA = "Open gallery";
+export const HOME_UPLOAD_CTA = "Upload your artwork";
+export const HOME_GENERATE_CTA = "Generate preview";
 
 // D10 binding licensing line shown wherever generation appears.
-export const HOME_GENERATION_LICENSING_NOTE =
-  "Custom artwork must be licensed or original; printability confirmed at your estimate.";
-
 // Interaction-state copy (styling the already-wired states to spec).
 export const HOME_GENERATION_LOADING = "Drafting your concept — about 30s";
 export const HOME_AT_CAPACITY_TITLE = "We're at capacity for concepts today.";
@@ -114,15 +113,8 @@ export const HOME_COMPOSITE_ONLY_BODY =
 export const HOME_UPLOAD_ACCEPTED_FORMATS = "Accepted formats: JPEG, PNG, WebP.";
 // Upload entry promises the real flow: there is no public upload→AR pipeline on
 // this branch (lead capture only), so we don't over-promise "see it on your wall".
-export const HOME_UPLOAD_ENTRY_BODY = "Send us your art or logo — we'll show it on your wall at your estimate.";
-
-// Specs band.
-export const HOME_SPECS = [
-  { value: "1200 DPI", label: "photo-sharp detail" },
-  { value: "Dries instantly", label: "no cure time" },
-  { value: "0 seams", label: "one continuous print" },
-  { value: "~1 day", label: "typical install" }
-] as const;
+export const HOME_UPLOAD_ENTRY_BODY =
+  "Upload your art or logo to see it here immediately, then send the preview to your iPhone.";
 
 // Comparison table. LAUNCH GATE numbers are flagged at the call site in the
 // homepage component.
@@ -169,7 +161,7 @@ export const HOME_COMPARISON_ROWS: readonly HomeComparisonRow[] = [
   },
   {
     feature: "Typical starting price",
-    wallPrintPro: "$600",
+    wallPrintPro: "$500",
     vinylWrap: "$450+",
     handPainted: "$2,500+",
     needsClientVerification: true
@@ -185,30 +177,25 @@ export const HOME_TESTIMONIAL = {
 } as const;
 
 // Dark reserve strip.
-export const HOME_RESERVE_STRIP_HEADLINE = "Reserve your spot — $100, credited to your print.";
+export const HOME_RESERVE_STRIP_HEADLINE = "Reserve your spot - $100, credited to your print.";
 export const HOME_RESERVE_STRIP_BODY =
-  "Lock a print-job slot for your wall. Your $100 deposit is credited toward the final print price — it never buys artwork.";
+  "Reserve your next spot and be first in line when job preparation begins.";
 export const HOME_RESERVE_STRIP_CTA = "Reserve now";
 
-// Sections.
-export const HOME_WORK_HEADING = "Recent Chicago wall prints";
-export const HOME_WORK_SUBHEAD = "Real installs, filmed and photographed on real Chicago walls.";
-export const HOME_PORTFOLIO_TEASER_CTA = "See our Chicago work";
-
 // Process steps.
-export const HOME_PROCESS_HEADING = "From idea to installed in three steps.";
+export const HOME_PROCESS_HEADING = "From idea to print in three steps.";
 export const HOME_PROCESS_STEPS = [
   {
-    title: "Bring the art",
-    body: "Choose a starting design, upload a logo or artwork file, or describe a custom wall-print idea."
+    title: "Choose the art",
+    body: "Pick a design, upload your artwork, or describe the custom image you want."
   },
   {
-    title: "See it on your wall",
-    body: "Preview the print on your actual wall in AR from your phone, and we confirm it prints sharp at wall scale."
+    title: "Request an estimate",
+    body: "Send us your wall details so we can confirm the size, surface, timing, and price."
   },
   {
-    title: "We print & install",
-    body: "We print at 1200 DPI and install it seam-free on your Chicago wall — usually in about a day."
+    title: "We make the print",
+    body: "We print your approved design directly onto your wall."
   }
 ] as const;
 

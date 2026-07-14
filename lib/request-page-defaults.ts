@@ -9,6 +9,7 @@ export type RequestSearchParamsInput = {
   intent?: string | string[];
   conceptPrompt?: string | string[];
   designId?: string | string[];
+  focus?: string | string[];
 };
 
 export type RequestDesignContext = {
@@ -21,6 +22,7 @@ export type RequestPageDefaults = {
   defaultIntent: LeadRequestIntent;
   defaultConceptPrompt?: string;
   defaultDesignContext?: RequestDesignContext;
+  focusUpload: boolean;
 };
 
 function firstSearchParam(value: string | string[] | undefined) {
@@ -64,8 +66,11 @@ export function resolveRequestPageDefaults(searchParams: RequestSearchParamsInpu
     normalizeSearchText(firstSearchParam(searchParams?.conceptPrompt), LEAD_CONCEPT_PROMPT_MAX_LENGTH) ??
     (defaultDesignContext ? makeDesignConceptPrompt(defaultDesignContext) : undefined);
 
+  const focusUpload = firstSearchParam(searchParams?.focus) === "upload";
+
   return {
     defaultIntent,
+    focusUpload,
     ...(defaultConceptPrompt ? { defaultConceptPrompt } : {}),
     ...(defaultDesignContext ? { defaultDesignContext } : {})
   };

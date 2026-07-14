@@ -41,14 +41,7 @@ export default async function WorkJobPage({ params }: WorkJobPageProps) {
 
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-16 sm:px-8">
-      <Link
-        href="/work"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        ← All wall printing Chicago work
-      </Link>
-
-      <header className="mt-6 max-w-2xl">
+      <header className="max-w-2xl">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {job.title}
         </h1>
@@ -76,7 +69,7 @@ export default async function WorkJobPage({ params }: WorkJobPageProps) {
         {job.photos.map((photo, index) => (
           <div
             key={photo.src}
-            className="relative aspect-[4/3] w-full overflow-hidden rounded-[0.625rem] border border-border bg-muted shadow-[0_24px_70px_rgba(35,31,25,.12)]"
+            className="relative aspect-[4/5] w-full overflow-hidden rounded-[0.625rem] border border-border bg-muted shadow-[0_24px_70px_rgba(35,31,25,.12)]"
           >
             <Image
               src={photo.src}

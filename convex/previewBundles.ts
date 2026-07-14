@@ -28,6 +28,7 @@ import {
   previewConfirmationAreaBasisValidator,
   printValidator
 } from "./validators";
+import { validateStoredPreviewUpload } from "./uploadValidation";
 
 const internal = generatedInternal;
 
@@ -86,6 +87,10 @@ function logicalAiConceptSourceId(source: {
   byteLength: number;
 }) {
   return `ai:${source.leadRequestId}:${source.aiConceptDraftId}:${source.byteLength}`;
+}
+
+function logicalHomepageUploadSourceId(source: { sourceFingerprint: string; byteLength: number }) {
+  return `homepage:${source.sourceFingerprint}:${source.byteLength}`;
 }
 
 type PreviewConfirmationRecord = {
@@ -401,6 +406,96 @@ export const submitPublicConfirmation = mutation({
       _id: confirmationId,
       ...confirmation
     });
+  }
+});
+
+export const generateHomepageUploadUrl = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  }
+});
+
+export const createHomepageUploadBundle = mutation({
+  args: {
+    sourceStorageId: v.id("_storage"),
+    originalFileName: v.string(),
+    contentType: v.string(),
+    byteLength: v.number(),
+    sourceFingerprint: v.string(),
+    title: v.string(),
+    print: printValidator
+  },
+  returns: createdPreviewLinkValidator,
+  handler: async (ctx, args) => {
+    assertValidPrint(args.print);
+    const verifiedUpload = await validateStoredPreviewUpload(ctx, {
+      sourceStorageId: args.sourceStorageId,
+      contentType: args.contentType,
+      byteLength: args.byteLength,
+      sourceFingerprint: args.sourceFingerprint
+    });
+    const now = Date.now();
+    const crop = DEFAULT_PREVIEW_BUNDLE_CROP;
+    const title = normalizeBundleTitle(args.title);
+    const idempotencyKey = makePreviewBundleIdempotencyKey({
+      sellerSubject: "public-homepage",
+      source: {
+        kind: "upload",
+        sourceId: logicalHomepageUploadSourceId(verifiedUpload),
+        contentType: verifiedUpload.contentType,
+        byteLength: verifiedUpload.byteLength
+      },
+      crop,
+      print: args.print,
+      generatorVersion: PREVIEW_GENERATOR_VERSION
+    });
+    const existing = await ctx.db
+      .query("previewBundles")
+      .withIndex("by_idempotency_key", (q) => q.eq("idempotencyKey", idempotencyKey))
+      .first();
+
+    if (existing && existing.source.kind === "upload") {
+      return {
+        bundleId: existing._id,
+        publicSlug: existing.publicSlug,
+        publicUrl: toPublicUrl(existing.publicSlug),
+        status: existing.status
+      };
+    }
+
+    const publicSlug = createPreviewBundlePublicSlug();
+    const bundleId = await ctx.db.insert("previewBundles", {
+      publicSlug,
+      sellerSubject: "public-homepage",
+      title,
+      description: "Artwork uploaded for an instant Wall Print Pro wall preview.",
+      source: {
+        kind: "upload",
+        storageId: args.sourceStorageId,
+        originalFileName: args.originalFileName,
+        contentType: verifiedUpload.contentType,
+        byteLength: verifiedUpload.byteLength,
+        sourceFingerprint: verifiedUpload.sourceFingerprint
+      },
+      crop,
+      print: args.print,
+      generatorVersion: PREVIEW_GENERATOR_VERSION,
+      idempotencyKey,
+      status: "uploaded",
+      createdAt: now,
+      updatedAt: now
+    });
+
+    await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
+
+    return {
+      bundleId,
+      publicSlug,
+      publicUrl: toPublicUrl(publicSlug),
+      status: "uploaded"
+    };
   }
 });
 

@@ -10,6 +10,7 @@ export type ArSample = {
   id: string;
   title: string;
   description: string;
+  shareUrl?: string;
   print: PreviewBundlePrint;
   assets: {
     glb: ArAssetPath;

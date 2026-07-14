@@ -46,7 +46,7 @@ describe("root layout metadata", () => {
       {
         "applicationName": "Wall Print Pro",
         "canonical": "/",
-        "description": "Custom wall printing in Chicago. Choose a design, upload your art or logo, or describe an idea — then see it on your actual wall in AR before you commit. Wall murals from $600.",
+        "description": "Custom wall printing in Chicago. Choose a design, upload your art or logo, or describe an idea — then see it on your actual wall in AR before you commit. Wall prints from $500.",
         "ogSiteName": "Wall Print Pro",
         "ogType": "website",
         "title": {

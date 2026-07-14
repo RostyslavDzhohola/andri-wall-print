@@ -4,11 +4,17 @@ import {
   canRetryConceptStatusPollFailure,
   canStartHomepageConceptGeneration,
   CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES,
+  homepageUploadTitle,
   resolveAbsoluteShareUrl,
   resolveCompositeShareTarget
 } from "@/components/promotion/homepage-demo-actions";
 
 describe("homepage concept generation controls", () => {
+  it("turns an uploaded filename into a human-readable preview title", () => {
+    expect(homepageUploadTitle("my-company_logo.final.webp")).toBe("my company logo.final");
+    expect(homepageUploadTitle(".png")).toBe("Your artwork");
+  });
+
   it("blocks double-submit while a generation is in flight", () => {
     expect(
       canStartHomepageConceptGeneration({

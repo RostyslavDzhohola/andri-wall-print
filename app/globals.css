@@ -148,7 +148,7 @@ video {
   filter: drop-shadow(0 24px 22px rgba(0, 0, 0, 0.26)) drop-shadow(0 4px 4px rgba(0, 0, 0, 0.18));
 }
 
-/* --- The three intentional homepage motions (all reduced-motion aware) --- */
+/* --- The two intentional homepage motions (both reduced-motion aware) --- */
 
 /* 1. Hero fade-up on load. */
 @keyframes hero-fade-up {
@@ -166,22 +166,7 @@ video {
   animation: hero-fade-up 0.5s ease-out both;
 }
 
-/* 2. Art-card hover lift (pointer devices only). */
-@media (hover: hover) and (pointer: fine) {
-  .ar-art-card {
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease;
-    will-change: transform;
-  }
-
-  .ar-art-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 40px 110px rgba(35, 31, 25, 0.22);
-  }
-}
-
-/* 3. Entry / tab crossfade for the three-entry chooser. */
+/* 2. Entry / tab crossfade for the three-entry chooser. */
 @keyframes entry-crossfade {
   from {
     opacity: 0;
@@ -201,13 +186,11 @@ video {
     animation: none;
   }
 
-  .ar-art-card {
-    transition: none;
+  .instagram-project-play-control {
+    transform: none !important;
+    transition: none !important;
   }
 
-  .ar-art-card:hover {
-    transform: none;
-  }
 }
 
 .dark {

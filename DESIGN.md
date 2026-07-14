@@ -41,16 +41,14 @@ low-saturation backgrounds/foregrounds/borders for inline state messaging.
 ## Layout
 
 - Max content width `max-w-6xl`; hero splits into a `~0.46 / 0.54` two-column
-  grid at `lg` (copy left, art surface right).
+  grid at `md` (copy left, art surface right).
 - Generous vertical rhythm; sections separated by `border-t` + tinted `muted`
   bands rather than heavy dividers.
 
-## Motion (exactly three, all behind `prefers-reduced-motion`)
+## Motion (exactly two, both behind `prefers-reduced-motion`)
 
 1. **Hero fade-up** — the hero copy/chooser rises and fades in on load.
-2. **Art-card hover lift** — the hero art surface lifts slightly on hover
-   (pointer devices only).
-3. **Tab / entry crossfade** — the three-entry chooser crossfades between states.
+2. **Tab / entry crossfade** — the three-entry chooser crossfades between states.
 
 Reduced-motion users get the final state instantly (no transform/opacity
 transitions).

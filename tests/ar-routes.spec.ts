@@ -1,4 +1,5 @@
 import { expect, test, type APIResponse, type Page } from "@playwright/test";
+import path from "node:path";
 
 const BANNED_RENDERED_TERMS = [
   /\bConvex\b/i,
@@ -19,7 +20,6 @@ const BANNED_RENDERED_TERMS = [
   /\braw token\b/i,
   /\bAR preview\b/i,
   /\bbuyer\b/i,
-  /\bcustomer\b/i,
   /\buploaded\b/i,
   /\bgenerating\b/i,
   /\brejected\b/i,
@@ -87,38 +87,43 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
   await expect(page.getByRole("link", { name: "Our work" })).toHaveAttribute("href", "/work");
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
-  // Three-entry chooser: describe is the default active entry; email + prompt visible.
+  // Three-entry chooser: Describe opens on the compact email-first step.
   await expect(page.getByTestId("homepage-entry-choose")).toBeVisible();
   await expect(page.getByTestId("homepage-entry-upload")).toBeVisible();
   await expect(page.getByTestId("homepage-entry-describe")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByTestId("homepage-concept-generate")).toBeVisible();
+  await expect(page.getByText(/Step [12] of 2/)).toHaveCount(0);
   await expect(page.getByLabel("Email")).toHaveAttribute("type", "email");
-  await page.getByLabel("Describe your wall-print idea").fill("Gold leaf logo wall");
-  await expect(page.getByLabel("Describe your wall-print idea")).toHaveValue("Gold leaf logo wall");
-  await expect(page.getByTestId("homepage-proof-note")).toContainText("Pathways to Success");
-  // Binding D10 licensing note appears where generation appears.
-  await expect(page.getByText("printability confirmed at your estimate")).toBeVisible();
+  await expect(page.getByLabel("Describe your wall print")).toHaveCount(0);
+  await expect(page.getByTestId("homepage-concept-generate")).toHaveCount(0);
+  await page.getByLabel("Email").fill("buyer@example.com");
+  await page.getByTestId("homepage-describe-continue").click();
+  await expect(page.getByText(/Step [12] of 2/)).toHaveCount(0);
+  await page.getByLabel("Describe your wall print").fill("Gold leaf logo wall");
+  await expect(page.getByLabel("Describe your wall print")).toHaveValue("Gold leaf logo wall");
+  await expect(page.getByTestId("homepage-proof-note")).toHaveCount(0);
+  await expect(page.getByText("printability confirmed at your estimate")).toHaveCount(0);
   // Choose-design entry reveals the gallery handoff with the selected sample.
   await page.getByTestId("homepage-entry-choose").click();
   await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/gallery?designId=chicago-final-1");
-  // Upload entry reveals the contact-gated upload handoff.
+  await expect(page.getByTestId("homepage-selected-design-handoff")).toContainText("Open gallery");
+  // Upload entry stays on the homepage and reveals a direct file picker.
   await page.getByTestId("homepage-entry-upload").click();
-  await expect(page.getByTestId("homepage-upload-handoff")).toHaveAttribute("href", "/request?intent=concept#lead-upload-section");
+  await expect(page.getByTestId("homepage-artwork-file")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+  await expect(page.getByTestId("homepage-upload-handoff")).toHaveCount(0);
   await page.getByTestId("homepage-entry-describe").click();
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Request wall preview" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Try artwork" })).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toBeVisible();
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
+  await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
   await page.getByTestId("next-artwork").click();
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
-  await expect(page.getByTestId("homepage-proof-note")).toContainText("Lakefront Day");
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
   // Selection propagates to the choose-design handoff.
   await page.getByTestId("homepage-entry-choose").click();
   await expect(page.getByTestId("homepage-selected-design-handoff")).toHaveAttribute("href", "/gallery?designId=chicago-final-2");
   await page.getByTestId("homepage-entry-describe").click();
   await page.getByTestId("previous-artwork").click();
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-1.png");
   await expect(page.getByTestId("artwork-width-guide")).toHaveCount(0);
   await expect(page.getByTestId("artwork-height-guide")).toHaveCount(0);
   await expect(page.getByTestId("selected-artwork-size")).toHaveCount(0);
@@ -141,27 +146,175 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByRole("heading", { name: "Wall printing vs. everything else" })).toBeVisible();
   await expect(page.getByTestId("home-comparison")).toBeVisible();
   await expect(page.getByText("Yes — only us")).toBeVisible();
-  await expect(page.getByTestId("home-testimonial")).toBeVisible();
+  await expect(page.getByTestId("home-testimonial")).toHaveCount(0);
+  await expect(page.getByTestId("social-proof-homepage")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See a real wall transformation" })).toBeVisible();
+  await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(1);
+  await expect(page.getByTestId("facebook-proof-embed")).toHaveAttribute("loading", "lazy");
+  await expect(page.getByTestId("facebook-proof-embed")).toHaveAttribute("title", "Wall Print Pro customer wall transformation on Facebook");
+  await expect(page.getByTestId("instagram-proof-container")).toHaveCount(5);
+  await expect
+    .poll(
+      async () =>
+        page.getByTestId("instagram-proof-container").evaluateAll((containers) =>
+          containers.filter((container) => container.querySelector("iframe") || container.getAttribute("data-embed-status") === "failed").length
+        ),
+      { timeout: 15_000 }
+    )
+    .toBe(5);
+  expect(
+    await page.getByTestId("instagram-proof-container").evaluateAll((containers) =>
+      containers.filter((container) => !container.querySelector("iframe") && container.getBoundingClientRect().height > 200).length
+    )
+  ).toBe(0);
+  await expect(page.getByRole("heading", { name: "See our projects" })).toBeVisible();
+  await expect(page.getByText("Public project evidence")).toHaveCount(0);
+  await expect(page.getByTestId("social-proof-quote-cta")).toHaveAttribute("href", "/request");
+  await expect(page.getByTestId("social-proof-quote-cta")).toHaveText("Request an estimate");
+  await expect(page.getByRole("link", { name: "Follow us on Facebook" })).toBeVisible();
   await expect(page.getByTestId("home-reserve-strip")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reserve your spot - $100, credited to your print." })).toBeVisible();
+  await expect(page.getByText("Reserve your spot — $100, credited to your print.")).toHaveCount(0);
   await expect(page.getByTestId("home-reserve-cta")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recent Chicago wall prints" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "From idea to installed in three steps." })).toBeVisible();
-  await expect(page.getByText("Bring the art")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "From idea to print in three steps." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose the art" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Request an estimate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "We make the print" })).toBeVisible();
   await expect(page.getByTestId("home-process")).toBeVisible();
+  await expect(page.getByTestId("home-faq")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Questions before your estimate" })).toBeVisible();
+  await expect(page.getByTestId("home-final-quote")).toBeVisible();
+  await expect(page.getByTestId("home-final-quote-cta")).toHaveAttribute("href", "/request");
+  await expect(page.getByTestId("home-final-quote-cta")).toContainText("Free Demo");
   await expect(page.getByTestId("home-footer")).toBeVisible();
-  await expect(page.getByTestId("work-video")).toHaveCount(3);
-  await expect(page.getByTestId("work-video").first()).not.toHaveAttribute("controls", "");
-  await expect(page.getByTestId("work-video").first()).toHaveAttribute("muted", "");
-  await expect(page.getByTestId("work-video").first()).toHaveAttribute("loop", "");
-  await expect(page.locator('[data-testid="work-video"] source')).toHaveCount(3);
-  await expect(page.locator('[data-testid="work-video"] source').nth(0)).toHaveAttribute("src", /\/work-videos\/wall-print-1\.mp4(?:\?.*)?$/);
-  await expect(page.locator('[data-testid="work-video"] source').nth(1)).toHaveAttribute("src", /\/work-videos\/wall-print-2\.mp4(?:\?.*)?$/);
-  await expect(page.locator('[data-testid="work-video"] source').nth(2)).toHaveAttribute("src", /\/work-videos\/wall-print-3\.mp4(?:\?.*)?$/);
-  await expect(page.getByRole("link", { name: "Watch on Instagram" })).toHaveCount(0);
+  await expect(page.locator('source[src*="work-videos"]')).toHaveCount(0);
   await expectNoBannedRenderedTerms(page);
 });
 
-test("homepage concept flow polls until generated AR assets are ready", async ({ page }) => {
+test("Instagram failures become compact canonical-link fallbacks instead of blank boxes", async ({ page }) => {
+  await page.route("**/www.instagram.com/embed.js*", (route) => route.abort());
+  await page.goto("/");
+
+  const containers = page.getByTestId("instagram-proof-container");
+  await expect(containers).toHaveCount(5);
+  await expect
+    .poll(() => containers.evaluateAll((items) => items.map((item) => item.getAttribute("data-embed-status"))), { timeout: 12_000 })
+    .toEqual(Array(5).fill("failed"));
+  await expect(page.getByTestId("instagram-proof-fallback")).toHaveCount(5);
+
+  const fallbackState = await containers.evaluateAll((items) =>
+    items.map((item) => ({
+      hasIframe: Boolean(item.querySelector("iframe")),
+      height: item.getBoundingClientRect().height,
+      link: item.querySelector<HTMLAnchorElement>('a[href^="https://www.instagram.com/"]')?.href ?? null
+    }))
+  );
+
+  for (const item of fallbackState) {
+    expect(item.hasIframe).toBe(false);
+    expect(item.height).toBeLessThan(200);
+    expect(item.link).toMatch(/^https:\/\/www\.instagram\.com\//);
+  }
+});
+
+test("homepage upload renders immediately, stays in place, and shares the durable iPhone preview", async ({ page }, testInfo) => {
+  let releaseUploadUrl!: () => void;
+  const uploadUrlGate = new Promise<void>((resolve) => {
+    releaseUploadUrl = resolve;
+  });
+  let createInput: Record<string, unknown> | null = null;
+
+  await page.addInitScript(() => {
+    Object.defineProperty(window.navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
+        (window as Window & { __homepageSharedData?: ShareData }).__homepageSharedData = data;
+      }
+    });
+  });
+  await page.route("**/api/dev-public-origin", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ origin: "https://wall-preview.ngrok-free.dev" }) });
+  });
+  await page.route("**/api/homepage-test-upload", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ storageId: "storage-homepage-test" }) });
+  });
+  await page.route("**/api/homepage-artwork**", async (route) => {
+    const request = route.request();
+
+    if (request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "p-homepage-test",
+          slug: "p-homepage-test",
+          title: "Pathways to Success",
+          description: "Uploaded homepage artwork",
+          print: { aspectRatio: "6:5", widthMeters: 1.524, heightMeters: 1.27, label: "5 ft × 4 ft 2 in" },
+          assets: {
+            poster: "/artworks/chicago-final-1.png",
+            glb: "/ar/chicago-final-1.glb",
+            usdz: "/ar/chicago-final-1.usdz"
+          },
+          status: "ready"
+        })
+      });
+      return;
+    }
+
+    const body = request.postDataJSON() as { action?: string; input?: Record<string, unknown> };
+
+    if (body.action === "upload_url") {
+      await uploadUrlGate;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, uploadUrl: `${new URL(request.url()).origin}/api/homepage-test-upload` })
+      });
+      return;
+    }
+
+    createInput = body.input ?? null;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        preview: { publicSlug: "p-homepage-test", publicUrl: "/preview/p-homepage-test", status: "uploaded" }
+      })
+    });
+  });
+
+  await page.goto("/");
+  const initialUrl = page.url();
+  await page.getByTestId("homepage-entry-upload").click();
+  await page.getByTestId("homepage-artwork-file").setInputFiles(path.join(process.cwd(), "public/artworks/chicago-final-1.png"));
+
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", /^blob:/);
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("alt", "chicago final 1 wall print");
+  expect(page.url()).toBe(initialUrl);
+
+  releaseUploadUrl();
+
+  if (testInfo.project.name === "mobile-safari-shape") {
+    await expect(page.getByTestId("quick-look-link")).toBeVisible();
+    await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+    await expect(page.getByTestId("share-to-phone")).toHaveCount(0);
+    expect(createInput).toMatchObject({ sourceStorageId: "storage-homepage-test", contentType: "image/png" });
+    expect(page.url()).toBe(initialUrl);
+    return;
+  }
+
+  await expect(page.getByTestId("share-to-phone")).toBeVisible();
+  expect(createInput).toMatchObject({ sourceStorageId: "storage-homepage-test", contentType: "image/png" });
+  expect(page.url()).toBe(initialUrl);
+  await page.getByTestId("share-to-phone").click();
+  await expect
+    .poll(() => page.evaluate(() => (window as Window & { __homepageSharedData?: ShareData }).__homepageSharedData?.url))
+    .toBe("https://wall-preview.ngrok-free.dev/preview/p-homepage-test");
+});
+
+test("homepage Describe flow preserves both steps and submits from the keyboard", async ({ page }) => {
   const calls: Array<{ method: string; url: string; body?: unknown }> = [];
 
   await page.route("**/api/concept-art**", async (route) => {
@@ -213,28 +366,112 @@ test("homepage concept flow polls until generated AR assets are ready", async ({
   });
 
   await page.goto("/");
-  await page.getByLabel("Email").fill("buyer@example.com");
-  await page.getByLabel("Describe your wall-print idea").fill("Chicago skyline for a school lobby");
-  await page.getByTestId("homepage-concept-generate").click();
+  const initialUrl = page.url();
+  const email = page.getByLabel("Email");
+
+  await expect(page.getByTestId("homepage-describe-email-step")).toBeVisible();
+  await expect(page.getByText(/Step [12] of 2/)).toHaveCount(0);
+  await expect(page.getByLabel("Describe your wall print")).toHaveCount(0);
+  await email.fill("not-an-email");
+  await email.press("Enter");
+  await expect(page.getByText("Enter a valid email address to continue.", { exact: true })).toBeVisible();
+  await expect(email).toBeFocused();
+
+  await email.fill("buyer@example.com");
+  await email.press("Enter");
+
+  const description = page.getByLabel("Describe your wall print");
+  await expect(page.getByTestId("homepage-describe-description-step")).toBeVisible();
+  await expect(page.getByText(/Step [12] of 2/)).toHaveCount(0);
+  await expect(description).toBeFocused();
+  await description.fill("Chicago skyline");
+  await description.press("Shift+Enter");
+  await description.type("for a school lobby");
+  await expect(description).toHaveValue("Chicago skyline\nfor a school lobby");
+  expect(calls).toHaveLength(0);
+
+  await page.getByTestId("homepage-describe-back").click();
+  await expect(email).toBeFocused();
+  await expect(email).toHaveValue("buyer@example.com");
+  await email.press("Enter");
+  await expect(description).toBeFocused();
+  await expect(description).toHaveValue("Chicago skyline\nfor a school lobby");
+  await description.press("Enter");
 
   await expect(page.getByTestId("homepage-concept-status")).toContainText("Artwork preview is ready for wall placement.");
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Generated skyline concept");
+  await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-1.png");
   await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
   expect(calls.map((call) => call.method)).toEqual(["POST", "GET"]);
   expect(calls[0].body).toMatchObject({
     contactEmail: "buyer@example.com",
-    prompt: "Chicago skyline for a school lobby",
+    prompt: "Chicago skyline\nfor a school lobby",
     selectedDesignId: "chicago-final-1"
   });
   expect(calls[1].url).toContain("leadRequestId=lead_hero_123");
+  expect(page.url()).toBe(initialUrl);
+});
+
+test("homepage entry cards keep one compact responsive footprint", async ({ page }) => {
+  for (const viewport of [
+    { name: "desktop", width: 1440, height: 1000 },
+    { name: "tablet", width: 838, height: 900 },
+    { name: "mobile", width: 390, height: 844 }
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto("/");
+
+    const heights: number[] = [];
+
+    for (const entry of ["choose", "upload", "describe"] as const) {
+      await page.getByTestId(`homepage-entry-${entry}`).click();
+      heights.push((await page.getByTestId("homepage-entry-panel").boundingBox())?.height ?? 0);
+    }
+
+    const emailBox = await page.getByLabel("Email").boundingBox();
+    const continueBox = await page.getByTestId("homepage-describe-continue").boundingBox();
+    const entryPanelBox = await page.getByTestId("homepage-entry-panel").boundingBox();
+
+    expect(continueBox?.y ?? 0, `${viewport.name} Continue bottom row`).toBeGreaterThanOrEqual(
+      (emailBox?.y ?? 0) + (emailBox?.height ?? 0) + 8
+    );
+    expect(
+      Math.abs((entryPanelBox?.x ?? 0) + (entryPanelBox?.width ?? 0) - ((continueBox?.x ?? 0) + (continueBox?.width ?? 0))),
+      `${viewport.name} Continue right alignment`
+    ).toBeLessThanOrEqual(18);
+
+    await page.getByLabel("Email").fill(`${viewport.name}@example.com`);
+    await page.getByLabel("Email").press("Enter");
+    heights.push((await page.getByTestId("homepage-entry-panel").boundingBox())?.height ?? 0);
+
+    expect(Math.max(...heights) - Math.min(...heights), `${viewport.name} card-height difference`).toBeLessThanOrEqual(2);
+
+    const metrics = await page.getByTestId("homepage-demo-actions").evaluate((root) => {
+      const rootRect = root.getBoundingClientRect();
+      const targets = Array.from(root.querySelectorAll<HTMLElement>('button, input:not([type="file"]), textarea'))
+        .filter((element) => element.getClientRects().length > 0)
+        .map((element) => element.getBoundingClientRect().height);
+
+      return {
+        minTargetHeight: Math.min(...targets),
+        rootLeft: rootRect.left,
+        rootRight: rootRect.right,
+        viewportWidth: window.innerWidth
+      };
+    });
+
+    expect(metrics.minTargetHeight, `${viewport.name} minimum touch target`).toBeGreaterThanOrEqual(44);
+    expect(metrics.rootLeft, `${viewport.name} left edge`).toBeGreaterThanOrEqual(0);
+    expect(metrics.rootRight, `${viewport.name} right edge`).toBeLessThanOrEqual(metrics.viewportWidth);
+  }
 });
 
 test("gallery route lets users choose existing artwork for wall placement", async ({ page }) => {
   await page.goto("/gallery");
 
   await expect(page.getByRole("heading", { name: "Gallery" })).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "Go back" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Go back" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "/");
   // Shared site chrome renders on the gallery route: brand + nav + reserve CTA.
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
   await expect(page.getByRole("link", { name: "Our work" })).toHaveAttribute("href", "/work");
@@ -294,7 +531,8 @@ test.describe("mobile gallery layout", () => {
   test("keeps the gallery header controls inside the viewport", async ({ page }) => {
     await page.goto("/gallery");
 
-    await expect(page.getByRole("button", { name: "Go back" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Go back" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "/");
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
     const metrics = await page.evaluate(() => {
@@ -372,61 +610,28 @@ test.describe("mobile homepage layout", () => {
     expect(metrics.headingRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
   });
 
-  test("uses tap press to play and pause work videos on touch screens", async ({ page }) => {
-    await page.addInitScript(() => {
-      const originalMatchMedia = window.matchMedia.bind(window);
+  test("keeps the social-proof section inside the mobile viewport", async ({ page }) => {
+    await page.goto("/");
+    const metrics = await page.getByTestId("social-proof-homepage").evaluate((section) => {
+      const iframe = section.querySelector("iframe");
+      const sectionRect = section.getBoundingClientRect();
+      const iframeRect = iframe?.getBoundingClientRect();
 
-      window.matchMedia = ((query: string) => {
-        if (query.includes("(hover: hover)") || query.includes("(pointer: fine)")) {
-          return {
-            matches: false,
-            media: query,
-            onchange: null,
-            addEventListener() {},
-            removeEventListener() {},
-            addListener() {},
-            removeListener() {},
-            dispatchEvent: () => true
-          } as MediaQueryList;
-        }
-
-        return originalMatchMedia(query);
-      }) as typeof window.matchMedia;
-
-      Object.defineProperty(HTMLMediaElement.prototype, "paused", {
-        configurable: true,
-        get: function (this: HTMLMediaElement) {
-          return this.dataset.testPlaying !== "true";
-        }
-      });
-
-      HTMLMediaElement.prototype.play = function () {
-        this.dataset.testPlaying = "true";
-        this.dispatchEvent(new Event("play"));
-        return Promise.resolve();
-      };
-
-      HTMLMediaElement.prototype.pause = function () {
-        this.dataset.testPlaying = "false";
-        this.dispatchEvent(new Event("pause"));
+      return {
+        documentWidth: document.documentElement.scrollWidth,
+        iframeLeft: iframeRect?.left ?? -1,
+        iframeRight: iframeRect?.right ?? -1,
+        sectionLeft: sectionRect.left,
+        sectionRight: sectionRect.right,
+        viewportWidth: window.innerWidth
       };
     });
 
-    await page.goto("/");
-
-    const card = page.getByTestId("work-video-card").first();
-    const video = page.getByTestId("work-video").first();
-
-    await card.hover({ force: true });
-    await expect(video).not.toHaveAttribute("data-test-playing", "true");
-
-    await card.click();
-    await expect(video).toHaveAttribute("data-test-playing", "true");
-    await expect(card).toHaveAttribute("aria-label", "Pause Chicago wall print work clip 1");
-
-    await card.click();
-    await expect(video).toHaveAttribute("data-test-playing", "false");
-    await expect(card).toHaveAttribute("aria-label", "Play Chicago wall print work clip 1");
+    expect(metrics.sectionLeft).toBeGreaterThanOrEqual(0);
+    expect(metrics.sectionRight).toBeLessThanOrEqual(metrics.viewportWidth);
+    expect(metrics.documentWidth).toBe(metrics.viewportWidth);
+    expect(metrics.iframeLeft).toBeGreaterThanOrEqual(0);
+    expect(metrics.iframeRight).toBeLessThanOrEqual(metrics.viewportWidth);
   });
 });
 
@@ -434,7 +639,7 @@ test("bottom controls cycle the selected picture and native AR target", async ({
   await page.goto("/");
 
   await page.getByTestId("next-artwork").click();
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
+  await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
   await expect(page.getByTestId("selected-artwork-size")).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/ar/chicago-final-2.glb");
@@ -442,12 +647,69 @@ test("bottom controls cycle the selected picture and native AR target", async ({
   await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
 
   await page.getByTestId("next-artwork").click();
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("River Train Crossing");
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-3.png");
 
   await page.getByTestId("previous-artwork").click();
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Lakefront Day");
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
   await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
+});
+
+test("homepage hides artwork names and places picture navigation on the bottom row at narrow widths", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 538, height: 785 });
+  await page.goto("/");
+
+  await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
+  await expect(page.getByText("Pathways to Success", { exact: true })).toHaveCount(0);
+
+  const phoneAction = testInfo.project.name === "mobile-safari-shape" ? page.getByTestId("quick-look-link") : page.getByTestId("share-to-phone");
+  const shareBox = await phoneAction.boundingBox();
+  const nextBox = await page.getByTestId("next-artwork").boundingBox();
+  const controlsBox = await page.getByTestId("artwork-controls").boundingBox();
+
+  expect(nextBox?.y ?? 0).toBeGreaterThanOrEqual((shareBox?.y ?? 0) + (shareBox?.height ?? 0) + 8);
+  expect(
+    Math.abs((controlsBox?.x ?? 0) + (controlsBox?.width ?? 0) - ((shareBox?.x ?? 0) + (shareBox?.width ?? 0)))
+  ).toBeLessThanOrEqual(16);
+  await page.getByTestId("next-artwork").click();
+  await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.png");
+});
+
+test("homepage places social-proof actions below the Facebook video on small screens", async ({ page }) => {
+  await page.setViewportSize({ width: 558, height: 785 });
+  await page.goto("/");
+
+  const videoBox = await page.getByTestId("facebook-proof-embed").boundingBox();
+  const actionsBox = await page.getByTestId("social-proof-actions").boundingBox();
+
+  expect(actionsBox?.y ?? 0).toBeGreaterThanOrEqual((videoBox?.y ?? 0) + (videoBox?.height ?? 0) + 8);
+  await expect(page.getByTestId("social-proof-actions").getByRole("link")).toHaveCount(2);
+});
+
+test("homepage keeps the hero in two columns at tablet width without horizontal overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 838, height: 785 });
+  await page.goto("/");
+
+  const layout = await page.evaluate(() => {
+    const heroCopy = document.querySelector(".ar-hero-reveal");
+    const artCard = document.querySelector(".ar-art-card");
+
+    if (!heroCopy || !artCard) {
+      throw new Error("Expected homepage hero surfaces.");
+    }
+
+    const copyRect = heroCopy.getBoundingClientRect();
+    const artRect = artCard.getBoundingClientRect();
+
+    return {
+      copyRight: copyRect.right,
+      artLeft: artRect.left,
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth
+    };
+  });
+
+  expect(layout.copyRight).toBeLessThanOrEqual(layout.artLeft);
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
 });
 
 test.describe("AR launcher access guidance", () => {
@@ -639,6 +901,24 @@ test("shared site header + reserve CTA render on the Our work routes", async ({ 
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
 });
 
+test("work route shows the complete public social-proof library", async ({ page }) => {
+  await page.goto("/work");
+
+  await expect(page.getByRole("heading", { name: "Real prints, shown where they were published" })).toBeVisible();
+  await expect(page.getByTestId("social-proof-library")).toBeVisible();
+  await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(1);
+  await expect(page.getByTestId("instagram-proof-container")).toHaveCount(5);
+  await expect(page.getByTestId("social-proof-embed").nth(0)).toHaveAttribute("data-social-proof-id", "business-logo-wall");
+  await expect(page.getByTestId("social-proof-embed").nth(1)).toHaveAttribute("data-social-proof-id", "one-day-result");
+  await expect(page.getByTestId("social-proof-embed").nth(2)).toHaveAttribute("data-social-proof-id", "first-client-story");
+  await expect(page.getByTestId("social-proof-embed").nth(3)).toHaveAttribute("data-social-proof-id", "label808-studio");
+  await expect(page.getByTestId("social-proof-embed").nth(4)).toHaveAttribute("data-social-proof-id", "wall-printing-explained");
+  await expect(page.locator('source[src*="work-videos"]')).toHaveCount(0);
+
+  await page.goto("/work/pathways-to-success-mural");
+  await expect(page.getByTestId("work-detail-video")).toHaveCount(0);
+});
+
 test("/reserved keeps the shared header but swaps the CTA for a confirmation chip", async ({ page }) => {
   await page.goto("/reserved");
 
@@ -663,13 +943,13 @@ test("public preview route renders a ready seeded artwork", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Open on iPhone Safari." })).toBeVisible();
   await expect(page.getByText("To see the wall preview, open this same link in Safari on an iPhone.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Wall Print Pro" })).toHaveAttribute("href", "/");
-  await expect(page.getByTestId("selected-artwork-title")).toHaveText("Pathways to Success");
+  await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
   await expect(page.getByText("File name")).toBeVisible();
   await expect(page.getByTestId("public-confirmation-file-name")).toHaveText("Pathways to Success");
   await expect(page.getByTestId("public-confirmation-dimensions")).toHaveCount(0);
   await expect(page.getByTestId("previous-artwork")).toHaveCount(0);
   await expect(page.getByTestId("next-artwork")).toHaveCount(0);
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+  await expectWallPlacementEntryPoint(page);
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-placement", "wall");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-scale", "fixed");
   await expect(page.getByTestId("artwork-width-guide")).toHaveCount(0);

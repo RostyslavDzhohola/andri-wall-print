@@ -3,7 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { HomepageDemoActions } from "@/components/promotion/homepage-demo-actions";
-import { WorkVideosSection } from "@/components/promotion/work-videos-section";
+import { SocialProofSection } from "@/components/promotion/social-proof-section";
 import { LocalBusinessJsonLd } from "@/components/seo/local-business-jsonld";
 import { Button } from "@/components/ui/button";
 import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
@@ -15,20 +15,14 @@ import {
   HOME_FOOTER_TAGLINE,
   HOME_HEADLINE,
   HOME_LOCATION_BADGE,
-  HOME_PORTFOLIO_TEASER_CTA,
   HOME_PROCESS_HEADING,
   HOME_PROCESS_STEPS,
   HOME_RESERVE_STRIP_BODY,
   HOME_RESERVE_STRIP_CTA,
   HOME_RESERVE_STRIP_HEADLINE,
-  HOME_SPECS,
   HOME_SUBHEAD,
-  HOME_TESTIMONIAL,
-  HOME_WORK_HEADING,
-  HOME_WORK_SUBHEAD
 } from "@/lib/product-copy";
 import { resolveReserveHref } from "@/lib/reserve-url";
-import { loadWorkJobs } from "@/lib/work-content";
 import { cn } from "@/lib/utils";
 
 function ChicagoBadge() {
@@ -37,21 +31,6 @@ function ChicagoBadge() {
       <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
       {HOME_LOCATION_BADGE}
     </span>
-  );
-}
-
-function SpecsBand() {
-  return (
-    <section aria-label="Print specifications" className="border-t bg-card px-4 py-8 md:px-6">
-      <dl className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4">
-        {HOME_SPECS.map((spec) => (
-          <div className="grid gap-1" key={spec.value}>
-            <dt className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{spec.value}</dt>
-            <dd className="text-sm text-muted-foreground">{spec.label}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
   );
 }
 
@@ -119,20 +98,6 @@ function ComparisonTable() {
   );
 }
 
-function Testimonial() {
-  return (
-    <section className="border-t bg-muted/30 px-4 py-12 md:px-6 md:py-16" data-testid="home-testimonial">
-      <figure className="mx-auto max-w-3xl">
-        <blockquote className="text-2xl font-medium leading-snug text-foreground md:text-3xl">
-          &ldquo;{HOME_TESTIMONIAL.quote}&rdquo;
-        </blockquote>
-        {/* LAUNCH GATE: replace with a real, attributed Chicago client quote. */}
-        <figcaption className="mt-4 text-sm text-muted-foreground">{HOME_TESTIMONIAL.attribution}</figcaption>
-      </figure>
-    </section>
-  );
-}
-
 function ReserveStrip({ href }: { href: string }) {
   return (
     <section className="bg-foreground px-4 py-10 text-background md:px-6" data-testid="home-reserve-strip">
@@ -147,57 +112,6 @@ function ReserveStrip({ href }: { href: string }) {
             <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         </Button>
-      </div>
-    </section>
-  );
-}
-
-function PortfolioTeaser() {
-  const jobs = loadWorkJobs().slice(0, 3);
-
-  return (
-    <section className="border-t bg-background px-4 py-12 md:px-6 md:py-16" data-testid="home-portfolio-teaser">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-semibold leading-tight md:text-4xl">{HOME_WORK_HEADING}</h2>
-            <p className="mt-2 text-base leading-7 text-muted-foreground">{HOME_WORK_SUBHEAD}</p>
-          </div>
-          <Button asChild className="min-h-11 rounded-full px-5" size="lg" variant="outline">
-            <Link href="/work">
-              {HOME_PORTFOLIO_TEASER_CTA}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </div>
-
-        <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {jobs.map((job) => {
-            const photo = job.photos[0];
-
-            return (
-              <li key={job.slug}>
-                <Link
-                  className="group grid gap-3 rounded-lg border bg-card p-3 shadow-sm outline-offset-4 transition hover:shadow-[0_24px_70px_rgba(35,31,25,.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                  href={`/work/${job.slug}`}
-                >
-                  <img
-                    alt={photo.alt}
-                    className="aspect-[4/3] w-full rounded-md object-cover"
-                    draggable={false}
-                    src={photo.src}
-                  />
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">{job.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {job.neighborhood} · {job.area}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
       </div>
     </section>
   );
@@ -226,6 +140,77 @@ function ProcessSteps() {
             </li>
           ))}
         </ol>
+      </div>
+    </section>
+  );
+}
+
+const HOME_FAQS = [
+  {
+    question: "What happens after I request an estimate?",
+    answer:
+      "A Wall Print Pro team member contacts you to schedule an on-site visit, measure the wall, inspect the surface, and confirm the project price."
+  },
+  {
+    question: "Can I use my own artwork or business logo?",
+    answer:
+      "Yes. You can upload artwork or a logo from the homepage, or describe the custom design you want us to review."
+  },
+  {
+    question: "How do I know whether my wall can be printed?",
+    answer:
+      "Share the wall details in your request. We confirm the surface, access, measurements, and preparation needs during the estimate visit."
+  },
+  {
+    question: "How does the $100 priority reservation work?",
+    answer:
+      "The reservation moves your estimate into priority scheduling, and the full $100 is credited toward your wall print."
+  },
+  {
+    question: "When will I receive the final price?",
+    answer:
+      "We confirm the price after the on-site estimate, once the wall size, surface, artwork, and installation requirements are clear."
+  }
+] as const;
+
+function FaqSection() {
+  return (
+    <section className="border-t bg-background px-5 py-16 md:px-8 md:py-24" data-testid="home-faq">
+      <div className="mx-auto max-w-4xl">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">FAQ</p>
+        <h2 className="mt-3 text-3xl font-semibold leading-tight md:text-4xl">Questions before your estimate</h2>
+        <div className="mt-10 divide-y divide-border border-y border-border">
+          {HOME_FAQS.map((item) => (
+            <details className="group py-5" key={item.question}>
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-6 text-lg font-semibold text-foreground">
+                {item.question}
+                <span aria-hidden="true" className="text-2xl font-normal text-primary group-open:rotate-45">
+                  +
+                </span>
+              </summary>
+              <p className="max-w-3xl pb-2 pr-12 text-sm leading-7 text-muted-foreground md:text-base">{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalQuoteCta() {
+  return (
+    <section className="border-t bg-primary px-4 py-12 text-primary-foreground md:px-6 md:py-16" data-testid="home-final-quote">
+      <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary-foreground/70">Your wall is next</p>
+          <h2 className="mt-2 text-3xl font-semibold leading-tight md:text-4xl">See your idea on the wall before you commit.</h2>
+        </div>
+        <Button asChild className="min-h-11 rounded-full bg-background px-6 text-foreground hover:bg-background/90" size="lg">
+          <Link data-testid="home-final-quote-cta" href="/request">
+            Free Demo
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </Button>
       </div>
     </section>
   );
@@ -264,18 +249,12 @@ function SiteFooter() {
 function HomeSections({ reserveHref }: { reserveHref: string }) {
   return (
     <>
-      <SpecsBand />
+      <SocialProofSection />
       <ComparisonTable />
-      <Testimonial />
       <ReserveStrip href={reserveHref} />
-      <section className="border-t bg-background px-4 pt-12 md:px-6 md:pt-16" aria-label="Recent work video">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-semibold leading-tight md:text-4xl">Watch real installs</h2>
-        </div>
-      </section>
-      <WorkVideosSection />
       <ProcessSteps />
-      <PortfolioTeaser />
+      <FaqSection />
+      <FinalQuoteCta />
       <SiteFooter />
     </>
   );
@@ -289,7 +268,7 @@ export default function Home() {
       <LocalBusinessJsonLd />
       <ArPreviewSurface
         heading={HOME_HEADLINE}
-        headingClassName="text-[2.5rem] max-w-3xl sm:max-w-3xl md:max-w-4xl lg:max-w-[16ch]"
+        headingClassName="max-w-[12ch] text-[2.25rem] sm:text-[2.75rem] md:max-w-[11ch] md:text-[3rem] lg:max-w-[16ch] lg:text-6xl"
         intro={HOME_SUBHEAD}
         eyebrow={<ChicagoBadge />}
         sideContent={<HomepageDemoActions />}

@@ -10,6 +10,7 @@ import {
   readWallPrintProPublicContactUrl,
   readWallPrintProPublicPhone
 } from "@/lib/runtime-env";
+import { resolveReserveHref } from "@/lib/reserve-url";
 import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
@@ -47,42 +48,33 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestDefaults = resolveRequestPageDefaults(resolvedSearchParams);
+  const uploadFirst = requestDefaults.focusUpload;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 pb-4 md:px-6">
-        <div className="grid flex-1 gap-4 md:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] md:items-start">
-          <div className="grid content-start gap-5 py-3 md:py-6">
-            <div className="grid gap-4">
-              <h1 className="text-4xl font-semibold leading-[0.98] text-balance md:text-6xl">Start a wall print request.</h1>
-              <p className="max-w-lg text-base leading-7 text-muted-foreground">
-                Send your artwork, logo, or idea. Wall Print Pro can review the visual, flag production concerns, and estimate the real project.
-              </p>
-            </div>
-            <div className="overflow-hidden rounded-lg border bg-secondary">
-              <img alt="" className="aspect-[4/3] w-full object-cover" src="/artworks/chicago-final-1.png" />
-            </div>
-          </div>
+      <section className="mx-auto w-full max-w-3xl px-5 py-10 md:px-8 md:py-16">
+        <header className="grid gap-4">
+          <h1 className="text-4xl font-semibold leading-[0.98] text-balance md:text-6xl">Start a wall print request.</h1>
+          <p className="max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+            Reserve an on-site estimate. A Wall Print Pro team member will visit your space, measure the wall, review the surface,
+            and confirm the project price.
+          </p>
+        </header>
 
-          <section className="grid content-start py-3 md:py-6">
-            <Card className="shadow-[0_24px_70px_rgba(35,31,25,0.12)]">
-              <CardHeader>
-                <CardDescription className="font-semibold uppercase">Contact gated draft</CardDescription>
-                <CardTitle className="text-2xl md:text-3xl">Request details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PublicRequestForm
-                  aiEnabled={readWallPrintProAiConceptsConfigured()}
-                  defaultConceptPrompt={requestDefaults.defaultConceptPrompt}
-                  defaultDesignContext={requestDefaults.defaultDesignContext}
-                  defaultIntent={requestDefaults.defaultIntent}
-                  publicContactUrl={readWallPrintProPublicContactUrl()}
-                  publicPhone={readWallPrintProPublicPhone()}
-                />
-              </CardContent>
-            </Card>
-          </section>
-        </div>
+        <Card className="mt-10 shadow-[0_24px_70px_rgba(35,31,25,0.12)]">
+          <CardContent className="pt-6">
+            <PublicRequestForm
+              aiEnabled={readWallPrintProAiConceptsConfigured()}
+              defaultConceptPrompt={requestDefaults.defaultConceptPrompt}
+              defaultDesignContext={requestDefaults.defaultDesignContext}
+              defaultIntent={requestDefaults.defaultIntent}
+              publicContactUrl={readWallPrintProPublicContactUrl()}
+              publicPhone={readWallPrintProPublicPhone()}
+              reserveHref={resolveReserveHref()}
+              uploadFirst={uploadFirst}
+            />
+          </CardContent>
+        </Card>
       </section>
     </main>
   );

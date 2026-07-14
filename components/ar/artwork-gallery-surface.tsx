@@ -1,8 +1,7 @@
 "use client";
 
-import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useRef, useState } from "react";
 
@@ -20,7 +19,6 @@ export function ArtworkGallerySurface({
   initialSampleId,
   samples = AR_SAMPLES
 }: ArtworkGallerySurfaceProps) {
-  const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(() => {
     const initialIndex = initialSampleId ? samples.findIndex((sample) => sample.id === initialSampleId) : -1;
 
@@ -59,15 +57,6 @@ export function ArtworkGallerySurface({
     setSelectedIndex((current) => (current + 1) % samples.length);
   };
 
-  const goBack = () => {
-    if (window.history.length > 1) {
-      router.back();
-      return;
-    }
-
-    router.push("/");
-  };
-
   return (
     <main className="min-h-screen bg-background text-foreground">
       <Script
@@ -77,14 +66,7 @@ export function ArtworkGallerySurface({
         strategy="afterInteractive"
         type="module"
       />
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-4 md:px-6">
-        <div>
-          <Button aria-label="Go back" className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4" onClick={goBack} type="button" variant="ghost">
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Back</span>
-          </Button>
-        </div>
-
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-4 pt-4 md:px-6">
         <h1 className="sr-only">Gallery</h1>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)] lg:items-start">

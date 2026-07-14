@@ -25,13 +25,19 @@ describe("shared site header", () => {
   it("renders the brand nav links and the reserve CTA on a normal route", async () => {
     const html = await renderHeader("/gallery");
 
+    expect(html).toContain('href="/"');
     expect(html).toContain('href="/gallery"');
     expect(html).toContain('href="/work"');
+    expect(html).toContain("Home");
     expect(html).toContain("Gallery");
     expect(html).toContain("Our work");
+    expect(html).toContain("border-0");
+    expect(html).toContain("focus-visible:outline-none");
+    expect(html).not.toContain("focus-visible:outline-2");
     // Reserve CTA is present and points at the resolved payment link.
     expect(html).toContain('href="https://buy.stripe.com/test-link"');
     expect(html).toContain("Reserve a spot");
+    expect(html).toContain("Reserve $100");
     expect(html).toContain('data-testid="home-nav-reserve"');
     // Not the /reserved confirmation chip.
     expect(html).not.toContain('data-testid="site-reserve-confirmation"');
@@ -41,6 +47,12 @@ describe("shared site header", () => {
     const html = await renderHeader("/work/some-job");
 
     expect(html).toContain('aria-current="page"');
+  });
+
+  it("marks only the Home item active on the homepage", async () => {
+    const html = await renderHeader("/");
+
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
   });
 
   it("swaps the CTA for a non-link confirmation chip on /reserved (no reserve link)", async () => {
@@ -56,6 +68,7 @@ describe("shared site header", () => {
   it("keeps brand nav but hides the price CTA on private /preview routes", async () => {
     const html = await renderHeader("/preview/chicago-final-1");
 
+    expect(html).toContain('href="/"');
     expect(html).toContain('href="/gallery"');
     expect(html).not.toContain("https://buy.stripe.com/test-link");
     expect(html).not.toContain('data-testid="home-nav-reserve"');

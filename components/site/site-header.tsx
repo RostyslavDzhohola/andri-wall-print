@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check, GalleryHorizontal, MessageCircle } from "lucide-react";
+import { Check, GalleryHorizontal, House, MessageCircle } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,16 @@ type SiteHeaderProps = {
 };
 
 const NAV_LINKS = [
+  { href: "/", label: "Home", icon: House },
   { href: "/gallery", label: "Gallery", icon: GalleryHorizontal },
   { href: "/work", label: "Our work", icon: MessageCircle }
 ] as const;
 
 function isActive(pathname: string, href: string) {
+  if (href === "/") {
+    return pathname === href;
+  }
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -32,16 +37,21 @@ export function SiteHeader({ reserveHref }: SiteHeaderProps) {
   const hideReserveCta = pathname.startsWith("/preview");
 
   return (
-    <header className="flex items-center justify-between gap-4 pt-1 sm:pt-0">
-      <BrandMark ariaLabel="Wall Print Pro homepage" className="min-w-0 text-base sm:text-lg" textClassName="truncate" />
-      <div className="flex shrink-0 items-center gap-3">
+    <header className="flex items-center justify-between gap-1 pt-1 sm:gap-4 sm:pt-0">
+      <BrandMark
+        ariaLabel="Wall Print Pro homepage"
+        className="min-w-0 text-base sm:text-lg"
+        iconSize="sm"
+        textClassName="sr-only sm:not-sr-only sm:truncate"
+      />
+      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
         {NAV_LINKS.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
 
           return (
             <Button
               asChild
-              className="min-h-10 rounded-full px-3 sm:min-h-11 sm:px-4"
+              className="min-h-10 rounded-full px-2 sm:min-h-11 sm:px-4"
               key={href}
               size="lg"
               variant="ghost"
@@ -67,9 +77,10 @@ export function SiteHeader({ reserveHref }: SiteHeaderProps) {
             Spot reserved
           </span>
         ) : (
-          <Button asChild className="min-h-10 rounded-full px-4 sm:min-h-11 sm:px-5" size="lg">
+          <Button asChild className="min-h-10 rounded-full px-3 min-[360px]:px-4 sm:min-h-11 sm:px-5" size="lg">
             <Link data-testid="home-nav-reserve" href={reserveHref}>
-              {HOME_NAV_RESERVE_CTA}
+              <span className="min-[360px]:hidden">Reserve $100</span>
+              <span className="hidden min-[360px]:inline">{HOME_NAV_RESERVE_CTA}</span>
             </Link>
           </Button>
         )}

@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, Images, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, Images, Loader2, RotateCcw, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import { useArPreviewSelection } from "@/components/ar/ar-preview-surface";
 import type { ArSample } from "@/lib/ar-sample";
@@ -13,23 +13,45 @@ import { QrCode } from "@/components/ui/qr-code";
 import { Textarea } from "@/components/ui/textarea";
 import { isValidLeadEmail, LEAD_CONCEPT_PROMPT_MAX_LENGTH, normalizeLeadEmail } from "@/lib/lead-request-contract";
 import {
+  fingerprintBuilderUpload,
+  normalizeBuilderUploadToPng,
+  validatePublicUploadFile
+} from "@/lib/builder-upload-normalization";
+import {
   HOME_AT_CAPACITY_BODY,
   HOME_AT_CAPACITY_TITLE,
   HOME_COMPOSITE_ONLY_BODY,
   HOME_ENTRY_CHOOSE,
   HOME_ENTRY_DESCRIBE,
   HOME_ENTRY_UPLOAD,
-  HOME_GENERATION_LICENSING_NOTE,
+  HOME_GENERATE_CTA,
   HOME_GENERATION_LOADING,
-  HOME_SEE_ON_WALL_CTA,
+  HOME_OPEN_GALLERY_CTA,
+  HOME_UPLOAD_CTA,
   HOME_UPLOAD_ACCEPTED_FORMATS,
   HOME_UPLOAD_ENTRY_BODY
 } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 
 type HomepageEntry = "choose" | "upload" | "describe";
+type DescribeStep = "email" | "description";
 
 type GenerationStatus = "idle" | "generating" | "ready" | "composite_only" | "failed";
+type UploadStatus = "idle" | "validating" | "uploading" | "generating" | "ready" | "failed";
+
+type HomepageUploadPreview = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  print: ArSample["print"];
+  assets: {
+    poster: string | null;
+    glb: string | null;
+    usdz: string | null;
+  };
+  status: "ready";
+};
 
 type ConceptArtStartResponse =
   | {
@@ -70,6 +92,15 @@ type ConceptArtStatusResponse =
 const CONCEPT_STATUS_POLL_DELAY_MS = 1_200;
 const CONCEPT_STATUS_MAX_POLLS = 80;
 export const CONCEPT_STATUS_MAX_CONSECUTIVE_FETCH_FAILURES = 3;
+const UPLOAD_STATUS_POLL_DELAY_MS = 1_200;
+const UPLOAD_STATUS_MAX_POLLS = 80;
+const ENTRY_PANEL_CLASS = "entry-crossfade grid min-h-[10.25rem] content-start gap-3 rounded-lg border bg-card/80 p-4 shadow-sm";
+
+export function homepageUploadTitle(fileName: string) {
+  const title = fileName.replace(/\.[^.]+$/, "").trim().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+
+  return title || "Your artwork";
+}
 
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -219,7 +250,7 @@ async function fetchConceptStatus(leadRequestId: string) {
 }
 
 export function HomepageDemoActions() {
-  const { selectedBaseSample, selectedSample, showPreviewSample } = useArPreviewSelection();
+  const { selectedBaseSample, showPreviewSample } = useArPreviewSelection();
   const [conceptPrompt, setConceptPrompt] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>("idle");
@@ -229,9 +260,38 @@ export function HomepageDemoActions() {
   const [activeEntry, setActiveEntry] = useState<HomepageEntry>("describe");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [describeStep, setDescribeStep] = useState<DescribeStep>("email");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const entryTabRefs = useRef<Partial<Record<HomepageEntry, HTMLButtonElement | null>>>({});
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
+  const conceptPromptRef = useRef<HTMLTextAreaElement | null>(null);
+  const focusDescribeStepRef = useRef(false);
+  const uploadObjectUrlRef = useRef<string | null>(null);
+  const uploadRequestRef = useRef(0);
   const selectedDesignHref = `/gallery?designId=${encodeURIComponent(selectedBaseSample.id)}`;
-  const uploadHref = "/request?intent=concept#lead-upload-section";
+
+  useEffect(() => {
+    return () => {
+      uploadRequestRef.current += 1;
+
+      if (uploadObjectUrlRef.current) {
+        URL.revokeObjectURL(uploadObjectUrlRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!focusDescribeStepRef.current || activeEntry !== "describe") {
+      return;
+    }
+
+    focusDescribeStepRef.current = false;
+    const target = describeStep === "email" ? emailInputRef.current : conceptPromptRef.current;
+    target?.focus();
+  }, [activeEntry, describeStep]);
 
   const pollConceptStatus = async (leadRequestId: string) => {
     let consecutiveFetchFailures = 0;
@@ -395,6 +455,233 @@ export function HomepageDemoActions() {
     }
   };
 
+  const pollHomepageUpload = async (publicSlug: string, requestId: number) => {
+    for (let attempt = 0; attempt < UPLOAD_STATUS_MAX_POLLS; attempt += 1) {
+      if (attempt > 0) {
+        await wait(UPLOAD_STATUS_POLL_DELAY_MS);
+      }
+
+      if (requestId !== uploadRequestRef.current) {
+        return null;
+      }
+
+      const response = await fetch(`/api/homepage-artwork?slug=${encodeURIComponent(publicSlug)}`, {
+        headers: { Accept: "application/json" },
+        cache: "no-store"
+      });
+      const result = (await readJsonResponse<Record<string, unknown>>(response)) as
+        | HomepageUploadPreview
+        | { status?: string; reason?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error("Could not check the iPhone preview. Try again.");
+      }
+
+      if (result.status === "preparing") {
+        setUploadMessage("Preparing the iPhone wall preview...");
+        continue;
+      }
+
+      if (
+        result.status === "ready" &&
+        "assets" in result &&
+        result.assets.poster &&
+        result.assets.glb &&
+        result.assets.usdz
+      ) {
+        return result as HomepageUploadPreview;
+      }
+
+      throw new Error("This artwork could not be prepared for wall preview. Try the upload again.");
+    }
+
+    throw new Error("The iPhone preview is still preparing. Try again to keep checking this artwork.");
+  };
+
+  const prepareHomepageUpload = async (file: File, requestId: number) => {
+    try {
+      setUploadStatus("uploading");
+      setUploadMessage("Uploading your artwork...");
+      const normalized = await normalizeBuilderUploadToPng(file);
+      const sourceFingerprint = await fingerprintBuilderUpload(normalized.file);
+
+      if (requestId !== uploadRequestRef.current) {
+        return;
+      }
+
+      const uploadUrlResponse = await fetch("/api/homepage-artwork", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "upload_url" })
+      });
+      const uploadUrlResult = await readJsonResponse<{ ok: boolean; uploadUrl?: string; message?: string }>(uploadUrlResponse);
+
+      if (!uploadUrlResponse.ok || !uploadUrlResult.ok || !uploadUrlResult.uploadUrl) {
+        throw new Error(uploadUrlResult.message ?? "Upload could not be started.");
+      }
+
+      const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": normalized.file.type },
+        body: normalized.file
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Upload could not be saved.");
+      }
+
+      const { storageId } = (await uploadResponse.json()) as { storageId?: string };
+
+      if (!storageId) {
+        throw new Error("Upload could not be saved.");
+      }
+
+      const createResponse = await fetch("/api/homepage-artwork", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          input: {
+            sourceStorageId: storageId,
+            originalFileName: normalized.file.name,
+            contentType: normalized.file.type,
+            byteLength: normalized.file.size,
+            sourceFingerprint,
+            title: homepageUploadTitle(file.name),
+            print: selectedBaseSample.print
+          }
+        })
+      });
+      const createResult = await readJsonResponse<{
+        ok: boolean;
+        message?: string;
+        preview?: { publicSlug?: string; publicUrl?: string };
+      }>(createResponse);
+      const publicSlug = createResult.preview?.publicSlug;
+
+      if (!createResponse.ok || !createResult.ok || !publicSlug) {
+        throw new Error(createResult.message ?? "Wall preview could not be prepared.");
+      }
+
+      setUploadStatus("generating");
+      setUploadMessage("Preparing the iPhone wall preview...");
+      const preview = await pollHomepageUpload(publicSlug, requestId);
+
+      if (!preview || requestId !== uploadRequestRef.current) {
+        return;
+      }
+
+      showPreviewSample({
+        id: preview.id,
+        title: preview.title,
+        description: preview.description,
+        shareUrl: createResult.preview?.publicUrl ?? `/preview/${publicSlug}`,
+        print: preview.print,
+        assets: {
+          poster: preview.assets.poster!,
+          glb: preview.assets.glb!,
+          usdz: preview.assets.usdz!
+        }
+      });
+      setUploadStatus("ready");
+      setUploadMessage("Ready. Send this same artwork to your iPhone and place it on the wall.");
+
+      if (uploadObjectUrlRef.current) {
+        URL.revokeObjectURL(uploadObjectUrlRef.current);
+        uploadObjectUrlRef.current = null;
+      }
+    } catch (error) {
+      if (requestId !== uploadRequestRef.current) {
+        return;
+      }
+
+      setUploadStatus("failed");
+      setUploadMessage(error instanceof Error ? error.message : "Upload failed. Try again.");
+    }
+  };
+
+  const handleHomepageFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0] ?? null;
+    event.target.value = "";
+
+    if (!selected) {
+      return;
+    }
+
+    const requestId = uploadRequestRef.current + 1;
+    uploadRequestRef.current = requestId;
+    setUploadFile(selected);
+    setUploadStatus("validating");
+    setUploadMessage("Checking your artwork...");
+
+    if (uploadObjectUrlRef.current) {
+      URL.revokeObjectURL(uploadObjectUrlRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(selected);
+    uploadObjectUrlRef.current = objectUrl;
+    showPreviewSample({
+      id: `homepage-upload-${requestId}`,
+      title: homepageUploadTitle(selected.name),
+      description: "Your uploaded artwork, preparing for iPhone wall preview.",
+      print: selectedBaseSample.print,
+      assets: { poster: objectUrl, glb: "", usdz: "" }
+    });
+
+    let validation: Awaited<ReturnType<typeof validatePublicUploadFile>>;
+
+    try {
+      validation = await validatePublicUploadFile(selected);
+    } catch {
+      validation = { ok: false, reason: "Could not read this image. Choose a JPEG, PNG, or WebP file." };
+    }
+
+    if (requestId !== uploadRequestRef.current) {
+      return;
+    }
+
+    if (!validation.ok) {
+      setUploadFile(null);
+      setUploadStatus("failed");
+      setUploadMessage(validation.reason);
+      showPreviewSample(selectedBaseSample);
+      URL.revokeObjectURL(objectUrl);
+      uploadObjectUrlRef.current = null;
+      return;
+    }
+
+    await prepareHomepageUpload(selected, requestId);
+  };
+
+  const retryHomepageUpload = () => {
+    if (!uploadFile || uploadStatus === "uploading" || uploadStatus === "generating") {
+      return;
+    }
+
+    const requestId = uploadRequestRef.current + 1;
+    uploadRequestRef.current = requestId;
+    void prepareHomepageUpload(uploadFile, requestId);
+  };
+
+  const goToDescribeStep = (step: DescribeStep) => {
+    focusDescribeStepRef.current = true;
+    setDescribeStep(step);
+  };
+
+  const continueFromEmail = () => {
+    const email = normalizeLeadEmail(contactEmail);
+
+    if (!isValidLeadEmail(email)) {
+      setEmailError("Enter a valid email address to continue.");
+      emailInputRef.current?.focus();
+      return;
+    }
+
+    setContactEmail(email);
+    setEmailError(null);
+    goToDescribeStep("description");
+  };
+
   const isGenerating = generationStatus === "generating";
   const atCapacity = generationStatus === "failed" && isAtCapacityFailureMessage(generationMessage);
   const entries: { key: HomepageEntry; label: string; icon: typeof Images }[] = [
@@ -467,7 +754,7 @@ export function HomepageDemoActions() {
 
       {/* Choose design — hand off to the gallery with the selected base sample. */}
       {activeEntry === "choose" ? (
-        <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
+        <div className={ENTRY_PANEL_CLASS} data-testid="homepage-entry-panel">
           <p className="text-sm leading-6 text-muted-foreground">
             Start from a Chicago design and place it on your wall in AR. Currently selected:{" "}
             <span className="font-semibold text-foreground">{selectedBaseSample.title}</span>.
@@ -475,32 +762,61 @@ export function HomepageDemoActions() {
           <Button asChild className="min-h-11 w-fit rounded-full px-5" size="lg">
             <Link data-testid="homepage-selected-design-handoff" href={selectedDesignHref}>
               <Images className="size-4" aria-hidden="true" />
-              {HOME_SEE_ON_WALL_CTA}
+              {HOME_OPEN_GALLERY_CTA}
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </Button>
         </div>
       ) : null}
 
-      {/* Upload art/logo — hand off to the contact-gated upload flow. */}
+      {/* Upload art/logo — stay inline and reuse the existing wall-preview generation spine. */}
       {activeEntry === "upload" ? (
-        <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
+        <div className={ENTRY_PANEL_CLASS} data-testid="homepage-entry-panel">
           <p className="text-sm leading-6 text-muted-foreground">
             {HOME_UPLOAD_ENTRY_BODY} {HOME_UPLOAD_ACCEPTED_FORMATS}
           </p>
-          <Button asChild className="min-h-11 w-fit rounded-full px-5" size="lg">
-            <Link data-testid="homepage-upload-handoff" href={uploadHref}>
+          <label className="w-fit" htmlFor="homepage-artwork-upload">
+            <span className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90">
               <Upload className="size-4" aria-hidden="true" />
-              {HOME_SEE_ON_WALL_CTA}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
+              {uploadStatus === "idle" ? HOME_UPLOAD_CTA : "Choose different artwork"}
+            </span>
+          </label>
+          <input
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            data-testid="homepage-artwork-file"
+            id="homepage-artwork-upload"
+            onChange={(event) => void handleHomepageFileSelection(event)}
+            type="file"
+          />
+          {uploadMessage ? (
+            <div
+              aria-live="polite"
+              className={cn(
+                "flex items-start gap-2 rounded-md border px-3 py-2 text-sm leading-5",
+                uploadStatus === "failed" ? "border-destructive/40 bg-destructive/5 text-destructive" : "bg-muted/35 text-muted-foreground"
+              )}
+              data-testid="homepage-upload-status"
+              role={uploadStatus === "failed" ? "alert" : "status"}
+            >
+              {uploadStatus === "validating" || uploadStatus === "uploading" || uploadStatus === "generating" ? (
+                <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin" aria-hidden="true" />
+              ) : null}
+              <span>{uploadMessage}</span>
+            </div>
+          ) : null}
+          {uploadStatus === "failed" && uploadFile ? (
+            <Button className="min-h-10 w-fit rounded-full px-4" data-testid="homepage-upload-retry" onClick={retryHomepageUpload} type="button" variant="outline">
+              <RotateCcw className="size-4" aria-hidden="true" />
+              Try again
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
       {/* Describe idea — email-gated concept generation. */}
       {activeEntry === "describe" ? (
-        <div className="entry-crossfade grid gap-3 rounded-lg border bg-card/80 p-4 shadow-sm">
+        <div className={ENTRY_PANEL_CLASS} data-testid="homepage-entry-panel">
           {atCapacity ? (
             <div
               className="grid gap-2 rounded-md border border-status-warning-border bg-status-warning p-4 text-status-warning-foreground"
@@ -511,43 +827,110 @@ export function HomepageDemoActions() {
             </div>
           ) : null}
 
-          <div className="grid gap-2">
-            <Label htmlFor="homepage-concept-email">Email</Label>
-            <Input
-              id="homepage-concept-email"
-              inputMode="email"
-              onChange={(event) => setContactEmail(event.target.value)}
-              placeholder="you@example.com"
-              type="email"
-              value={contactEmail}
-            />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="homepage-concept">Describe your wall-print idea</Label>
-            <Textarea
-              id="homepage-concept"
-              maxLength={LEAD_CONCEPT_PROMPT_MAX_LENGTH}
-              onChange={(event) => setConceptPrompt(event.target.value)}
-              placeholder="Logo wall, Chicago skyline, kids area mural..."
-              rows={3}
-              value={conceptPrompt}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              className="min-h-11 rounded-full px-5"
-              data-testid="homepage-concept-generate"
-              disabled={isGenerating}
-              onClick={() => void generateConceptArtwork()}
-              size="lg"
-              type="button"
+          {describeStep === "email" ? (
+            <form
+              className="grid h-full grid-rows-[auto_auto_1fr] gap-3"
+              data-testid="homepage-describe-email-step"
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                continueFromEmail();
+              }}
             >
-              <Sparkles className="size-4" aria-hidden="true" />
-              {isGenerating ? "Drafting concept" : HOME_SEE_ON_WALL_CTA}
-              {isGenerating ? null : <ArrowRight className="size-4" aria-hidden="true" />}
-            </Button>
-            {canCheckAgain && lastLeadRequestId ? (
+              <Label className="font-semibold" htmlFor="homepage-concept-email">
+                Email
+              </Label>
+              <Input
+                aria-describedby={emailError ? "homepage-concept-email-error" : undefined}
+                aria-invalid={Boolean(emailError)}
+                autoComplete="email"
+                className="min-h-11"
+                id="homepage-concept-email"
+                inputMode="email"
+                onChange={(event) => {
+                  setContactEmail(event.target.value);
+                  if (emailError) {
+                    setEmailError(null);
+                  }
+                }}
+                placeholder="you@example.com"
+                ref={emailInputRef}
+                type="email"
+                value={contactEmail}
+              />
+              <div className="flex items-end gap-3">
+                {emailError ? (
+                  <p className="text-sm font-medium text-destructive" id="homepage-concept-email-error" role="alert">
+                    {emailError}
+                  </p>
+                ) : null}
+                <Button className="ml-auto min-h-11 rounded-full px-4" data-testid="homepage-describe-continue" size="lg" type="submit">
+                  Continue
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <form
+              className="grid gap-3"
+              data-testid="homepage-describe-description-step"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void generateConceptArtwork();
+              }}
+            >
+              <Label className="font-semibold" htmlFor="homepage-concept">
+                Describe your wall print
+              </Label>
+              <Textarea
+                aria-describedby="homepage-concept-keyboard-hint"
+                className="h-11 min-h-11 resize-none py-2.5"
+                id="homepage-concept"
+                maxLength={LEAD_CONCEPT_PROMPT_MAX_LENGTH}
+                onChange={(event) => setConceptPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                placeholder="Logo wall, Chicago skyline, kids area mural..."
+                ref={conceptPromptRef}
+                rows={1}
+                value={conceptPrompt}
+              />
+              <span className="sr-only" id="homepage-concept-keyboard-hint">
+                Press Enter to generate the preview. Press Shift and Enter for a new line.
+              </span>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  className="min-h-11 rounded-full px-3"
+                  data-testid="homepage-describe-back"
+                  disabled={isGenerating}
+                  onClick={() => goToDescribeStep("email")}
+                  size="lg"
+                  type="button"
+                  variant="ghost"
+                >
+                  Back
+                </Button>
+                <Button
+                  className="min-h-11 rounded-full px-4"
+                  data-testid="homepage-concept-generate"
+                  disabled={isGenerating}
+                  size="lg"
+                  type="submit"
+                >
+                  <Sparkles className="size-4" aria-hidden="true" />
+                  {isGenerating ? "Drafting concept" : HOME_GENERATE_CTA}
+                  {isGenerating ? null : <ArrowRight className="size-4" aria-hidden="true" />}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {canCheckAgain && lastLeadRequestId ? (
               <Button
                 className="min-h-11 rounded-full px-4"
                 data-testid="homepage-concept-check-again"
@@ -559,8 +942,7 @@ export function HomepageDemoActions() {
               >
                 Check again
               </Button>
-            ) : null}
-          </div>
+          ) : null}
 
           {isGenerating ? (
             <div
@@ -595,14 +977,8 @@ export function HomepageDemoActions() {
               {generationMessage ?? ""}
             </span>
           )}
-
-          <p className="text-xs leading-5 text-muted-foreground">{HOME_GENERATION_LICENSING_NOTE}</p>
         </div>
       ) : null}
-
-      <div className="rounded-lg border bg-muted/35 p-3 text-sm leading-6" data-testid="homepage-proof-note">
-        Proof on screen: <span className="font-semibold">{selectedSample.title}</span>
-      </div>
     </div>
   );
 }

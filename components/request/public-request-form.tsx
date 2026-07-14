@@ -3,14 +3,7 @@
 import { useMutation } from "convex/react";
 import { ArrowRight, CheckCircle2, ImagePlus, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
-
-import {
-  PrintSizeFields,
-  printSizeFieldsValueFromPrint,
-  resolvePrintSizeFieldsValue,
-  type PrintSizeFieldsValue
-} from "@/components/preview/print-size-fields";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +25,6 @@ import {
   type LeadRequestIntent
 } from "@/lib/lead-request-contract";
 import { formatLeadRequestResultMessage } from "@/lib/lead-request-presentation";
-import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
 import type { RequestDesignContext } from "@/lib/request-page-defaults";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +37,8 @@ type PublicRequestFormProps = {
   defaultDesignContext?: RequestDesignContext;
   publicPhone?: string;
   publicContactUrl?: string;
+  reserveHref: string;
+  uploadFirst?: boolean;
 };
 
 type SubmissionResult = {
@@ -68,7 +62,9 @@ export function PublicRequestForm({
   defaultConceptPrompt,
   defaultDesignContext,
   publicPhone,
-  publicContactUrl
+  publicContactUrl,
+  reserveHref,
+  uploadFirst = false
 }: PublicRequestFormProps) {
   const generateLeadUploadUrl = useMutation(leadRequestsApi.generateLeadUploadUrl);
   const submitLeadRequest = useMutation(leadRequestsApi.submitLeadRequest);
@@ -81,14 +77,12 @@ export function PublicRequestForm({
   const [businessName, setBusinessName] = useState("");
   const [wallDescription, setWallDescription] = useState("");
   const [conceptPrompt, setConceptPrompt] = useState(defaultConceptPrompt ?? "");
-  const [reserveInterest, setReserveInterest] = useState(defaultIntent === "reserve");
+  const reserveInterest = defaultIntent === "reserve";
   const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [printSize, setPrintSize] = useState<PrintSizeFieldsValue>(() => printSizeFieldsValueFromPrint(DEFAULT_PREVIEW_BUNDLE_PRINT));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SubmissionResult | null>(null);
-  const printValidation = useMemo(() => resolvePrintSizeFieldsValue(printSize), [printSize]);
   const normalizedEmail = normalizeLeadEmail(contactEmail);
   const emailEntered = Boolean(normalizedEmail);
   const emailValid = isValidLeadEmail(normalizedEmail);
@@ -102,8 +96,7 @@ export function PublicRequestForm({
       contactName.trim() &&
       preferredContactSatisfied &&
       (!emailEntered || emailValid) &&
-      (!phoneEntered || phoneValid) &&
-      printValidation.ok
+      (!phoneEntered || phoneValid)
   );
 
   const handleFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -141,10 +134,6 @@ export function PublicRequestForm({
     setResult(null);
 
     try {
-      if (!printValidation.ok) {
-        throw new Error(printValidation.reason);
-      }
-
       let upload:
         | {
             storageId: string;
@@ -201,8 +190,7 @@ export function PublicRequestForm({
         ...(conceptPrompt.trim() ? { conceptPrompt } : {}),
         intent,
         reserveInterest,
-        ...(upload ? { upload } : {}),
-        print: printValidation.print
+        ...(upload ? { upload } : {})
       })) as SubmissionResult;
       setResult(saved);
       setFile(null);
@@ -214,8 +202,40 @@ export function PublicRequestForm({
     }
   };
 
+  const uploadField = (
+    <div className="grid gap-2" id="lead-upload-section">
+      <Label htmlFor="lead-upload">Upload your artwork</Label>
+      <label
+        className={cn(
+          "grid min-h-36 cursor-pointer place-items-center rounded-lg border border-dashed bg-muted/35 px-4 py-6 text-center transition-colors hover:bg-muted/55",
+          file && "border-primary bg-primary/5"
+        )}
+        htmlFor="lead-upload"
+      >
+        <span className="grid justify-items-center gap-2">
+          <ImagePlus className="size-5 text-primary" />
+          <span className="text-sm font-semibold">{file ? file.name : "Choose artwork, a logo, or a wall reference"}</span>
+          <span className="text-xs text-muted-foreground">JPEG, PNG, or WebP</span>
+        </span>
+      </label>
+      <input
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        id="lead-upload"
+        onChange={handleFileSelection}
+        type="file"
+      />
+      {uploadError ? (
+        <p className="text-sm font-medium text-destructive" data-testid="request-upload-error" role="alert">
+          {uploadError} Accepted formats: JPEG, PNG, or WebP.
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <form className="grid gap-5" onSubmit={submit}>
+      {uploadFirst ? uploadField : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="lead-name">Name</Label>
@@ -296,53 +316,19 @@ export function PublicRequestForm({
         />
       </div>
 
-      <PrintSizeFields
-        description="Set the first print size for the wall-placement draft."
-        testIdPrefix="request-print-size"
-        title="Approximate print size"
-        validation={printValidation}
-        value={printSize}
-        onChange={setPrintSize}
-      />
+      {uploadFirst ? null : uploadField}
 
-      <div className="grid gap-2" id="lead-upload-section">
-        <Label htmlFor="lead-upload">Optional image</Label>
-        <label
-          className={cn(
-            "grid min-h-28 cursor-pointer place-items-center rounded-lg border border-dashed bg-muted/35 px-4 py-5 text-center transition-colors hover:bg-muted/55",
-            file && "border-primary bg-primary/5"
-          )}
-          htmlFor="lead-upload"
-        >
-          <span className="grid justify-items-center gap-2">
-            <ImagePlus className="size-5 text-primary" />
-            <span className="text-sm font-semibold">{file ? file.name : "Upload artwork, logo, or wall reference"}</span>
-            <span className="text-xs text-muted-foreground">JPEG, PNG, or WebP</span>
-          </span>
-        </label>
-        <input
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          id="lead-upload"
-          onChange={handleFileSelection}
-          type="file"
-        />
-        {uploadError ? (
-          <p className="text-sm font-medium text-destructive" data-testid="request-upload-error" role="alert">
-            {uploadError} Accepted formats: JPEG, PNG, or WebP.
+      <section className="grid gap-4 rounded-lg border border-primary/25 bg-primary/5 p-5" data-testid="request-priority-reservation">
+        <div className="grid gap-1">
+          <h3 className="text-lg font-semibold text-foreground">Want the earliest estimate visit?</h3>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Reserve priority scheduling for $100. The full reservation is credited toward your wall print.
           </p>
-        ) : null}
-      </div>
-
-      <label className="flex items-start gap-3 rounded-lg border bg-muted/25 p-3 text-sm">
-        <input
-          checked={reserveInterest}
-          className="mt-1"
-          onChange={(event) => setReserveInterest(event.target.checked)}
-          type="checkbox"
-        />
-        <span>I want to reserve priority review for this wall print request.</span>
-      </label>
+        </div>
+        <Button asChild className="w-fit min-h-11 rounded-full px-5" variant="outline">
+          <a href={reserveHref}>Reserve priority estimate — $100</a>
+        </Button>
+      </section>
 
       {!aiEnabled && conceptPrompt.trim() ? (
         <Alert>
@@ -374,7 +360,7 @@ export function PublicRequestForm({
       <div className="flex flex-wrap items-center gap-3">
         <Button className="min-h-11 rounded-full px-5" disabled={!canSubmit} type="submit">
           {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-          Send request
+          Request an on-site estimate
         </Button>
         {publicPhone ? (
           <Button asChild className="min-h-11 rounded-full px-5" variant="outline">

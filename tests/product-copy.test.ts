@@ -7,6 +7,7 @@ import {
   previewSourceLabel,
   previewStatusGroup,
   previewStatusLabel,
+  HOME_RESERVE_STRIP_HEADLINE,
   wallPreviewIssueMessage
 } from "@/lib/product-copy";
 
@@ -43,5 +44,10 @@ describe("product UI copy helpers", () => {
     expect(inviteLinkStatusLabel("not_found")).toBe("Disabled");
     expect(demoLinkStatusLabel("valid")).toBe("Ready");
     expect(wallPreviewIssueMessage()).toBe("This client preview needs attention. Try preparing it again.");
+  });
+
+  it("uses a plain hyphen in the homepage reserve headline", () => {
+    expect(HOME_RESERVE_STRIP_HEADLINE).toBe("Reserve your spot - $100, credited to your print.");
+    expect(HOME_RESERVE_STRIP_HEADLINE).not.toContain("—");
   });
 });

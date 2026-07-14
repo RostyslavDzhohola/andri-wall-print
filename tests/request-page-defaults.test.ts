@@ -12,7 +12,8 @@ describe("request page defaults", () => {
       })
     ).toEqual({
       defaultIntent: "concept",
-      defaultConceptPrompt: "Gold leaf logo wall"
+      defaultConceptPrompt: "Gold leaf logo wall",
+      focusUpload: false
     });
   });
 
@@ -52,7 +53,15 @@ describe("request page defaults", () => {
 
   it("ignores unknown design ids instead of falling back to a default design", () => {
     expect(resolveRequestPageDefaults({ designId: "missing-design" })).toEqual({
-      defaultIntent: "concept"
+      defaultIntent: "concept",
+      focusUpload: false
+    });
+  });
+
+  it("marks the upload-first workflow from the homepage CTA", () => {
+    expect(resolveRequestPageDefaults({ focus: "upload" })).toMatchObject({
+      defaultIntent: "concept",
+      focusUpload: true
     });
   });
 });

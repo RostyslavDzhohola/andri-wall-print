@@ -307,7 +307,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     });
   };
 
-  const getCurrentSharePath = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const getCurrentSharePath = () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
   const shareToPhone = async () => {
     let shareUrlResult: Awaited<ReturnType<typeof resolveClientPreviewUrl>>;

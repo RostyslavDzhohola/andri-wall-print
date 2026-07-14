@@ -16,7 +16,7 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const SITE_NAME = "Wall Print Pro";
 const ROOT_TITLE = "Wall Print Pro — Custom wall printing in Chicago";
 const ROOT_DESCRIPTION =
-  "Custom wall printing in Chicago. Choose a design, upload your art or logo, or describe an idea — then see it on your actual wall in AR before you commit. Wall murals from $600.";
+  "Custom wall printing in Chicago. Choose a design, upload your art or logo, or describe an idea — then see it on your actual wall in AR before you commit. Wall prints from $500.";
 // Strong real work photo (the Chicago "Pathways to Success" skyline print) as the
 // default social share image.
 const OG_IMAGE = absoluteUrl("/artworks/chicago-final-1.png");
