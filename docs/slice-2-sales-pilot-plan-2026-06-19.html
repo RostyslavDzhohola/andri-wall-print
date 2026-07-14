@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Slice 2 Plan | Wall Print Pro Sales Pilot</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f5ef;
+        --ink: #211f1a;
+        --muted: #6e665c;
+        --panel: #fffdf8;
+        --line: #ded8cc;
+        --primary: #315f54;
+        --primary-soft: #e5eee9;
+        --warning: #8a5a18;
+        --warning-soft: #fbefd9;
+        --done: #24634d;
+        --done-soft: #e1efe8;
+        --todo: #7a3333;
+        --todo-soft: #f4e1de;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      header,
+      section {
+        margin-bottom: 18px;
+      }
+
+      header {
+        display: grid;
+        gap: 16px;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 820px;
+        font-size: clamp(2.2rem, 5vw, 4.6rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+        line-height: 1.08;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+      }
+
+      code {
+        overflow-wrap: anywhere;
+        border-radius: 6px;
+        background: rgba(49, 95, 84, 0.1);
+        padding: 2px 5px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      .eyebrow {
+        color: var(--primary);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 1.08rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .panel,
+      .card,
+      .row {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+      }
+
+      .panel,
+      .card {
+        padding: 18px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 18px 0;
+      }
+
+      .matrix {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1.1fr 1.2fr 0.75fr;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .tag {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .done {
+        background: var(--done-soft);
+        color: var(--done);
+      }
+
+      .partial {
+        background: var(--warning-soft);
+        color: var(--warning);
+      }
+
+      .todo {
+        background: var(--todo-soft);
+        color: var(--todo);
+      }
+
+      .primary {
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      .artifact-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .artifact-list div {
+        border-left: 3px solid var(--primary);
+        padding-left: 10px;
+      }
+
+      .command-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .command-list code {
+        display: block;
+        padding: 10px;
+      }
+
+      footer {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 820px) {
+        main {
+          width: min(100% - 20px, 1120px);
+          padding-top: 20px;
+        }
+
+        header,
+        .panel,
+        .card {
+          padding: 14px;
+        }
+
+        .two,
+        .three,
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Next-step implementation plan</p>
+        <h1>Slice 2: make the Wall Print Pro pilot client-review-ready.</h1>
+        <p class="lede">
+          This plan turns the browser audit findings into a narrow implementation pass. It keeps the current
+          sales-pilot scope: public homepage, request intake, preview confirmation, and seller follow-up. It does
+          not expand into payments, booking, final measurement, or a public pricing calculator.
+        </p>
+        <div class="artifact-list" aria-label="Source artifacts">
+          <div><strong>Shipping guide:</strong> <code>/Users/Rostyslav/Projects/preview-picture/docs/gstack-shipping-guide.html</code></div>
+          <div><strong>Progress map:</strong> <code>/Users/Rostyslav/Projects/preview-picture/docs/progress-next-steps-2026-06-18.html</code></div>
+          <div><strong>CEO plan:</strong> <code>/Users/Rostyslav/.gstack/projects/preview-picture/ceo-plans/2026-06-17-wall-print-pro-sales-pilot-ai-draft-previews.md</code></div>
+          <div><strong>Engineering test plan:</strong> <code>/Users/Rostyslav/.gstack/projects/preview-picture/Rostyslav-main-eng-review-test-plan-20260616-213842.md</code></div>
+          <div><strong>Latest QA outcome:</strong> <code>/Users/Rostyslav/.gstack/projects/preview-picture/Rostyslav-codex-qa-wall-print-prototype-20260617-test-outcome-20260617-133046.md</code></div>
+        </div>
+      </header>
+
+      <section class="grid two">
+        <article class="panel">
+          <p class="eyebrow">Decision</p>
+          <h2>Finish homepage and request polish before showing Wall Print Pro again.</h2>
+          <p class="muted">
+            The backend/request/inbox spine is usable. The visible prospect experience is the bigger mismatch with
+            the agreed GStack plan, so this slice should improve the public story and remove obvious confusion before
+            another client-review pass.
+          </p>
+        </article>
+        <article class="panel">
+          <p class="eyebrow">Non-goals</p>
+          <ul>
+            <li>No public pricing or internal estimates in public routes.</li>
+            <li>No payment, booking, or measurement platform work.</li>
+            <li>No full GStack rerun unless this slice expands beyond the current plan.</li>
+            <li>No phone-device QA in this pass; that stays a separate acceptance pass.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div>
+          <p class="eyebrow">Escalated issue matrix</p>
+          <h2>What gets fixed now vs what remains configured or deferred.</h2>
+        </div>
+        <div class="matrix">
+          <article class="row">
+            <div>
+              <h3>Homepage still reads like an AR demo</h3>
+              <p class="muted">The first screen needs to explain Wall Print Pro's sales-pilot offer, not only native AR placement.</p>
+            </div>
+            <div>
+              <p>Update <code>app/page.tsx</code> with sales-pilot copy, proof/use-case/process sections, and request/gallery/reserve CTAs.</p>
+            </div>
+            <span class="tag done">Address now</span>
+          </article>
+          <article class="row">
+            <div>
+              <h3>Request form requires email</h3>
+              <p class="muted">The CEO plan allows email or phone and asks for richer lead context.</p>
+            </div>
+            <div>
+              <p>Support preferred contact method, phone-only validation, project type, and seller-inbox visibility.</p>
+            </div>
+            <span class="tag done">Address now</span>
+          </article>
+          <article class="row">
+            <div>
+              <h3>Preview save/confirmation state is confusing after reload</h3>
+              <p class="muted">A signed-in browser can have a durable saved claim while the preview page still shows fresh actions.</p>
+            </div>
+            <div>
+              <p>Add a signed-in buyer claim lookup and use it to show durable saved/confirmed state on the public preview card.</p>
+            </div>
+            <span class="tag done">Address now</span>
+          </article>
+          <article class="row">
+            <div>
+              <h3>Preview header says Sign in while signed in</h3>
+              <p class="muted">The server-rendered header cannot see client auth state.</p>
+            </div>
+            <div>
+              <p>Move the header action to a client auth-aware button that shows Dashboard for signed-in users and Sign in otherwise.</p>
+            </div>
+            <span class="tag done">Address now</span>
+          </article>
+          <article class="row">
+            <div>
+              <h3>AI concept drafting is offline</h3>
+              <p class="muted">The UI correctly falls back to seller review when provider config is missing.</p>
+            </div>
+            <div>
+              <p>Do not fake AI output. Validate the configured OpenAI path later with real env values and rate-limit behavior.</p>
+            </div>
+            <span class="tag partial">Configured later</span>
+          </article>
+          <article class="row">
+            <div>
+              <h3>No ngrok tunnel detected</h3>
+              <p class="muted">Created preview links work on the Mac only without a tunnel.</p>
+            </div>
+            <div>
+              <p>Keep this out of the non-phone slice. Revisit during the physical-device QA pass.</p>
+            </div>
+            <span class="tag todo">Later QA</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="grid three">
+        <article class="card">
+          <p class="eyebrow">Phase 1</p>
+          <h3>Public prospect polish</h3>
+          <ul>
+            <li>Confirm homepage CTAs route to <code>/gallery</code>, <code>/request</code>, and <code>/request?intent=reserve</code>.</li>
+            <li>Keep the AR preview as proof, not the whole story.</li>
+            <li>Show contact CTA only when public contact config exists.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Phase 2</p>
+          <h3>Lead intake and seller visibility</h3>
+          <ul>
+            <li>Accept email or phone with preferred contact method.</li>
+            <li>Carry project type into Convex and the seller inbox.</li>
+            <li>Preserve upload and print-size handling.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Phase 3</p>
+          <h3>Preview/account consistency</h3>
+          <ul>
+            <li>Use signed-in buyer claim state on public previews.</li>
+            <li>Show Dashboard instead of Sign in when auth is already present.</li>
+            <li>Keep public preview payloads buyer-safe and price-free.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Acceptance criteria</p>
+        <ul>
+          <li>A prospect can understand the offer on <code>/</code> within one viewport and choose request, gallery, reserve, or configured contact.</li>
+          <li><code>/request</code> accepts either a valid email or a valid phone number and shows preferred contact/project context in <code>/admin/leads</code>.</li>
+          <li>A signed-in user who already saved a preview sees saved state on reload instead of a fresh save prompt.</li>
+          <li>A signed-in user sees a dashboard action on <code>/preview/[slug]</code>, while a signed-out user sees sign-in.</li>
+          <li>Public preview and account surfaces still exclude seller-only pricing and internal estimates.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Verification commands</p>
+        <p class="muted">Use <code>pnpm</code> for project scripts. Do not use <code>npm</code>. Do not start <code>pnpm dev</code> unless browser QA deliberately needs it.</p>
+        <div class="command-list">
+          <code>pnpm typecheck</code>
+          <code>pnpm test</code>
+          <code>pnpm build</code>
+          <code>pnpm test:e2e</code>
+        </div>
+      </section>
+
+      <footer>
+        <p>Created June 19, 2026. This artifact is intentionally branch-local and copyable into a new Codex thread with enough context to continue.</p>
+      </footer>
+    </main>
+  </body>
+</html>

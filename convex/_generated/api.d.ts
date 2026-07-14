@@ -8,11 +8,14 @@
  * @module
  */
 
+import type * as aiConcepts from "../aiConcepts.js";
 import type * as arPreviews from "../arPreviews.js";
-import type * as builderInvites from "../builderInvites.js";
 import type * as bundleGeneration from "../bundleGeneration.js";
+import type * as crons from "../crons.js";
+import type * as leadRequests from "../leadRequests.js";
 import type * as previewBundles from "../previewBundles.js";
-import type * as sellerAuth from "../sellerAuth.js";
+import type * as sellerPricing from "../sellerPricing.js";
+import type * as uploadValidation from "../uploadValidation.js";
 import type * as validators from "../validators.js";
 
 import type {
@@ -22,11 +25,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  aiConcepts: typeof aiConcepts;
   arPreviews: typeof arPreviews;
-  builderInvites: typeof builderInvites;
   bundleGeneration: typeof bundleGeneration;
+  crons: typeof crons;
+  leadRequests: typeof leadRequests;
   previewBundles: typeof previewBundles;
-  sellerAuth: typeof sellerAuth;
+  sellerPricing: typeof sellerPricing;
+  uploadValidation: typeof uploadValidation;
   validators: typeof validators;
 }>;
 

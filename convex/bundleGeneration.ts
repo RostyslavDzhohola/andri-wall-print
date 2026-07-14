@@ -2,6 +2,7 @@
 
 import { internalActionGeneric as internalAction } from "convex/server";
 import { internal as generatedInternal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 import { generateFlatPrintAssets } from "../lib/ar-asset-generator";
@@ -10,7 +11,23 @@ import { AR_ASSET_CONTENT_TYPES } from "../lib/ar-launcher";
 const internal = generatedInternal;
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? "Uploaded artwork could not be prepared." : "This wall preview needs attention.";
+  if (!(error instanceof Error)) {
+    return "This wall preview needs attention.";
+  }
+
+  return error.message;
+}
+
+function isRejectedUploadError(message: string) {
+  return (
+    message.startsWith("Uploaded artwork byte length") ||
+    message.startsWith("Uploaded artwork is not a valid prepared PNG") ||
+    message.startsWith("Prepared upload ") ||
+    message.startsWith("Generated poster exceeds") ||
+    message.startsWith("Generated GLB exceeds") ||
+    message.startsWith("Generated USDZ exceeds") ||
+    message.startsWith("Generated AR bundle exceeds")
+  );
 }
 
 function fileStem(fileName: string) {
@@ -28,26 +45,42 @@ function toArrayBuffer(bytes: Uint8Array) {
 
 export const generateBundleAssets = internalAction({
   args: {
-    bundleId: v.id("previewBundles")
+    bundleId: v.id("previewBundles"),
+    attempt: v.optional(v.number())
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const input = await ctx.runQuery(internal.previewBundles.getGenerationInput, args);
-
-    if (!input) {
-      return null;
-    }
-
-    const claimed = await ctx.runMutation(internal.previewBundles.markGenerating, {
-      bundleId: args.bundleId,
-      attempt: input.attempt
-    });
-
-    if (!claimed) {
-      return null;
-    }
+    let input: {
+      attempt: number;
+      title: string;
+      print: { widthMeters: number; heightMeters: number };
+      source: {
+        storageId: Id<"_storage">;
+        originalFileName: string;
+        byteLength: number;
+      };
+      generatorVersion: string;
+    } | null = null;
 
     try {
+      input = await ctx.runQuery(internal.previewBundles.getGenerationInput, {
+        bundleId: args.bundleId,
+        attempt: args.attempt
+      });
+
+      if (!input) {
+        return null;
+      }
+
+      const claimed = await ctx.runMutation(internal.previewBundles.markGenerating, {
+        bundleId: args.bundleId,
+        attempt: input.attempt
+      });
+
+      if (!claimed) {
+        return null;
+      }
+
       const sourceUrl = await ctx.storage.getUrl(input.source.storageId);
 
       if (!sourceUrl) {
@@ -105,12 +138,21 @@ export const generateBundleAssets = internalAction({
         }
       });
     } catch (error) {
-      await ctx.runMutation(internal.previewBundles.finalizeGenerationFailure, {
-        bundleId: args.bundleId,
-        attempt: input.attempt,
-        reason: errorMessage(error),
-        rejected: false
-      });
+      const reason = errorMessage(error);
+
+      if (input) {
+        await ctx.runMutation(internal.previewBundles.finalizeGenerationFailure, {
+          bundleId: args.bundleId,
+          attempt: input.attempt,
+          reason,
+          rejected: isRejectedUploadError(reason)
+        });
+      } else {
+        await ctx.runMutation(internal.previewBundles.recordGenerationCrash, {
+          bundleId: args.bundleId,
+          reason
+        });
+      }
     }
 
     return null;

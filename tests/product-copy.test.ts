@@ -7,6 +7,7 @@ import {
   previewSourceLabel,
   previewStatusGroup,
   previewStatusLabel,
+  HOME_RESERVE_STRIP_HEADLINE,
   wallPreviewIssueMessage
 } from "@/lib/product-copy";
 
@@ -28,12 +29,13 @@ describe("product UI copy helpers", () => {
     expect(previewStatusGroup("revoked")).toBe("disabled");
   });
 
-  it("maps source and creation values to product labels", () => {
-    expect(previewSourceLabel("sample")).toBe("Saved artwork");
-    expect(previewSourceLabel("upload")).toBe("Uploaded artwork");
-    expect(previewCreationLabel("builder")).toBe("Invite page");
-    expect(previewCreationLabel("seller")).toBe("Admin workspace");
-  });
+	  it("maps source and creation values to product labels", () => {
+	    expect(previewSourceLabel("sample")).toBe("Saved artwork");
+	    expect(previewSourceLabel("upload")).toBe("Uploaded artwork");
+	    expect(previewSourceLabel("ai_concept")).toBe("Concept draft");
+	    expect(previewCreationLabel("builder")).toBe("Invite page");
+	    expect(previewCreationLabel("seller")).toBe("Admin workspace");
+	  });
 
   it("maps invite link statuses and issue copy", () => {
     expect(inviteLinkStatusLabel("valid")).toBe("Ready");
@@ -42,5 +44,10 @@ describe("product UI copy helpers", () => {
     expect(inviteLinkStatusLabel("not_found")).toBe("Disabled");
     expect(demoLinkStatusLabel("valid")).toBe("Ready");
     expect(wallPreviewIssueMessage()).toBe("This client preview needs attention. Try preparing it again.");
+  });
+
+  it("uses a plain hyphen in the homepage reserve headline", () => {
+    expect(HOME_RESERVE_STRIP_HEADLINE).toBe("Reserve your spot - $100, credited to your print.");
+    expect(HOME_RESERVE_STRIP_HEADLINE).not.toContain("—");
   });
 });

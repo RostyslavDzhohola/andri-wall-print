@@ -40,7 +40,7 @@ export function BrandMark({
   );
 
   const sharedClassName = cn(
-    "inline-flex items-center gap-2 rounded-sm font-semibold outline-offset-4 transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+    "inline-flex items-center gap-2 border-0 font-semibold transition hover:text-primary focus-visible:text-primary focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-4 focus-visible:outline-none",
     className
   );
 

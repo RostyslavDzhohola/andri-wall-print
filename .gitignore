@@ -5,5 +5,7 @@ tsconfig.tsbuildinfo
 .DS_Store
 test-results/
 .gstack/
+tmp/
 .env*.local
 .vercel
+.superpowers/

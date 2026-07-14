@@ -12,5 +12,5 @@ export function NativeArSample({
   heading = "Place this print on your wall.",
   intro = "Choose a picture, open the wall preview, and move around there to see how the selected print looks on the wall."
 }: NativeArSampleProps) {
-  return <ArPreviewSurface brandName="Preview Picture" heading={heading} intro={intro} samples={samples} />;
+  return <ArPreviewSurface heading={heading} intro={intro} samples={samples} />;
 }

@@ -1,13 +1,15 @@
 import { AR_SAMPLES, type ArSample } from "./ar-sample";
 import { hasReadyArAssetUrls } from "./ar-launcher";
+import { formatPreviewBundlePrintDimensions, type PreviewBundleSourceKind } from "./preview-bundle-contract";
 import { readConvexRuntimeUrl, readPhase0PreviewLocalFallback } from "./runtime-env";
 
 export type PublicPreviewResult =
   | {
-      status: "ready";
-      sample: ArSample;
-      source: "convex" | "local-fallback";
-    }
+	      status: "ready";
+	      sample: ArSample;
+	      source: "convex" | "local-fallback";
+	      sourceKind: PreviewBundleSourceKind;
+	    }
   | {
       status: "preparing";
       slug: string;
@@ -75,6 +77,16 @@ function readPreviewStatus(value: unknown) {
   return readString(value.status);
 }
 
+function readSourceKind(value: unknown): PreviewBundleSourceKind {
+  if (!isRecord(value)) {
+    return "sample";
+  }
+
+  const sourceKind = readString(value.sourceKind);
+
+  return sourceKind === "upload" || sourceKind === "sample" || sourceKind === "ai_concept" ? sourceKind : "sample";
+}
+
 export function parseConvexPreviewValue(value: unknown): ArSample | null {
   if (!isRecord(value)) {
     return null;
@@ -93,12 +105,11 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
   const aspectRatio = readString(print.aspectRatio);
   const widthMeters = readNumber(print.widthMeters);
   const heightMeters = readNumber(print.heightMeters);
-  const label = readString(print.label);
   const poster = readString(assets.poster);
   const glb = readString(assets.glb);
   const usdz = readString(assets.usdz);
 
-  if (!aspectRatio || widthMeters === null || heightMeters === null || !label || !poster || !glb || !usdz) {
+  if (!aspectRatio || widthMeters === null || heightMeters === null || !poster || !glb || !usdz) {
     return null;
   }
 
@@ -110,7 +121,7 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
       aspectRatio,
       widthMeters,
       heightMeters,
-      label
+      label: formatPreviewBundlePrintDimensions({ widthMeters, heightMeters })
     },
     assets: {
       poster,
@@ -128,11 +139,12 @@ export async function getPublicPreview(slug: string, options: PublicPreviewOptio
     const sample = AR_SAMPLES.find((candidate) => candidate.id === slug);
 
     if (sample) {
-      return {
-        status: "ready",
-        sample,
-        source: "local-fallback"
-      };
+        return {
+          status: "ready",
+          sample,
+          source: "local-fallback",
+          sourceKind: "sample"
+        };
     }
 
     if (readPhase0PreviewLocalFallback() || !convexUrl) {
@@ -197,11 +209,12 @@ export async function getPublicPreview(slug: string, options: PublicPreviewOptio
     }
 
     if (sample && hasReadyArAssetUrls(sample)) {
-      return {
-        status: "ready",
-        sample,
-        source: "convex"
-      };
+        return {
+          status: "ready",
+          sample,
+          source: "convex",
+          sourceKind: readSourceKind(body.value)
+        };
     }
 
     return {

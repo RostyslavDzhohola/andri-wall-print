@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { getPublicPreviewHandler } from "@/convex/arPreviews";
 import { assertValidAssetMeta, assertValidPrint } from "@/convex/validators";
 import { getPublicPreview, parseConvexPreviewValue, type PublicPreviewOptions } from "@/lib/convex-public-preview";
 
@@ -12,6 +13,54 @@ function jsonResponse(body: unknown, options: { ok?: boolean; status?: number } 
 }
 
 describe("Convex public preview adapter", () => {
+  it("serves getPublicPreview with a null identity", async () => {
+    const getUserIdentity = vi.fn(async () => null);
+    const readyBundle = {
+      publicSlug: "p-public-ready",
+      title: "Public Ready",
+      description: "Client proof",
+      status: "ready",
+      source: { kind: "upload" },
+      print: {
+        aspectRatio: "6:5",
+        widthMeters: 1.524,
+        heightMeters: 1.27,
+        label: "152 x 127 cm"
+      },
+      assetUrls: {
+        poster: "https://example.com/poster.png",
+        glb: "https://example.com/model.glb",
+        usdz: "https://example.com/model.usdz"
+      },
+      assetMeta: {
+        poster: { fileName: "poster.png", contentType: "image/png", byteLength: 100 },
+        glb: { fileName: "model.glb", contentType: "model/gltf-binary", byteLength: 100 },
+        usdz: { fileName: "model.usdz", contentType: "model/vnd.usdz+zip", byteLength: 100 }
+      }
+    };
+    const ctx = {
+      auth: { getUserIdentity },
+      db: {
+        query: (tableName: string) => ({
+          withIndex: () => ({
+            first: async () => (tableName === "previewBundles" ? readyBundle : null)
+          })
+        })
+      },
+      storage: {
+        getUrl: vi.fn()
+      }
+    };
+
+    await expect(getPublicPreviewHandler(ctx, { slug: "p-public-ready" })).resolves.toMatchObject({
+      id: "p-public-ready",
+      slug: "p-public-ready",
+      status: "ready",
+      sourceKind: "upload"
+    });
+    expect(getUserIdentity).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid seed dimensions and byte sizes before writing Convex records", () => {
     expect(() => assertValidPrint({ widthMeters: 0, heightMeters: 1 })).toThrow("print.widthMeters must be a positive finite number.");
     expect(() => assertValidPrint({ widthMeters: 1, heightMeters: Number.POSITIVE_INFINITY })).toThrow(
@@ -61,7 +110,7 @@ describe("Convex public preview adapter", () => {
         aspectRatio: "6:5",
         widthMeters: 1.524,
         heightMeters: 1.27,
-        label: "152 x 127 cm"
+        label: "5 ft x 4.2 ft"
       },
       assets: {
         poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
@@ -69,6 +118,35 @@ describe("Convex public preview adapter", () => {
         usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
       }
     });
+  });
+
+  it("drops internal price fields from buyer-ready preview values", () => {
+    const parsed = parseConvexPreviewValue({
+      slug: "client-proof-abc",
+      title: "Client Proof",
+      description: "Client proof",
+      print: {
+        aspectRatio: "6:5",
+        widthMeters: 1.524,
+        heightMeters: 1.27,
+        label: "152 x 127 cm"
+      },
+      assets: {
+        poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
+        glb: "https://steady-otter-123.convex.cloud/api/storage/glb",
+        usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
+      },
+      pricing: {
+        areaSquareFeet: 20.83,
+        pricePerSquareFootCents: 4200,
+        estimateCents: 87503
+      },
+      rate: 42,
+      internalEstimateCents: 87503
+    });
+
+    expect(JSON.stringify(parsed)).not.toMatch(/price|pricing|rate|estimate/i);
+    expect(parsed?.print.label).toBe("5 ft x 4.2 ft");
   });
 
   it("calls the Convex public HTTP query endpoint", async () => {
@@ -142,6 +220,43 @@ describe("Convex public preview adapter", () => {
       status: "preparing",
       slug: "client-proof-abc",
       reason: "This client preview is being prepared. Check back shortly."
+    });
+  });
+
+  it("preserves AI concept source kind for public warning labels", async () => {
+    const fetcher: PublicPreviewOptions["fetcher"] = async () =>
+      jsonResponse({
+        status: "success",
+        value: {
+          slug: "client-proof-abc",
+          title: "Concept Draft",
+          description: "Client proof",
+          sourceKind: "ai_concept",
+          print: {
+            aspectRatio: "1:1",
+            widthMeters: 1,
+            heightMeters: 1,
+            label: "100 x 100 cm"
+          },
+          assets: {
+            poster: "https://steady-otter-123.convex.cloud/api/storage/poster",
+            glb: "https://steady-otter-123.convex.cloud/api/storage/glb",
+            usdz: "https://steady-otter-123.convex.cloud/api/storage/usdz"
+          }
+        }
+      });
+
+    await expect(
+      getPublicPreview("client-proof-abc", {
+        convexUrl: "https://steady-otter-123.convex.cloud",
+        fetcher
+      })
+    ).resolves.toMatchObject({
+      status: "ready",
+      sourceKind: "ai_concept",
+      sample: {
+        id: "client-proof-abc"
+      }
     });
   });
 

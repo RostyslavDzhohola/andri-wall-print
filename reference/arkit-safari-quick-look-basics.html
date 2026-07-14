@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Safari ARKit Quick Reference</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1f2933;
+        --muted: #65727f;
+        --line: #d8dee4;
+        --paper: #fbfaf7;
+        --panel: #ffffff;
+        --accent: #176b63;
+        --accent-2: #7b3f00;
+        --soft: #eef6f3;
+        --warn: #fff4df;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 40px 22px 56px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.1;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 34px;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin-top: 34px;
+        font-size: 22px;
+      }
+
+      h3 {
+        margin-top: 0;
+        font-size: 16px;
+      }
+
+      p {
+        margin: 10px 0 0;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      code {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: #f5f7f8;
+        padding: 1px 5px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .lede {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 16px;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .step {
+        position: relative;
+        min-height: 118px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .step:not(:last-child)::after {
+        content: ">";
+        position: absolute;
+        right: -14px;
+        top: 42%;
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      .step b {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--accent);
+      }
+
+      .label {
+        display: inline-block;
+        margin-bottom: 8px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--accent);
+        padding: 3px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      th {
+        background: #f4f2ec;
+      }
+
+      .callout {
+        border-left: 5px solid var(--accent-2);
+        background: var(--warn);
+        padding: 14px 16px;
+        border-radius: 8px;
+      }
+
+      ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      @media (max-width: 820px) {
+        .two,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        .step::after {
+          display: none;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        main {
+          padding: 20px;
+        }
+
+        a {
+          color: #000;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Safari ARKit Quick Reference</h1>
+      <p class="lede">
+        For Preview Picture, Safari does not give the webpage a live ARKit session. The webpage prepares and links the right assets, then Safari hands the USDZ file to Apple's native AR Quick Look viewer.
+      </p>
+
+      <section class="flow" aria-label="Preview Picture AR handoff flow">
+        <div class="step">
+          <b>1. Preview page</b>
+          <span>Customer opens <code>/preview/[slug]</code>.</span>
+        </div>
+        <div class="step">
+          <b>2. Web assets</b>
+          <span>Page has poster, GLB, and USDZ URLs.</span>
+        </div>
+        <div class="step">
+          <b>3. Safari link</b>
+          <span><code>rel="ar"</code> link points to USDZ.</span>
+        </div>
+        <div class="step">
+          <b>4. Quick Look</b>
+          <span>Native viewer opens outside the DOM.</span>
+        </div>
+        <div class="step">
+          <b>5. ARKit work</b>
+          <span>Device tracks motion and detects surfaces.</span>
+        </div>
+      </section>
+
+      <h2>Terms</h2>
+      <div class="grid two">
+        <article class="card">
+          <span class="label">ARKit</span>
+          <p>Apple's native framework for world tracking, scene understanding, plane detection, anchors, and sensor-backed AR data.</p>
+        </article>
+        <article class="card">
+          <span class="label">AR Quick Look</span>
+          <p>Apple's built-in viewer for opening USDZ or Reality files from Safari, Messages, Mail, apps, and more.</p>
+        </article>
+        <article class="card">
+          <span class="label">USDZ</span>
+          <p>The iPhone Safari asset that Quick Look opens. In this project it represents the wall print as a real-size flat plane.</p>
+        </article>
+        <article class="card">
+          <span class="label">GLB</span>
+          <p>The web-friendly 3D asset used by <code>model-viewer</code> and Android Scene Viewer. It is not the primary Safari Quick Look file.</p>
+        </article>
+      </div>
+
+      <h2>Project File Map</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Why it matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>components/ar/ar-preview-surface.tsx</code></td>
+            <td>Loads <code>@google/model-viewer</code> and renders the visible preview surface around the AR launcher.</td>
+          </tr>
+          <tr>
+            <td><code>components/ar/native-ar-launcher.tsx</code></td>
+            <td>Detects device/browser, blocks non-Safari paths, renders the hidden <code>model-viewer</code>, and renders the <code>rel="ar"</code> Quick Look link.</td>
+          </tr>
+          <tr>
+            <td><code>lib/ar-launcher.ts</code></td>
+            <td>Defines asset content types and adds <code>#allowsContentScaling=0</code> so wall prints keep their authored size in Quick Look.</td>
+          </tr>
+          <tr>
+            <td><code>next.config.ts</code></td>
+            <td>Serves checked-in <code>.usdz</code> and <code>.glb</code> assets with the content types Safari and model viewers expect.</td>
+          </tr>
+          <tr>
+            <td><code>lib/ar-asset-generator.ts</code></td>
+            <td>Builds the generated poster, GLB, and USDZ assets from uploaded artwork and selected physical dimensions.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Browser vs Native iOS</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Question</th>
+            <th>Safari Quick Look path</th>
+            <th>Native iOS ARKit path</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Can the user open it from a shared link?</td>
+            <td>Yes. This is the current product advantage.</td>
+            <td>No. They must install/open an app.</td>
+          </tr>
+          <tr>
+            <td>Can the web page control the live camera AR session?</td>
+            <td>No. Quick Look is a native viewer outside the webpage DOM.</td>
+            <td>Yes. The app can own ARKit/RealityKit rendering and interaction.</td>
+          </tr>
+          <tr>
+            <td>Can we show custom React UI over AR?</td>
+            <td>Not inside Quick Look. Use Quick Look banners or return-to-page actions for limited flows.</td>
+            <td>Yes. Native UI can be layered around the AR view.</td>
+          </tr>
+          <tr>
+            <td>Can we keep the wall print true-size?</td>
+            <td>Yes, through correct model dimensions and Quick Look scaling settings.</td>
+            <td>Yes, with direct control over model transforms and anchors.</td>
+          </tr>
+          <tr>
+            <td>Best learning focus right now?</td>
+            <td>USDZ, MIME type, <code>rel="ar"</code>, asset dimensions, Safari/iPhone testing.</td>
+            <td>World tracking, plane detection, anchors, RealityKit entities, permissions.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Rules of Thumb</h2>
+      <div class="callout">
+        <p><strong>Learn native ARKit basics for mental models, not because the current web MVP needs a native app.</strong></p>
+        <p>Native ARKit becomes worth serious time when you need custom camera UI, wall measurement, persistence across rooms, richer editing, or interaction that Quick Look cannot express.</p>
+      </div>
+
+      <h2>Primary Sources</h2>
+      <ul>
+        <li><a href="https://developer.apple.com/augmented-reality/quick-look/">Apple Quick Look Gallery</a></li>
+        <li><a href="https://webkit.org/blog/8421/viewing-augmented-reality-assets-in-safari-for-ios/">WebKit: Viewing Augmented Reality Assets in Safari for iOS</a></li>
+        <li><a href="https://developer.apple.com/videos/play/wwdc2019/612/">Apple WWDC19: Advances in AR Quick Look</a></li>
+        <li><a href="https://modelviewer.dev/examples/augmentedreality/">model-viewer: Augmented Reality</a></li>
+      </ul>
+    </main>
+  </body>
+</html>

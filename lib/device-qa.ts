@@ -12,13 +12,13 @@ export const PHASE0_DEVICE_MATRIX: Phase0DeviceMatrixEntry[] = [
     device: "iPhone with LiDAR or ARKit support",
     browser: "Safari",
     expectedViewer: "USDZ Quick Look",
-    acceptance: "Tap Place on wall, confirm the fixed-scale print can be placed on a detected wall."
+    acceptance: "Tap Place on wall, confirm the print can be placed on a detected wall and pinch-resized."
   },
   {
     platform: "android",
     device: "ARCore-capable Android phone",
     browser: "Chrome",
     expectedViewer: "Scene Viewer",
-    acceptance: "Tap Place on wall, confirm the fixed-scale print opens in native AR without downloading the model."
+    acceptance: "Tap Place on wall, confirm the print opens in native AR and can be pinch-resized."
   }
 ];

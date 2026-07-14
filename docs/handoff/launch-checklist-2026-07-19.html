@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wall Print Pro — July 19 Launch Checklist</title>
+  <style>
+    :root { color-scheme: dark; --ink:#f4efe7; --muted:#aaa198; --paper:#11100f; --card:#1b1917; --line:#3b3631; --red:#ff8078; --red-bg:#351c1b; --green:#71d39a; --green-bg:#162a20; --amber:#f1c562; --amber-bg:#302613; --blue:#72b8f4; --blue-bg:#162638; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.55 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); }
+    main { width:min(920px,100%); margin:auto; padding:28px 18px 80px; }
+    h1 { margin:0; font-size:clamp(2rem,7vw,3.8rem); line-height:1; letter-spacing:-.045em; }
+    h2 { margin:0 0 12px; font-size:1.45rem; }
+    p { margin:8px 0; }
+    .eyebrow { color:var(--red); font-size:.78rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    .intro { max-width:700px; color:var(--muted); font-size:1.05rem; }
+    .status { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:24px 0; }
+    .responsibility-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0; }
+    .responsibility { padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); }
+    .responsibility h2 { font-size:1.1rem; }
+    .responsibility ul { margin:10px 0 0; padding-left:20px; }
+    .responsibility li { margin:7px 0; color:var(--muted); font-size:.9rem; }
+    .responsibility.ai { border-top:5px solid var(--blue); }
+    .responsibility.client { border-top:5px solid var(--red); }
+    .responsibility.developer { border-top:5px solid var(--amber); }
+    .client-checklist-link { display:inline-flex; align-items:center; min-height:42px; margin-top:14px; padding:0 14px; border:1px solid var(--red); border-radius:999px; color:#fff4f2; background:var(--red-bg); font-size:.88rem; font-weight:750; text-decoration:none; }
+    .client-checklist-link:hover { background:#4a2523; }
+    .handoff-note { padding:14px 16px; border:1px solid #28543b; border-radius:12px; color:#b9e9ca; background:var(--green-bg); font-size:.9rem; }
+    .metric { padding:15px; border:1px solid var(--line); border-radius:14px; background:var(--card); }
+    .metric strong { display:block; font-size:1.35rem; }
+    .metric span { color:var(--muted); font-size:.8rem; }
+    .bar { height:10px; overflow:hidden; border-radius:999px; background:#302c28; }
+    .bar > span { display:block; height:100%; width:0; background:var(--green); transition:width .2s; }
+    .phase { margin-top:22px; padding:20px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:0 14px 35px rgba(40,31,20,.05); }
+    .phase-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .deadline { white-space:nowrap; border-radius:999px; padding:5px 10px; color:var(--red); background:var(--red-bg); font-size:.78rem; font-weight:750; }
+    .why { margin:0 0 14px; color:var(--muted); }
+    .item { display:grid; grid-template-columns:26px 1fr; gap:10px; padding:11px 0; border-top:1px solid #302c28; }
+    .item:first-of-type { border-top:0; }
+    input[type="checkbox"] { width:21px; height:21px; margin-top:2px; accent-color:var(--green); }
+    label { cursor:pointer; }
+    input:checked + label .task { color:var(--muted); text-decoration:line-through; }
+    .task { display:block; font-weight:680; }
+    .detail { display:block; margin-top:3px; color:var(--muted); font-size:.9rem; }
+    .owner,.evidence { display:inline-block; margin:6px 6px 0 0; padding:2px 7px; border-radius:7px; font-size:.72rem; font-weight:750; }
+    .owner { color:var(--blue); background:var(--blue-bg); }
+    .evidence { color:var(--green); background:var(--green-bg); }
+    .gate { margin-top:24px; padding:18px; border:2px solid var(--red); border-radius:16px; background:var(--red-bg); }
+    .gate ul { margin:10px 0 0; padding-left:20px; }
+    .later { background:var(--amber-bg); border-color:#765d28; }
+    .later .deadline { color:var(--amber); background:#463716; }
+    code { padding:.12em .35em; border-radius:5px; background:#2b2723; color:#f8ddae; font-size:.88em; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    button { min-height:42px; padding:0 14px; border:1px solid var(--line); border-radius:999px; color:var(--ink); background:var(--card); font:inherit; font-weight:700; cursor:pointer; }
+    button:hover { background:#292521; }
+    footer { margin-top:28px; color:var(--muted); font-size:.82rem; text-align:center; }
+    @media (max-width:760px) { .responsibility-grid { grid-template-columns:1fr; } }
+    @media (max-width:620px) { .status { grid-template-columns:1fr; } .phase-head { display:block; } .deadline { display:inline-block; margin:4px 0 10px; } }
+    @media print { main { width:100%; padding:0; } .phase { break-inside:avoid; box-shadow:none; } .toolbar { display:none; } }
+  </style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Publish-ready by Sunday, July 19, 2026</p>
+  <h1>Wall Print Pro<br />launch checklist</h1>
+  <p class="intro">Follow this from top to bottom. Do not start another feature. The site publishes only after every red launch-blocker section is complete.</p>
+
+  <section aria-labelledby="who-does-what">
+    <h2 id="who-does-what">Who does what</h2>
+    <div class="responsibility-grid">
+      <article class="responsibility ai">
+        <h2>Delegate to Codex (AI)</h2>
+        <ul>
+          <li>Finish or remove the current uncommitted portfolio-video work.</li>
+          <li>Apply all client-approved business details, claims, testimonial, and portfolio facts.</li>
+          <li>Remove placeholders, generated-file noise, and untracked release files.</li>
+          <li>Review the release diff and create the release commit when explicitly asked.</li>
+          <li>Run typecheck, unit tests, production build, end-to-end tests, and placeholder audits.</li>
+          <li>Configure and deploy Convex/Vercel when the accounts are already authenticated and you authorize deployment.</li>
+          <li>Verify the production desktop journey, URLs, metadata, videos, failure paths, sitemap, and social previews.</li>
+          <li>Prepare the final evidence report and go/no-go result.</li>
+        </ul>
+      </article>
+      <article class="responsibility client">
+        <h2>Ask the client</h2>
+        <ul>
+          <li>Confirm legal/public business name, service area or address, phone, email, and contact destination.</li>
+          <li>Confirm the domain and who owns Stripe, Vercel, Convex, OpenAI, and registrar accounts.</li>
+          <li>Approve the $500 starting price, $100 reservation, 1200 DPI, install-time, and comparison claims.</li>
+          <li>Define and approve the “Free Demo,” estimate, video-walkthrough, response-time, and upload-preview promises.</li>
+          <li>Confirm the official social profiles and permission to embed every listed Facebook and Instagram post.</li>
+          <li>Verify each portfolio job's facts and grant permission to publish its footage.</li>
+          <li>Create/approve the Stripe Payment Link and payment/refund operating policy.</li>
+          <li>Approve going live, indexing the site, and linking it from Google Business Profile.</li>
+        </ul>
+        <a class="client-checklist-link" href="https://docs.google.com/document/d/1Y7XIKTphcoImks-6bMN42S9jNeCecBNkwL1EFPHtcy8/edit?usp=drivesdk" target="_blank" rel="noopener noreferrer">Open client approval checklist ↗</a>
+      </article>
+      <article class="responsibility developer">
+        <h2>You as developer</h2>
+        <ul>
+          <li>Get the client answers and account invitations; never paste secret keys into chat.</li>
+          <li>Make the business decisions Codex cannot make: keep/drop the video slice and remove/reword unverified claims.</li>
+          <li>Authorize commits, production deployments, DNS changes, indexing, and live payments.</li>
+          <li>Sign into any dashboard that requires your password, passkey, MFA, billing approval, or ownership confirmation.</li>
+          <li>Provide or arrange a real iPhone and Android for AR testing; Codex can guide and record the results.</li>
+          <li>Approve a Stripe test payment or live-payment/refund test.</li>
+          <li>Review the final evidence and make the final publish/no-publish call.</li>
+        </ul>
+      </article>
+    </div>
+    <p class="handoff-note"><strong>Simple rule:</strong> client supplies truth and permission; you supply access, approvals, and physical-device actions; Codex does the repository work, automated checks, deployment execution, and evidence collection.</p>
+  </section>
+
+  <div class="status" aria-label="Checklist status">
+    <div class="metric"><strong id="doneCount">0</strong><span>tasks complete</span></div>
+    <div class="metric"><strong id="leftCount">0</strong><span>tasks remaining</span></div>
+    <div class="metric"><strong id="percentCount">0%</strong><span>overall completion</span></div>
+  </div>
+  <div class="bar" aria-label="Completion progress"><span id="progressBar"></span></div>
+  <div class="toolbar"><button id="reset">Reset checks</button><button onclick="window.print()">Print / Save PDF</button></div>
+
+  <section class="phase">
+    <div class="phase-head"><h2>1. Get the client truth packet</h2><span class="deadline">Due Monday, July 13</span></div>
+    <p class="why">Nothing untrue, invented, or placeholder-shaped can remain on the public site.</p>
+    <div class="item"><input id="t1" type="checkbox"><label for="t1"><span class="task">Confirm public business identity</span><span class="detail">Business name, service-area/storefront address policy, phone, email, and contact URL.</span><span class="owner">Owner: client</span><span class="evidence">Evidence: written approval</span></label></div>
+    <div class="item"><input id="t2" type="checkbox"><label for="t2"><span class="task">Confirm domain and account access</span><span class="detail">Production domain plus Vercel, Convex, Stripe, OpenAI, and registrar ownership/access.</span><span class="owner">Owner: client + builder</span><span class="evidence">Evidence: access verified</span></label></div>
+    <div class="item"><input id="t3" type="checkbox"><label for="t3"><span class="task">Confirm every number and commercial claim</span><span class="detail">$500 starting price, $100 reservation, 1200 DPI, install time, and competitor comparison figures.</span><span class="owner">Owner: client</span><span class="evidence">Evidence: approved claim list</span></label></div>
+    <div class="item"><input id="t4" type="checkbox"><label for="t4"><span class="task">Approve the social proof and publishing permissions</span><span class="detail">Confirm the official Facebook and Instagram profiles, every displayed post, its website description, and permission to publish it.</span><span class="owner">Owner: client decision</span><span class="evidence">Evidence: post-by-post approval</span></label></div>
+    <div class="item"><input id="t5" type="checkbox"><label for="t5"><span class="task">Verify all three portfolio jobs and footage permissions</span><span class="detail">Title, neighborhood, surface, dimensions, story, and permission to publish video/photos. Remove any fact that cannot be verified.</span><span class="owner">Owner: client</span><span class="evidence">Evidence: job-by-job signoff</span></label></div>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>2. Freeze one clean release candidate</h2><span class="deadline">Due Tuesday, July 14</span></div>
+    <p class="why">Finish the current portfolio-video slice or discard it. Do not start another visual feature.</p>
+    <div class="item"><input id="t6" type="checkbox"><label for="t6"><span class="task">Decide: keep or drop the current uncommitted `/work` video change</span><span class="detail">The current tree has 9 tracked changes and untracked <code>lib/work-video-assets.ts</code>.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: explicit decision</span></label></div>
+    <div class="item"><input id="t7" type="checkbox"><label for="t7"><span class="task">If kept, complete the exact video slice</span><span class="detail">Include shared metadata, index/detail videos, three JSON changes, and route/content tests. Verify all R2 MP4s and local posters load.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: working browser check</span></label></div>
+    <div class="item"><input id="t8" type="checkbox"><label for="t8"><span class="task">Apply the approved client truth packet</span><span class="detail">Update business identity, contact details, copy, claims, social proof, and portfolio content.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: reviewed diff</span></label></div>
+    <div class="item"><input id="t9" type="checkbox"><label for="t9"><span class="task">Remove generated-file noise and resolve every untracked file</span><span class="detail">In particular, review the development-only <code>next-env.d.ts</code> path change.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: clean git status</span></label></div>
+    <div class="item"><input id="t10" type="checkbox"><label for="t10"><span class="task">Create and identify the frozen release commit</span><span class="detail">After this point, only launch-blocking fixes are allowed.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: release commit SHA</span></label></div>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>3. Pass the release gate</h2><span class="deadline">Due Wednesday, July 15</span></div>
+    <p class="why">Run all gates from the frozen commit. Any failure blocks deployment.</p>
+    <div class="item"><input id="t11" type="checkbox"><label for="t11"><span class="task"><code>pnpm typecheck</code> passes</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: exit 0</span></label></div>
+    <div class="item"><input id="t12" type="checkbox"><label for="t12"><span class="task"><code>pnpm test</code> passes</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: all unit tests green</span></label></div>
+    <div class="item"><input id="t13" type="checkbox"><label for="t13"><span class="task"><code>pnpm build</code> passes</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: production build green</span></label></div>
+    <div class="item"><input id="t14" type="checkbox"><label for="t14"><span class="task"><code>pnpm test:e2e</code> passes</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: all browser tests green</span></label></div>
+    <div class="item"><input id="t15" type="checkbox"><label for="t15"><span class="task">Run the public placeholder audit</span><span class="detail">No fake address, 555 phone, dead Stripe link, placeholder testimonial, or unconfirmed portfolio claim remains reachable.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: zero launch-placeholder hits</span></label></div>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>4. Configure and deploy production</h2><span class="deadline">Due Thursday, July 16</span></div>
+    <div class="item"><input id="t16" type="checkbox"><label for="t16"><span class="task">Deploy current Convex schema and functions to the correct production deployment</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: production dashboard</span></label></div>
+    <div class="item"><input id="t17" type="checkbox"><label for="t17"><span class="task">Set all Vercel and Convex environment variables</span><span class="detail">Site URL, Convex URLs, Stripe URL, phone, contact URL, AI feature flag, and OpenAI key where generation runs.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: deployed values verified without exposing secrets</span></label></div>
+    <div class="item"><input id="t18" type="checkbox"><label for="t18"><span class="task">Set the OpenAI spending limit</span><span class="owner">Owner: client + builder</span><span class="evidence">Evidence: dashboard limit confirmed</span></label></div>
+    <div class="item"><input id="t19" type="checkbox"><label for="t19"><span class="task">Create the real $100 Stripe Payment Link and exact `/reserved` redirect</span><span class="owner">Owner: client + builder</span><span class="evidence">Evidence: link opens and redirect is configured</span></label></div>
+    <div class="item"><input id="t20" type="checkbox"><label for="t20"><span class="task">Connect the production domain and verify HTTPS</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: live HTTPS URL</span></label></div>
+    <div class="item"><input id="t21" type="checkbox"><label for="t21"><span class="task">Deploy the frozen release commit with indexing still held</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: deployment SHA matches</span></label></div>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>5. Prove the production buyer journey</h2><span class="deadline">Due Saturday, July 18</span></div>
+    <div class="item"><input id="t22" type="checkbox"><label for="t22"><span class="task">Desktop production QA passes</span><span class="detail">Homepage chooser, uploads, generation, `/work` videos, QR handoff, reserve CTA, and unsupported-AR fallback.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: checklist + screenshots</span></label></div>
+    <div class="item"><input id="t23" type="checkbox"><label for="t23"><span class="task">iPhone Safari Quick Look passes</span><span class="detail">Test gallery and generated AR, placement/scale, QR, reservation, and contact actions.</span><span class="owner">Owner: human device test</span><span class="evidence">Evidence: recording + device/browser</span></label></div>
+    <div class="item"><input id="t24" type="checkbox"><label for="t24"><span class="task">Android Chrome Scene Viewer passes</span><span class="detail">Test gallery and generated AR, placement/scale, reservation, and contact actions.</span><span class="owner">Owner: human device test</span><span class="evidence">Evidence: recording + device/browser</span></label></div>
+    <div class="item"><input id="t25" type="checkbox"><label for="t25"><span class="task">Stripe phone round-trip passes</span><span class="detail">Pay in test mode or approved live/refund flow, land on `/reserved`, see receipt reference, and confirm real call/text links.</span><span class="owner">Owner: client + builder</span><span class="evidence">Evidence: payment + return screenshots</span></label></div>
+    <div class="item"><input id="t26" type="checkbox"><label for="t26"><span class="task">Convex records the `reserved_visit` event</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: dashboard record</span></label></div>
+    <div class="item"><input id="t27" type="checkbox"><label for="t27"><span class="task">Failure paths preserve a truthful lead or reserve path</span><span class="detail">AI disabled, provider timeout, invalid upload, daily cap, unsupported AR, and unavailable remote video.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: failure-path notes</span></label></div>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>6. Publish</h2><span class="deadline">Sunday, July 19</span></div>
+    <div class="item"><input id="t28" type="checkbox"><label for="t28"><span class="task">Run one final smoke test from a fresh browser session</span><span class="detail">Home, navigation, work pages, preview/AR, request, Stripe, reserved page, phone/contact, sitemap, robots, canonical URLs, and social preview.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: final smoke record</span></label></div>
+    <div class="item"><input id="t29" type="checkbox"><label for="t29"><span class="task">Confirm all launch-blocker tasks above are checked</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: this checklist at 100%</span></label></div>
+    <div class="item"><input id="t30" type="checkbox"><label for="t30"><span class="task">Enable intended indexing and submit the sitemap</span><span class="detail">Verify Search Console and update the Google Business Profile website/NAP.</span><span class="owner">Owner: client + builder</span><span class="evidence">Evidence: indexing confirmation</span></label></div>
+    <div class="item"><input id="t31" type="checkbox"><label for="t31"><span class="task">Verify public share surfaces</span><span class="detail">Facebook, Instagram bio, and Google Business Profile links/unfurls.</span><span class="owner">Owner: builder</span><span class="evidence">Evidence: live link checks</span></label></div>
+  </section>
+
+  <section class="gate">
+    <h2>Hard no-go rule</h2>
+    <p>Do not index or promote the site if any of these remain open:</p>
+    <ul><li>Unverified or placeholder public content</li><li>Dirty or failing release commit</li><li>Missing production configuration</li><li>No real-device AR proof</li><li>No successful Stripe return and Convex event proof</li></ul>
+    <p><strong>If blocked:</strong> keep the production deployment unindexed. Fix the blocker; do not add features.</p>
+  </section>
+
+  <section class="phase later">
+    <div class="phase-head"><h2>After launch — not part of July 19</h2><span class="deadline">Defer</span></div>
+    <div class="item"><input id="p1" type="checkbox"><label for="p1"><span class="task">Full Clerk teardown and dead seller/admin cleanup</span></label></div>
+    <div class="item"><input id="p2" type="checkbox"><label for="p2"><span class="task">Additional Convex function-harness tests</span></label></div>
+    <div class="item"><input id="p3" type="checkbox"><label for="p3"><span class="task">Week-two accessibility, abuse protection, validator, and test-helper polish</span></label></div>
+    <div class="item"><input id="p4" type="checkbox"><label for="p4"><span class="task">Automated AR-link email sender</span></label></div>
+    <div class="item"><input id="p5" type="checkbox"><label for="p5"><span class="task">September local-SEO operations and new portfolio tooling</span></label></div>
+  </section>
+
+  <footer>Checks are saved in this browser automatically. Source: live repository review on July 12, 2026.</footer>
+</main>
+<script>
+  const launchChecks = [...document.querySelectorAll('input[type="checkbox"]')].filter(box => box.id.startsWith('t'));
+  const allChecks = [...document.querySelectorAll('input[type="checkbox"]')];
+  const key = 'wall-print-pro-launch-checklist-2026-07-19';
+  const saved = JSON.parse(localStorage.getItem(key) || '{}');
+  allChecks.forEach(box => { box.checked = Boolean(saved[box.id]); box.addEventListener('change', save); });
+  function save() { const state = {}; allChecks.forEach(box => state[box.id] = box.checked); localStorage.setItem(key, JSON.stringify(state)); update(); }
+  function update() { const done = launchChecks.filter(box => box.checked).length; const percent = Math.round(done / launchChecks.length * 100); document.getElementById('doneCount').textContent = done; document.getElementById('leftCount').textContent = launchChecks.length - done; document.getElementById('percentCount').textContent = percent + '%'; document.getElementById('progressBar').style.width = percent + '%'; }
+  document.getElementById('reset').addEventListener('click', () => { if (confirm('Clear every saved check?')) { allChecks.forEach(box => box.checked = false); save(); } });
+  update();
+</script>
+</body>
+</html>

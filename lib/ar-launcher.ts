@@ -59,8 +59,12 @@ export function getAssetContentType(href: string) {
   return AR_ASSET_CONTENT_TYPES[getAssetKindFromHref(href)];
 }
 
+function hasAssetUrl(value: string | null | undefined) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export function hasReadyArAssetUrls(sample: ArSample) {
-  return Boolean(sample.assets.poster && sample.assets.glb && sample.assets.usdz);
+  return hasAssetUrl(sample.assets.poster) && hasAssetUrl(sample.assets.glb) && hasAssetUrl(sample.assets.usdz);
 }
 
 export async function checkAssetDelivery(

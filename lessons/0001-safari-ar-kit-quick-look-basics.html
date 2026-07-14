@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lesson 0001: Safari ARKit and Quick Look Basics</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17212b;
+        --muted: #65727f;
+        --paper: #fbfaf7;
+        --panel: #ffffff;
+        --line: #d9dee4;
+        --accent: #176b63;
+        --accent-dark: #0f4f49;
+        --warm: #8a4b08;
+        --soft: #eef6f3;
+        --ok: #e8f6ed;
+        --bad: #fff0ed;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.58;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 42px 22px 60px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 24px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        font-size: 36px;
+      }
+
+      h2 {
+        margin-top: 34px;
+        font-size: 23px;
+      }
+
+      h3 {
+        margin-top: 0;
+        font-size: 16px;
+      }
+
+      p {
+        margin: 10px 0 0;
+      }
+
+      a {
+        color: var(--accent-dark);
+      }
+
+      code {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: #f5f7f8;
+        padding: 1px 5px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .kicker {
+        display: inline-flex;
+        margin-bottom: 12px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--accent-dark);
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 18px;
+      }
+
+      .diagram {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .box {
+        position: relative;
+        min-height: 126px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .box:not(:last-child)::after {
+        content: ">";
+        position: absolute;
+        right: -16px;
+        top: 43%;
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .box strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--accent-dark);
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .important {
+        border-left: 5px solid var(--warm);
+        background: #fff4df;
+      }
+
+      .sources,
+      .practice {
+        margin-top: 14px;
+      }
+
+      .quiz {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .choice {
+        display: block;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px 14px;
+        color: var(--ink);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .choice:hover,
+      .choice:focus {
+        border-color: var(--accent);
+        outline: 2px solid transparent;
+      }
+
+      .result {
+        min-height: 48px;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-weight: 700;
+      }
+
+      .result.good {
+        background: var(--ok);
+        color: #135c2c;
+      }
+
+      .result.bad {
+        background: var(--bad);
+        color: #8f2d1f;
+      }
+
+      ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 760px) {
+        .diagram,
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .box::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="kicker">Lesson 0001</span>
+        <h1>Safari does not run your web app's ARKit session. It hands the model to AR Quick Look.</h1>
+        <p class="lede">
+          Your first tangible win: after this lesson, you should be able to point at the Preview Picture code and explain what happens when a customer taps <code>Place on wall</code> on iPhone Safari.
+        </p>
+      </header>
+
+      <section>
+        <h2>The mental model</h2>
+        <div class="diagram" aria-label="Browser to Quick Look handoff">
+          <div class="box">
+            <strong>Web page</strong>
+            React renders the preview page, poster image, and AR launch button.
+          </div>
+          <div class="box">
+            <strong>Asset bundle</strong>
+            The project provides poster, GLB, and USDZ files with real print dimensions.
+          </div>
+          <div class="box">
+            <strong>Safari trigger</strong>
+            The button is an <code>&lt;a rel="ar"&gt;</code> link to the USDZ file.
+          </div>
+          <div class="box">
+            <strong>Native viewer</strong>
+            Apple AR Quick Look opens and uses ARKit underneath for surfaces and tracking.
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>What this project already does</h2>
+        <div class="split">
+          <article class="panel">
+            <h3>The handoff code</h3>
+            <p>
+              <code>components/ar/native-ar-launcher.tsx</code> renders the Quick Look link, checks whether the user is on iPhone Safari, and blocks known bad browser paths before launch.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>The fixed-size rule</h3>
+            <p>
+              <code>lib/ar-launcher.ts</code> adds <code>#allowsContentScaling=0</code> to the USDZ URL so the wall print should stay at its authored physical size.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>The model files</h3>
+            <p>
+              <code>lib/ar-asset-generator.ts</code> creates the poster, GLB, and USDZ from artwork and dimensions. Safari needs the USDZ. Web/Android paths also use GLB.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>The delivery headers</h3>
+            <p>
+              <code>next.config.ts</code> serves checked-in <code>.usdz</code> assets as <code>model/vnd.usdz+zip</code>, which WebKit says Safari expects for USDZ recognition.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>The useful basics</h2>
+        <div class="panel important">
+          <p>
+            For the current web product, learn AR Quick Look before deep native ARKit. AR Quick Look is the product surface. ARKit is the underlying native system that makes the viewer understand motion, walls, floors, and anchors.
+          </p>
+        </div>
+        <ul>
+          <li><strong>ARKit:</strong> native Apple AR framework. It handles tracking, surfaces, anchors, and scene understanding.</li>
+          <li><strong>AR Quick Look:</strong> Apple's system viewer that Safari can open from a USDZ link.</li>
+          <li><strong>USDZ:</strong> the iOS/Safari AR file. If this is missing, wrong-sized, too large, or served with the wrong type, the customer path breaks.</li>
+          <li><strong><code>rel="ar"</code>:</strong> the Safari hint that a link is an AR launch, not just a normal download/navigation.</li>
+          <li><strong><code>allowsContentScaling=0</code>:</strong> the Quick Look setting that disables user resizing, important for true-size wall art.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Should you learn native iOS ARKit too?</h2>
+        <div class="split">
+          <article class="panel">
+            <h3>Yes, learn the basics</h3>
+            <p>
+              It will help you reason about what Quick Look is doing: world tracking, plane detection, anchors, real-world scale, and why walls can be hard to detect in bad lighting or on blank surfaces.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>But do not switch yet</h3>
+            <p>
+              A native app is helpful when you need custom camera UI, measurement, persistent saved wall placements, richer editing, or interactions that Quick Look cannot expose. It is not required for a shareable Safari sales preview.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="practice">
+        <h2>Practice: pick the broken layer</h2>
+        <p>
+          A customer opens a preview on iPhone Safari, taps <code>Place on wall</code>, and Safari downloads the file instead of opening AR. Which layer is most likely broken?
+        </p>
+        <div class="quiz">
+          <button class="choice" data-correct="false">ARKit plane detection</button>
+          <button class="choice" data-correct="true">USDZ link or MIME type</button>
+          <button class="choice" data-correct="false">Convex record sorting</button>
+          <button class="choice" data-correct="false">React button styling</button>
+          <div id="result" class="result" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Read next</h2>
+        <p>
+          Primary source: <a href="https://webkit.org/blog/8421/viewing-augmented-reality-assets-in-safari-for-ios/">WebKit's "Viewing Augmented Reality Assets in Safari for iOS"</a>. It is short and explains the exact Safari pieces: USDZ, MIME type, and linking.
+        </p>
+        <p>
+          Keep the reference open too: <a href="../reference/arkit-safari-quick-look-basics.html">Safari ARKit Quick Reference</a>.
+        </p>
+      </section>
+
+      <section class="sources">
+        <h2>Sources used</h2>
+        <ul class="small">
+          <li><a href="https://developer.apple.com/augmented-reality/quick-look/">Apple Quick Look Gallery</a></li>
+          <li><a href="https://webkit.org/blog/8421/viewing-augmented-reality-assets-in-safari-for-ios/">WebKit: Viewing Augmented Reality Assets in Safari for iOS</a></li>
+          <li><a href="https://developer.apple.com/videos/play/wwdc2019/612/">Apple WWDC19: Advances in AR Quick Look</a></li>
+          <li><a href="https://developer.apple.com/videos/play/wwdc2021/10078/">Apple WWDC21: AR Quick Look, meet Object Capture</a></li>
+          <li><a href="https://modelviewer.dev/examples/augmentedreality/">model-viewer: Augmented Reality</a></li>
+        </ul>
+      </section>
+
+      <footer>
+        <p class="small">
+          Ask Codex follow-up questions when anything feels fuzzy. Good next questions: "What does USDZ actually contain?", "Why does MIME type matter?", or "Show me the exact project code path for Place on wall."
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      const result = document.getElementById("result");
+      document.querySelectorAll(".choice").forEach((button) => {
+        button.addEventListener("click", () => {
+          const correct = button.dataset.correct === "true";
+          result.className = correct ? "result good" : "result bad";
+          result.textContent = correct
+            ? "Correct. If Safari downloads instead of launching AR, first check the USDZ href, rel=\"ar\", and Content-Type."
+            : "Not first. ARKit plane detection happens after Quick Look opens. Here the launch handoff failed before ARKit had a chance.";
+        });
+      });
+    </script>
+  </body>
+</html>
