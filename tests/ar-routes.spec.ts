@@ -155,7 +155,8 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("home-testimonial")).toHaveCount(0);
   await expect(page.getByText("About 1 day")).toBeVisible();
   await expect(page.getByText("Free before you commit")).toBeVisible();
-  await expect(page.getByText("Typical turnkey project")).toBeVisible();
+  await expect(page.getByText("Typical turnkey project")).toHaveCount(0);
+  await expect(page.getByText("$500+ turnkey")).toHaveCount(0);
   await expect(page.getByText("Design, installation & cleanup")).toBeVisible();
   await expect(page.getByTestId("social-proof-homepage")).toBeVisible();
   await expect(page.getByRole("heading", { name: "See a real wall transformation" })).toBeVisible();

@@ -102,6 +102,8 @@ describe("lead request contract", () => {
   it("uses Zod to require a realistic phone number", () => {
     expect(leadRequestSchema.safeParse({ contactName: "Buyer", contactPhone: "3125550101", preferredContactMethod: "phone" }).success).toBe(true);
     expect(isValidLeadPhone("+1 (312) 555-0101")).toBe(true);
+    expect(isValidLeadPhone("123456789012345")).toBe(true);
+    expect(isValidLeadPhone("1234567890123456")).toBe(false);
     expect(isValidLeadPhone("555-0101")).toBe(false);
     expect(isValidLeadPhone("call 312-555-0101")).toBe(false);
 

@@ -55,6 +55,7 @@ const contactMethodOptions: Array<{ value: LeadContactMethod; label: string }> =
 const projectTypeOptions = ["Home wall", "Business wall", "Event or pop-up", "Not sure yet"] as const;
 const preferredContactGroupId = "preferred-contact-method";
 const emailHelpId = "lead-email-help";
+const emailErrorId = "lead-email-error";
 const phoneHelpId = "lead-phone-help";
 
 export function PublicRequestForm({
@@ -242,17 +243,24 @@ export function PublicRequestForm({
         <div className="grid gap-2">
           <Label htmlFor="lead-email">Email</Label>
           <Input
-            aria-describedby={emailHelpId}
+            aria-describedby={emailEntered && !emailValid ? `${emailHelpId} ${emailErrorId}` : emailHelpId}
+            aria-invalid={emailEntered && !emailValid}
             autoComplete="email"
             id="lead-email"
             inputMode="email"
             onChange={(event) => setContactEmail(event.target.value)}
+            required={preferredContactMethod === "email"}
             type="email"
             value={contactEmail}
           />
           <p className="text-xs leading-5 text-muted-foreground" id={emailHelpId}>
             Best for sending your preview + estimate.
           </p>
+          {emailEntered && !emailValid ? (
+            <p className="text-xs font-medium text-destructive" id={emailErrorId} role="alert">
+              Enter a valid email address.
+            </p>
+          ) : null}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="lead-phone">Phone</Label>

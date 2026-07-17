@@ -157,13 +157,6 @@ export const HOME_COMPARISON_ROWS: readonly HomeComparisonRow[] = [
     handPainted: "Varies"
   },
   {
-    feature: "Typical turnkey project",
-    wallPrintPro: "$500+ turnkey",
-    vinylWrap: "$450+ before add-ons",
-    handPainted: "$2,500+ varies",
-    needsClientVerification: true
-  },
-  {
     feature: "No seams, peeling or bubbling",
     wallPrintPro: "Yes",
     vinylWrap: "No — film can lift",

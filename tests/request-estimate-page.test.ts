@@ -26,6 +26,8 @@ describe("on-site estimate request page", () => {
   it("reduces contact and project-detail friction while preserving the either-or contact requirement", () => {
     expect(formSource).toContain("Best for sending your preview + estimate.");
     expect(formSource).toContain("Only used for questions about your wall.");
+    expect(formSource).toContain("aria-invalid={emailEntered && !emailValid}");
+    expect(formSource).toContain("Enter a valid email address.");
     expect(formSource).toContain("isValidLeadPhone(contactPhone)");
     expect(formSource).toContain("Enter a valid phone number with 10 to 15 digits.");
     expect(formSource).toContain("Please provide at least one: email or phone.");
