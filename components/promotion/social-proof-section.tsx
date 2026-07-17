@@ -124,7 +124,7 @@ function InstagramProofEmbed({ item, index }: { item: SocialProofItem; index: nu
         <p className="text-sm leading-6 text-muted-foreground">{item.summary}</p>
       </div>
       <div
-        className="overflow-hidden rounded-[0.625rem] border border-border bg-card p-1"
+        className="instagram-proof-viewport overflow-hidden rounded-[0.625rem] border border-border bg-card p-1"
         data-embed-status={status}
         data-testid="instagram-proof-container"
         ref={containerRef}
