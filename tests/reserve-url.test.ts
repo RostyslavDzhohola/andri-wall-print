@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PLACEHOLDER_RESERVE_URL, resolveReserveHref } from "@/lib/reserve-url";
+import { FALLBACK_RESERVE_URL, resolveReserveHref } from "@/lib/reserve-url";
 
 const ENV_KEY = "WALL_PRINT_PRO_RESERVE_URL";
 
@@ -9,9 +9,9 @@ afterEach(() => {
 });
 
 describe("resolveReserveHref", () => {
-  it("falls back to the placeholder Stripe link when no env override is set", () => {
+  it("falls back to the on-site request form when no payment link is configured", () => {
     delete process.env[ENV_KEY];
-    expect(resolveReserveHref()).toBe(PLACEHOLDER_RESERVE_URL);
+    expect(resolveReserveHref()).toBe(FALLBACK_RESERVE_URL);
   });
 
   it("prefers the trimmed env override when set", () => {
@@ -21,6 +21,6 @@ describe("resolveReserveHref", () => {
 
   it("ignores a blank env override", () => {
     process.env[ENV_KEY] = "   ";
-    expect(resolveReserveHref()).toBe(PLACEHOLDER_RESERVE_URL);
+    expect(resolveReserveHref()).toBe(FALLBACK_RESERVE_URL);
   });
 });
