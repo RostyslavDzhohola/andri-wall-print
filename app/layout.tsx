@@ -8,7 +8,6 @@ import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { readClerkPublishableKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
-import { resolveReserveHref } from "@/lib/reserve-url";
 import { absoluteUrl, getSiteUrl } from "@/lib/site-url";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -63,9 +62,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Resolve on the server at build/ISR time (bracket-based runtime-env read) so
-  // the shared header/sticky bar never reintroduce dynamic rendering.
-  const reserveHref = resolveReserveHref();
+  const estimateHref = "/request";
 
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
@@ -76,10 +73,10 @@ export default function RootLayout({
         >
           <div className="flex min-h-screen flex-col bg-background text-foreground">
             <div className="mx-auto w-full max-w-6xl px-4 pt-4 md:px-6">
-              <SiteHeader reserveHref={reserveHref} />
+              <SiteHeader estimateHref={estimateHref} />
             </div>
             <div className="flex-1">{children}</div>
-            <StickyReserveBar reserveHref={reserveHref} />
+            <StickyReserveBar estimateHref={estimateHref} />
           </div>
         </AppProviders>
       </body>

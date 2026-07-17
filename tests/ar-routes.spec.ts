@@ -82,8 +82,13 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await page.goto("/");
 
   // Approved C2 homepage: trust/education build, generation is the headline.
-  await expect(page.getByRole("heading", { name: "Not wallpaper. Not vinyl. Printed straight onto your wall." })).toBeVisible();
-  await expect(page.getByText("Custom wall printing in Chicago.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Custom murals printed directly on your wall in Chicago." })).toBeVisible();
+  await expect(
+    page.getByText(
+      "Turn any plain wall into a custom mural in about a day, without wallpaper or vinyl. See it on your wall first with a free digital preview."
+    )
+  ).toBeVisible();
+  await expect(page.getByText("Offices · restaurants · home feature walls.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
   await expect(page.getByRole("link", { name: "Our work" })).toHaveAttribute("href", "/work");
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
@@ -93,6 +98,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("homepage-entry-describe")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText(/Step [12] of 2/)).toHaveCount(0);
   await expect(page.getByLabel("Email")).toHaveAttribute("type", "email");
+  await expect(page.getByTestId("homepage-describe-continue")).toHaveText("Continue");
   await expect(page.getByLabel("Describe your wall print")).toHaveCount(0);
   await expect(page.getByTestId("homepage-concept-generate")).toHaveCount(0);
   await page.getByLabel("Email").fill("buyer@example.com");
@@ -147,6 +153,10 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("home-comparison")).toBeVisible();
   await expect(page.getByText("Yes — only us")).toBeVisible();
   await expect(page.getByTestId("home-testimonial")).toHaveCount(0);
+  await expect(page.getByText("About 1 day")).toBeVisible();
+  await expect(page.getByText("Free before you commit")).toBeVisible();
+  await expect(page.getByText("Typical turnkey project")).toBeVisible();
+  await expect(page.getByText("Design, installation & cleanup")).toBeVisible();
   await expect(page.getByTestId("social-proof-homepage")).toBeVisible();
   await expect(page.getByRole("heading", { name: "See a real wall transformation" })).toBeVisible();
   await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(1);
@@ -168,24 +178,45 @@ test("homepage renders a static artwork presentation with native AR assets", asy
     )
   ).toBe(0);
   await expect(page.getByRole("heading", { name: "See our projects" })).toBeVisible();
+  const socialProofTop = await page.getByTestId("social-proof-homepage").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  const processTop = await page.getByTestId("home-process").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  const comparisonTop = await page.getByTestId("home-comparison").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  const projectsTop = await page.getByRole("heading", { name: "See our projects" }).evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  const reserveTop = await page.getByTestId("home-reserve-strip").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  expect(socialProofTop).toBeLessThan(processTop);
+  expect(processTop).toBeLessThan(comparisonTop);
+  expect(comparisonTop).toBeLessThan(projectsTop);
+  expect(projectsTop).toBeLessThan(reserveTop);
+  await expect(page.getByRole("columnheader", { name: "Feature" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Wall Print Pro" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Vinyl wrap" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Hand painted" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Wall print option comparison" })).toBeVisible();
+  await expect(page.getByText("Wall Print Pro compared with vinyl wrap and hand-painted murals.")).toHaveCount(0);
+  await expect(page.getByText("Customer testimonial coming soon.")).toHaveCount(0);
   await expect(page.getByText("Public project evidence")).toHaveCount(0);
   await expect(page.getByTestId("social-proof-quote-cta")).toHaveAttribute("href", "/request");
-  await expect(page.getByTestId("social-proof-quote-cta")).toHaveText("Request an estimate");
+  await expect(page.getByTestId("social-proof-quote-cta")).toHaveText("Get estimate");
   await expect(page.getByRole("link", { name: "Follow us on Facebook" })).toBeVisible();
   await expect(page.getByTestId("home-reserve-strip")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Reserve your spot - $100, credited to your print." })).toBeVisible();
-  await expect(page.getByText("Reserve your spot — $100, credited to your print.")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Reserve your spot — $100" })).toBeVisible();
+  await expect(page.getByTestId("home-reserve-strip").locator("strong")).toHaveText("credited to your print");
   await expect(page.getByTestId("home-reserve-cta")).toBeVisible();
+  await expect(page.getByTestId("home-reserve-cta")).toContainText("Reserve spot — $100");
   await expect(page.getByRole("heading", { name: "From idea to print in three steps." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Choose the art" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Request an estimate" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "We make the print" })).toBeVisible();
   await expect(page.getByTestId("home-process")).toBeVisible();
+  await expect(page.getByTestId("home-process").getByRole("listitem")).toHaveCount(3);
+  await expect(page.getByTestId("home-process").getByText("1", { exact: true })).toHaveCount(1);
+  await expect(page.getByTestId("home-process").getByText("2", { exact: true })).toHaveCount(1);
+  await expect(page.getByTestId("home-process").getByText("3", { exact: true })).toHaveCount(1);
   await expect(page.getByTestId("home-faq")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Questions before your estimate" })).toBeVisible();
   await expect(page.getByTestId("home-final-quote")).toBeVisible();
   await expect(page.getByTestId("home-final-quote-cta")).toHaveAttribute("href", "/request");
-  await expect(page.getByTestId("home-final-quote-cta")).toContainText("Free Demo");
+  await expect(page.getByTestId("home-final-quote-cta")).toContainText("Free preview");
   await expect(page.getByTestId("home-footer")).toBeVisible();
   await expect(page.locator('source[src*="work-videos"]')).toHaveCount(0);
   await expectNoBannedRenderedTerms(page);
@@ -1016,7 +1047,7 @@ test("public preview route renders a ready seeded artwork", async ({ page }) => 
 
   await page.getByRole("link", { name: "Wall Print Pro" }).click();
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { name: "Not wallpaper. Not vinyl. Printed straight onto your wall." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Custom murals printed directly on your wall in Chicago." })).toBeVisible();
 });
 
 test("public preview route renders an unavailable state for missing Convex assets", async ({ page }) => {
