@@ -133,6 +133,14 @@ video {
   max-width: 100%;
 }
 
+/* Meta injects a 326px minimum width that otherwise overflows 320px phones. */
+.instagram-proof-viewport .instagram-media {
+  display: block !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
 .camera-mask {
   clip-path: inset(0 round 0.75rem);
 }

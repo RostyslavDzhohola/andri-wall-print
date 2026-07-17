@@ -685,6 +685,53 @@ test("homepage places social-proof actions below the Facebook video on small scr
   await expect(page.getByTestId("social-proof-actions").getByRole("link")).toHaveCount(2);
 });
 
+test("official Instagram embeds stay inside a 320px viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 785 });
+  await page.route("**/api/instagram-projects", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: false, reason: "not-configured" })
+    })
+  );
+  await page.route("**/www.instagram.com/embed.js*", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: `
+        window.instgrm = {
+          Embeds: {
+            process() {
+              document.querySelectorAll("blockquote.instagram-media").forEach((blockquote) => {
+                const iframe = document.createElement("iframe");
+                iframe.className = "instagram-media instagram-media-rendered";
+                iframe.style.minWidth = "326px";
+                iframe.style.width = "100%";
+                blockquote.replaceWith(iframe);
+              });
+            }
+          }
+        };
+        window.instgrm.Embeds.process();
+      `
+    })
+  );
+
+  await page.goto("/");
+  await expect(page.locator("iframe.instagram-media")).toHaveCount(5);
+
+  const layout = await page.evaluate(() => ({
+    documentWidth: document.documentElement.scrollWidth,
+    embedOverflowCount: Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe.instagram-media")).filter((iframe) => {
+      const iframeBox = iframe.getBoundingClientRect();
+      const containerBox = iframe.parentElement?.getBoundingClientRect();
+      return !containerBox || iframeBox.left < containerBox.left || iframeBox.right > containerBox.right;
+    }).length,
+    viewportWidth: document.documentElement.clientWidth
+  }));
+
+  expect(layout.embedOverflowCount).toBe(0);
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+});
+
 test("homepage keeps the hero in two columns at tablet width without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 838, height: 785 });
   await page.goto("/");
