@@ -80,18 +80,18 @@ export function wallPreviewIssueMessage() {
 // Homepage marketing copy (approved C2 direction).
 //
 // The old "no-AI-copy" rule is retired: generation is the headline. All homepage
-// copy strings live here so the client copy pass can happen in one file. D10
-// deposit rule is binding: the $100 reserves the print-job slot and is credited
-// to the final price — never "buy art".
+// copy strings live here so the client copy pass can happen in one file. Cold
+// visitors are routed through the neutral estimate flow before any payment step.
 // ---------------------------------------------------------------------------
 
-export const HOME_NAV_RESERVE_CTA = "Reserve a spot — $100";
+export const HOME_NAV_ESTIMATE_CTA = "Get an estimate";
 export const HOME_LOCATION_BADGE = "Chicago · wall prints from $500";
+export const HOME_AUDIENCE_LINE = "Offices · restaurants · home feature walls.";
 
 // Chicago local-SEO woven in naturally (human-first, no stuffing).
-export const HOME_HEADLINE = "Not wallpaper. Not vinyl. Printed straight onto your wall.";
+export const HOME_HEADLINE = "Custom murals printed directly on your wall in Chicago.";
 export const HOME_SUBHEAD =
-  "Custom wall printing in Chicago. Choose a design, upload your own art or logo, or describe an idea — then see it on your actual wall before you commit.";
+  "Turn any plain wall into a custom mural in about a day, without wallpaper or vinyl. See it on your wall first with a free digital preview.";
 
 // Three-entry chooser labels + primary CTA. Kept short (≤8 chars) so all three
 // render with ZERO ellipsis in the segmented control at 375px — the control also
@@ -120,8 +120,19 @@ export const HOME_UPLOAD_ENTRY_BODY =
 // homepage component.
 export const HOME_COMPARISON_HEADING = "Wall printing vs. everything else";
 export const HOME_COMPARISON_SUBHEAD =
-  "Why Chicago homes and businesses are choosing direct-to-wall printing.";
-export const HOME_COMPARISON_COLUMNS = ["Wall Print Pro", "Vinyl wrap", "Hand-painted"] as const;
+  "Compare the full project — preview, production, installation, cleanup, and what happens over time.";
+export const HOME_COMPARISON_COLUMNS = ["Wall Print Pro", "Vinyl wrap", "Hand painted"] as const;
+
+export const HOME_COMPARISON_PROOF_POINTS = [
+  {
+    label: "Typical on-site time",
+    value: "About 1 day"
+  },
+  {
+    label: "Digital wall preview",
+    value: "Free before you commit"
+  }
+] as const;
 
 export type HomeComparisonRow = {
   feature: string;
@@ -140,10 +151,22 @@ export const HOME_COMPARISON_ROWS: readonly HomeComparisonRow[] = [
     handPainted: "No"
   },
   {
-    feature: "Seams & peeling over time",
-    wallPrintPro: "None",
-    vinylWrap: "Common",
-    handPainted: "None"
+    feature: "Design, installation & cleanup",
+    wallPrintPro: "Included",
+    vinylWrap: "Often extra",
+    handPainted: "Varies"
+  },
+  {
+    feature: "No seams, peeling or bubbling",
+    wallPrintPro: "Yes",
+    vinylWrap: "No — film can lift",
+    handPainted: "Yes"
+  },
+  {
+    feature: "Can be repainted over later",
+    wallPrintPro: "Yes",
+    vinylWrap: "After removal",
+    handPainted: "Yes"
   },
   {
     feature: "Photo-level detail",
@@ -158,29 +181,23 @@ export const HOME_COMPARISON_ROWS: readonly HomeComparisonRow[] = [
     vinylWrap: "2–3 days",
     handPainted: "1–2 weeks",
     needsClientVerification: true
-  },
-  {
-    feature: "Typical starting price",
-    wallPrintPro: "$500",
-    vinylWrap: "$450+",
-    handPainted: "$2,500+",
-    needsClientVerification: true
   }
 ] as const;
 
-// Testimonial — clearly a placeholder needing a real quote from the client.
+// Testimonial placeholder — replace with a verified quote and attribution.
 export const HOME_TESTIMONIAL = {
-  quote:
-    "They showed me the mural on my own wall from my phone before I paid a cent. Sold.",
-  attribution: "PLACEHOLDER — replace with a real, attributed Chicago client quote before launch.",
+  quote: "Customer testimonial coming soon.",
+  attribution: "Verified customer quote and project details will be added here.",
   needsClientQuote: true
 } as const;
 
-// Dark reserve strip.
-export const HOME_RESERVE_STRIP_HEADLINE = "Reserve your spot - $100, credited to your print.";
-export const HOME_RESERVE_STRIP_BODY =
-  "Reserve your next spot and be first in line when job preparation begins.";
-export const HOME_RESERVE_STRIP_CTA = "Reserve now";
+// Lower-funnel reservation strip. Payment stays below proof, process, comparison,
+// and public projects; cold visitors first see neutral estimate CTAs.
+export const HOME_RESERVE_STRIP_HEADLINE = "Reserve your spot — $100";
+export const HOME_RESERVE_STRIP_BODY_PREFIX = "When you're ready, the $100 reservation holds your print-job slot and is ";
+export const HOME_RESERVE_STRIP_CREDIT = "credited to your print";
+export const HOME_RESERVE_STRIP_BODY_SUFFIX = " — it isn't an extra fee.";
+export const HOME_RESERVE_STRIP_CTA = "Reserve spot — $100";
 
 // Process steps.
 export const HOME_PROCESS_HEADING = "From idea to print in three steps.";

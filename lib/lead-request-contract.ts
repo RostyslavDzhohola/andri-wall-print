@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const LEAD_REQUEST_INTENTS = ["contact", "concept", "reserve"] as const;
 export const LEAD_REQUEST_STATUSES = ["new", "reviewing", "contacted", "won", "lost", "archived"] as const;
 export const AI_CONCEPT_DRAFT_STATUSES = [
@@ -21,6 +23,8 @@ export const LEAD_CONCEPT_PROMPT_MAX_LENGTH = 900;
 export const LEAD_TEXT_FIELD_MAX_LENGTH = 240;
 export const LEAD_WALL_DESCRIPTION_MAX_LENGTH = 700;
 export const LEAD_AI_RATE_LIMIT_PER_DAY = 3;
+export const LEAD_PHONE_MIN_DIGITS = 10;
+export const LEAD_PHONE_MAX_DIGITS = 15;
 
 export type LeadContactInput = {
   contactName: string;
@@ -64,14 +68,33 @@ export function normalizeLeadEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-export function isValidLeadEmail(value: string) {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalizeLeadEmail(value));
-}
-
 export function normalizeLeadPhone(value: string | undefined) {
   const digits = (value ?? "").replace(/\D/g, "");
 
-  return digits ? digits.slice(0, 20) : undefined;
+  return digits || undefined;
+}
+
+export const leadEmailSchema = z.string().trim().toLowerCase().email("Enter a valid email address.");
+
+export const leadPhoneSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => {
+      const digitCount = normalizeLeadPhone(value)?.length ?? 0;
+
+      return /^\+?[\d\s().-]+$/.test(value) && digitCount >= LEAD_PHONE_MIN_DIGITS && digitCount <= LEAD_PHONE_MAX_DIGITS;
+    },
+    { message: "Enter a valid phone number with 10 to 15 digits." }
+  )
+  .transform((value) => normalizeLeadPhone(value) as string);
+
+export function isValidLeadEmail(value: string) {
+  return leadEmailSchema.safeParse(value).success;
+}
+
+export function isValidLeadPhone(value: string | undefined) {
+  return leadPhoneSchema.safeParse(value ?? "").success;
 }
 
 export function isLeadRequestIntent(value: string): value is LeadRequestIntent {
@@ -98,62 +121,105 @@ function resolvePreferredContactMethod(input: string | undefined, hasEmail: bool
   return hasPhone ? "phone" : "email";
 }
 
+const rawLeadRequestSchema = z.object({
+  contactName: z.string(),
+  contactEmail: z.string().optional(),
+  contactPhone: z.string().optional(),
+  preferredContactMethod: z.string().optional(),
+  projectType: z.string().optional(),
+  businessName: z.string().optional(),
+  wallDescription: z.string().optional(),
+  conceptPrompt: z.string().optional(),
+  intent: z.string().optional(),
+  reserveInterest: z.boolean().optional()
+});
+
+export const leadRequestSchema = rawLeadRequestSchema
+  .transform((input) => {
+    const contactName = optionalText(input.contactName, LEAD_TEXT_FIELD_MAX_LENGTH) ?? "";
+    const contactEmail = normalizeLeadEmail(input.contactEmail ?? "");
+    const contactPhone = optionalText(input.contactPhone, LEAD_TEXT_FIELD_MAX_LENGTH);
+    const normalizedContactPhone = normalizeLeadPhone(contactPhone);
+    const hasValidEmail = Boolean(contactEmail) && isValidLeadEmail(contactEmail);
+    const hasValidPhone = Boolean(contactPhone) && isValidLeadPhone(contactPhone);
+    const preferredContactMethod = resolvePreferredContactMethod(input.preferredContactMethod, hasValidEmail, hasValidPhone);
+    const intent = input.intent && isLeadRequestIntent(input.intent) ? input.intent : "concept";
+
+    return {
+      contactName,
+      contactEmail,
+      contactPhone,
+      normalizedContactPhone,
+      hasValidEmail,
+      hasValidPhone,
+      preferredContactMethod,
+      projectType: optionalText(input.projectType, LEAD_TEXT_FIELD_MAX_LENGTH),
+      businessName: optionalText(input.businessName, LEAD_TEXT_FIELD_MAX_LENGTH),
+      wallDescription: optionalText(input.wallDescription, LEAD_WALL_DESCRIPTION_MAX_LENGTH),
+      conceptPrompt: optionalText(input.conceptPrompt, LEAD_CONCEPT_PROMPT_MAX_LENGTH),
+      conceptPromptSupplied: Boolean(input.conceptPrompt),
+      intent,
+      reserveInterest: Boolean(input.reserveInterest || intent === "reserve")
+    };
+  })
+  .superRefine((input, context) => {
+    const addIssue = (message: string, path: string) => {
+      context.addIssue({ code: "custom", message, path: [path] });
+    };
+
+    if (!input.contactName) {
+      addIssue("Name is required.", "contactName");
+    }
+
+    if (input.contactEmail && !input.hasValidEmail) {
+      addIssue("Enter a valid email address.", "contactEmail");
+    }
+
+    if (input.contactPhone && !input.hasValidPhone) {
+      addIssue("Enter a valid phone number with 10 to 15 digits.", "contactPhone");
+    }
+
+    if (!input.hasValidEmail && !input.hasValidPhone) {
+      addIssue("Email or phone is required.", "contactEmail");
+    }
+
+    if (input.preferredContactMethod === "email" && !input.hasValidEmail) {
+      addIssue("Email is required when email is the preferred contact method.", "contactEmail");
+    }
+
+    if (input.preferredContactMethod === "phone" && !input.hasValidPhone) {
+      addIssue("Phone is required when phone is the preferred contact method.", "contactPhone");
+    }
+
+    if (input.conceptPromptSupplied && !input.conceptPrompt) {
+      addIssue("Concept prompt is required to draft a concept.", "conceptPrompt");
+    }
+  })
+  .transform(
+    (input): NormalizedLeadContact => ({
+      contactName: input.contactName,
+      contactEmail: input.contactEmail,
+      ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
+      normalizedContactEmail: input.contactEmail,
+      ...(input.normalizedContactPhone ? { normalizedContactPhone: input.normalizedContactPhone } : {}),
+      preferredContactMethod: input.preferredContactMethod,
+      ...(input.projectType ? { projectType: input.projectType } : {}),
+      ...(input.businessName ? { businessName: input.businessName } : {}),
+      ...(input.wallDescription ? { wallDescription: input.wallDescription } : {}),
+      ...(input.conceptPrompt ? { conceptPrompt: input.conceptPrompt } : {}),
+      intent: input.intent,
+      reserveInterest: input.reserveInterest
+    })
+  );
+
 export function normalizeLeadRequestInput(input: LeadContactInput): NormalizedLeadContact {
-  const contactName = optionalText(input.contactName, LEAD_TEXT_FIELD_MAX_LENGTH);
-  const contactEmail = normalizeLeadEmail(input.contactEmail ?? "");
-  const contactPhone = optionalText(input.contactPhone, LEAD_TEXT_FIELD_MAX_LENGTH);
-  const normalizedContactPhone = normalizeLeadPhone(contactPhone);
-  const hasEmail = Boolean(contactEmail);
-  const hasValidEmail = hasEmail && isValidLeadEmail(contactEmail);
-  const hasPhone = Boolean(normalizedContactPhone);
-  const preferredContactMethod = resolvePreferredContactMethod(input.preferredContactMethod, hasValidEmail, hasPhone);
-  const intent = input.intent && isLeadRequestIntent(input.intent) ? input.intent : "concept";
-  const conceptPrompt = optionalText(input.conceptPrompt, LEAD_CONCEPT_PROMPT_MAX_LENGTH);
+  const parsed = leadRequestSchema.safeParse(input);
 
-  if (!contactName) {
-    throw new Error("Name is required.");
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "This request could not be saved.");
   }
 
-  if (hasEmail && !hasValidEmail) {
-    throw new Error("Enter a valid email address.");
-  }
-
-  if (contactPhone && !hasPhone) {
-    throw new Error("Enter a valid phone number.");
-  }
-
-  if (!hasValidEmail && !hasPhone) {
-    throw new Error("Email or phone is required.");
-  }
-
-  if (preferredContactMethod === "email" && !hasValidEmail) {
-    throw new Error("Email is required when email is the preferred contact method.");
-  }
-
-  if (preferredContactMethod === "phone" && !hasPhone) {
-    throw new Error("Phone is required when phone is the preferred contact method.");
-  }
-
-  if (input.conceptPrompt && !conceptPrompt) {
-    throw new Error("Concept prompt is required to draft a concept.");
-  }
-
-  return {
-    contactName,
-    contactEmail,
-    ...(contactPhone ? { contactPhone } : {}),
-    normalizedContactEmail: contactEmail,
-    ...(normalizedContactPhone ? { normalizedContactPhone } : {}),
-    preferredContactMethod,
-    ...(optionalText(input.projectType, LEAD_TEXT_FIELD_MAX_LENGTH) ? { projectType: optionalText(input.projectType, LEAD_TEXT_FIELD_MAX_LENGTH) } : {}),
-    ...(optionalText(input.businessName, LEAD_TEXT_FIELD_MAX_LENGTH) ? { businessName: optionalText(input.businessName, LEAD_TEXT_FIELD_MAX_LENGTH) } : {}),
-    ...(optionalText(input.wallDescription, LEAD_WALL_DESCRIPTION_MAX_LENGTH)
-      ? { wallDescription: optionalText(input.wallDescription, LEAD_WALL_DESCRIPTION_MAX_LENGTH) }
-      : {}),
-    ...(conceptPrompt ? { conceptPrompt } : {}),
-    intent,
-    reserveInterest: Boolean(input.reserveInterest || intent === "reserve")
-  };
+  return parsed.data;
 }
 
 export function makeLeadRateLimitBucket(now = Date.now()) {

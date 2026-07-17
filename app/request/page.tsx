@@ -10,7 +10,6 @@ import {
   readWallPrintProPublicContactUrl,
   readWallPrintProPublicPhone
 } from "@/lib/runtime-env";
-import { resolveReserveHref } from "@/lib/reserve-url";
 import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
@@ -54,11 +53,12 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto w-full max-w-3xl px-5 py-10 md:px-8 md:py-16">
         <header className="grid gap-4">
-          <h1 className="text-4xl font-semibold leading-[0.98] text-balance md:text-6xl">Start a wall print request.</h1>
+          <h1 className="text-4xl font-semibold leading-[0.98] text-balance md:text-6xl">Request a wall print estimate.</h1>
           <p className="max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-            Reserve an on-site estimate. A Wall Print Pro team member will visit your space, measure the wall, review the surface,
-            and confirm the project price.
+            Tell us about your wall and idea. A Wall Print Pro team member will review the project details, contact you about an
+            on-site visit, and confirm the scope and price.
           </p>
+          <p className="text-sm font-medium text-foreground">Takes about 60 seconds. No spam, no obligation.</p>
         </header>
 
         <Card className="mt-10 shadow-[0_24px_70px_rgba(35,31,25,0.12)]">
@@ -70,7 +70,6 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
               defaultIntent={requestDefaults.defaultIntent}
               publicContactUrl={readWallPrintProPublicContactUrl()}
               publicPhone={readWallPrintProPublicPhone()}
-              reserveHref={resolveReserveHref()}
               uploadFirst={uploadFirst}
             />
           </CardContent>

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { InstagramProjectCarousel } from "@/components/promotion/instagram-project-carousel";
 import { Button } from "@/components/ui/button";
 import type { InstagramProjectMedia } from "@/lib/instagram-project-media";
+import { HOME_TESTIMONIAL } from "@/lib/product-copy";
 import {
   FACEBOOK_PROFILE_URL,
   getFacebookEmbedUrl,
@@ -22,6 +23,7 @@ declare global {
 
 type SocialProofSectionProps = {
   variant?: "homepage" | "library";
+  beforeProjects?: ReactNode;
 };
 
 type InstagramEmbedStatus = "loading" | "rendered" | "failed";
@@ -248,7 +250,7 @@ function InstagramProjectCollection({ items }: { items: readonly SocialProofItem
   );
 }
 
-export function SocialProofSection({ variant = "homepage" }: SocialProofSectionProps) {
+export function SocialProofSection({ beforeProjects, variant = "homepage" }: SocialProofSectionProps) {
   const [featured, ...instagramItems] = SOCIAL_PROOF_ITEMS;
   const embedUrl = getFacebookEmbedUrl(featured);
   const isHomepage = variant === "homepage";
@@ -267,6 +269,13 @@ export function SocialProofSection({ variant = "homepage" }: SocialProofSectionP
               See a real wall transformation
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">{featured.summary}</p>
+
+            {isHomepage && !HOME_TESTIMONIAL.needsClientQuote ? (
+              <blockquote className="mt-8 max-w-xl border-l-2 border-primary pl-5" data-testid="home-testimonial">
+                <p className="text-xl font-medium leading-8 text-foreground">&ldquo;{HOME_TESTIMONIAL.quote}&rdquo;</p>
+                <footer className="mt-3 text-sm font-medium text-muted-foreground">{HOME_TESTIMONIAL.attribution}</footer>
+              </blockquote>
+            ) : null}
           </div>
 
           <div className="mx-auto w-full max-w-[21rem] overflow-hidden rounded-[0.625rem] border bg-black shadow-[0_24px_70px_rgba(35,31,25,.12)]">
@@ -287,7 +296,7 @@ export function SocialProofSection({ variant = "homepage" }: SocialProofSectionP
             {isHomepage ? (
               <Button asChild className="min-h-11 rounded-full px-6" size="lg">
                 <Link data-testid="social-proof-quote-cta" href="/request">
-                  Request an estimate
+                  Get estimate
                 </Link>
               </Button>
             ) : null}
@@ -298,6 +307,8 @@ export function SocialProofSection({ variant = "homepage" }: SocialProofSectionP
             </Button>
           </div>
         </div>
+
+        {beforeProjects}
 
         <div>
           <div className="max-w-2xl">

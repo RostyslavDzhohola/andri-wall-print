@@ -10,14 +10,18 @@ import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
 import {
   HOME_COMPARISON_COLUMNS,
   HOME_COMPARISON_HEADING,
+  HOME_COMPARISON_PROOF_POINTS,
   HOME_COMPARISON_ROWS,
   HOME_COMPARISON_SUBHEAD,
+  HOME_AUDIENCE_LINE,
   HOME_FOOTER_TAGLINE,
   HOME_HEADLINE,
   HOME_LOCATION_BADGE,
   HOME_PROCESS_HEADING,
   HOME_PROCESS_STEPS,
-  HOME_RESERVE_STRIP_BODY,
+  HOME_RESERVE_STRIP_BODY_PREFIX,
+  HOME_RESERVE_STRIP_BODY_SUFFIX,
+  HOME_RESERVE_STRIP_CREDIT,
   HOME_RESERVE_STRIP_CTA,
   HOME_RESERVE_STRIP_HEADLINE,
   HOME_SUBHEAD,
@@ -27,32 +31,43 @@ import { cn } from "@/lib/utils";
 
 function ChicagoBadge() {
   return (
-    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary">
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
-      {HOME_LOCATION_BADGE}
-    </span>
+    <div className="grid w-fit gap-2">
+      <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary">
+        <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
+        {HOME_LOCATION_BADGE}
+      </span>
+      <span className="text-sm font-medium text-muted-foreground">{HOME_AUDIENCE_LINE}</span>
+    </div>
   );
 }
 
 function ComparisonTable() {
   return (
-    <section className="border-t bg-background px-4 py-12 md:px-6 md:py-16" data-testid="home-comparison">
+    <section className="border-y border-border py-14 md:py-16" data-testid="home-comparison">
       <div className="mx-auto max-w-5xl">
         <h2 className="text-3xl font-semibold leading-tight md:text-4xl">{HOME_COMPARISON_HEADING}</h2>
         <p className="mt-2 max-w-xl text-base leading-7 text-muted-foreground">{HOME_COMPARISON_SUBHEAD}</p>
 
+        <dl className="mt-8 grid max-w-2xl gap-4 sm:grid-cols-2" data-testid="home-comparison-proof-points">
+          {HOME_COMPARISON_PROOF_POINTS.map((point) => (
+            <div className="border-l-2 border-primary pl-4" key={point.label}>
+              <dt className="text-sm font-medium text-muted-foreground">{point.label}</dt>
+              <dd className="mt-1 text-xl font-semibold text-foreground">{point.value}</dd>
+            </div>
+          ))}
+        </dl>
+
         <div className="mt-8 overflow-x-auto rounded-lg border bg-card shadow-[0_24px_70px_rgba(35,31,25,.12)]">
-          <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
-            <caption className="sr-only">Wall Print Pro compared with vinyl wrap and hand-painted murals.</caption>
+          <table aria-label="Wall print option comparison" className="w-full min-w-[36rem] table-fixed border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="px-4 py-3 font-medium text-muted-foreground" scope="col">
-                  <span className="sr-only">Feature</span>
+              <tr className="border-b-2 border-border bg-muted/60">
+                <th className="w-[34%] px-4 py-3 font-semibold text-foreground" scope="col">
+                  Feature
                 </th>
                 {HOME_COMPARISON_COLUMNS.map((column, index) => (
                   <th
                     className={cn(
-                      "px-4 py-3 font-semibold",
+                      "border-l border-border px-4 py-3 text-center font-semibold",
                       index === 0 ? "text-primary" : "text-muted-foreground"
                     )}
                     key={column}
@@ -70,7 +85,7 @@ function ComparisonTable() {
                     {row.feature}
                   </th>
                   {/* LAUNCH GATE: verify with client */}
-                  <td className="px-4 py-3 font-semibold text-foreground">
+                  <td className="border-l border-border px-4 py-3 font-semibold text-foreground">
                     {row.feature.includes("AR") ? (
                       <span className="inline-flex items-center gap-1.5 text-primary">
                         <Check className="size-4" aria-hidden="true" />
@@ -81,17 +96,17 @@ function ComparisonTable() {
                     )}
                   </td>
                   {/* LAUNCH GATE: verify with client */}
-                  <td className="px-4 py-3 text-muted-foreground">{row.vinylWrap}</td>
+                  <td className="border-l border-border px-4 py-3 text-muted-foreground">{row.vinylWrap}</td>
                   {/* LAUNCH GATE: verify with client */}
-                  <td className="px-4 py-3 text-muted-foreground">{row.handPainted}</td>
+                  <td className="border-l border-border px-4 py-3 text-muted-foreground">{row.handPainted}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          {/* LAUNCH GATE: verify with client — comparison figures above are plausible placeholders. */}
-          Comparison figures are estimates pending client verification.
+          {/* LAUNCH GATE: verify comparison figures with the client before launch. */}
+          Final scope, timing, and pricing depend on wall size, surface, access, artwork, and installation details.
         </p>
       </div>
     </section>
@@ -104,7 +119,11 @@ function ReserveStrip({ href }: { href: string }) {
       <div className="mx-auto flex max-w-5xl flex-col items-start gap-5 md:flex-row md:items-center md:justify-between">
         <div className="max-w-2xl">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{HOME_RESERVE_STRIP_HEADLINE}</h2>
-          <p className="mt-2 text-sm leading-6 text-background/70">{HOME_RESERVE_STRIP_BODY}</p>
+          <p className="mt-2 text-sm leading-6 text-background/70">
+            {HOME_RESERVE_STRIP_BODY_PREFIX}
+            <strong className="font-semibold text-background">{HOME_RESERVE_STRIP_CREDIT}</strong>
+            {HOME_RESERVE_STRIP_BODY_SUFFIX}
+          </p>
         </div>
         <Button asChild className="min-h-11 rounded-full bg-background px-6 text-foreground hover:bg-background/90" size="lg">
           <Link data-testid="home-reserve-cta" href={href}>
@@ -124,9 +143,9 @@ function ProcessSteps() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">Process</p>
         <h2 className="mt-2 text-3xl font-semibold leading-tight md:text-4xl">{HOME_PROCESS_HEADING}</h2>
 
-        <ol className="mt-8 grid gap-4">
+        <div className="mt-8 grid gap-4" role="list">
           {HOME_PROCESS_STEPS.map((step, index) => (
-            <li className="flex gap-4 rounded-lg border bg-card p-5 shadow-sm" key={step.title}>
+            <div className="flex gap-4 rounded-lg border bg-card p-5 shadow-sm" key={step.title} role="listitem">
               <span
                 aria-hidden="true"
                 className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
@@ -137,9 +156,9 @@ function ProcessSteps() {
                 <h3 className="text-lg font-semibold text-foreground">{step.title}</h3>
                 <p className="text-sm leading-6 text-muted-foreground">{step.body}</p>
               </div>
-            </li>
+            </div>
           ))}
-        </ol>
+        </div>
       </div>
     </section>
   );
@@ -162,9 +181,9 @@ const HOME_FAQS = [
       "Share the wall details in your request. We confirm the surface, access, measurements, and preparation needs during the estimate visit."
   },
   {
-    question: "How does the $100 priority reservation work?",
+    question: "Do I need to pay to request an estimate?",
     answer:
-      "The reservation moves your estimate into priority scheduling, and the full $100 is credited toward your wall print."
+      "No payment is required to submit your project details. We'll contact you to review next steps and schedule the estimate."
   },
   {
     question: "When will I receive the final price?",
@@ -207,7 +226,7 @@ function FinalQuoteCta() {
         </div>
         <Button asChild className="min-h-11 rounded-full bg-background px-6 text-foreground hover:bg-background/90" size="lg">
           <Link data-testid="home-final-quote-cta" href="/request">
-            Free Demo
+            Free preview
             <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         </Button>
@@ -249,10 +268,15 @@ function SiteFooter() {
 function HomeSections({ reserveHref }: { reserveHref: string }) {
   return (
     <>
-      <SocialProofSection />
-      <ComparisonTable />
+      <SocialProofSection
+        beforeProjects={
+          <>
+            <ProcessSteps />
+            <ComparisonTable />
+          </>
+        }
+      />
       <ReserveStrip href={reserveHref} />
-      <ProcessSteps />
       <FaqSection />
       <FinalQuoteCta />
       <SiteFooter />
@@ -268,7 +292,7 @@ export default function Home() {
       <LocalBusinessJsonLd />
       <ArPreviewSurface
         heading={HOME_HEADLINE}
-        headingClassName="max-w-[12ch] text-[2.25rem] sm:text-[2.75rem] md:max-w-[11ch] md:text-[3rem] lg:max-w-[16ch] lg:text-6xl"
+        headingClassName="max-w-[15ch] text-[2.25rem] sm:text-[2.75rem] md:max-w-[14ch] md:text-[3rem] lg:max-w-[17ch] lg:text-6xl"
         intro={HOME_SUBHEAD}
         eyebrow={<ChicagoBadge />}
         sideContent={<HomepageDemoActions />}

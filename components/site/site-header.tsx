@@ -6,11 +6,11 @@ import { Check, GalleryHorizontal, House, MessageCircle } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
-import { HOME_NAV_RESERVE_CTA } from "@/lib/product-copy";
+import { HOME_NAV_ESTIMATE_CTA } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 
 type SiteHeaderProps = {
-  reserveHref: string;
+  estimateHref: string;
 };
 
 const NAV_LINKS = [
@@ -27,13 +27,13 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SiteHeader({ reserveHref }: SiteHeaderProps) {
+export function SiteHeader({ estimateHref }: SiteHeaderProps) {
   const pathname = usePathname() ?? "/";
   // On /reserved the customer just paid — keep the skeleton identical but swap
   // the CTA for a non-link confirmation chip so we never ask them to pay again.
   const isReserved = pathname === "/reserved";
-  // /preview/* is a private client-invite surface outside the public reserve
-  // funnel — it keeps the shared brand + nav but never shows a price CTA.
+  // /preview/* is a private client-invite surface outside the public estimate
+  // funnel, so it keeps the shared brand + nav without a competing CTA.
   const hideReserveCta = pathname.startsWith("/preview");
 
   return (
@@ -78,9 +78,9 @@ export function SiteHeader({ reserveHref }: SiteHeaderProps) {
           </span>
         ) : (
           <Button asChild className="min-h-10 rounded-full px-3 min-[360px]:px-4 sm:min-h-11 sm:px-5" size="lg">
-            <Link data-testid="home-nav-reserve" href={reserveHref}>
-              <span className="min-[360px]:hidden">Reserve $100</span>
-              <span className="hidden min-[360px]:inline">{HOME_NAV_RESERVE_CTA}</span>
+            <Link data-testid="home-nav-reserve" href={estimateHref}>
+              <span className="min-[360px]:hidden">Estimate</span>
+              <span className="hidden min-[360px]:inline">{HOME_NAV_ESTIMATE_CTA}</span>
             </Link>
           </Button>
         )}

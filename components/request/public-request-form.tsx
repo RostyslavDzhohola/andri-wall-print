@@ -19,12 +19,12 @@ import {
 import {
   LEAD_CONCEPT_PROMPT_MAX_LENGTH,
   isValidLeadEmail,
+  isValidLeadPhone,
   normalizeLeadEmail,
   normalizeLeadPhone,
   type LeadContactMethod,
   type LeadRequestIntent
 } from "@/lib/lead-request-contract";
-import { formatLeadRequestResultMessage } from "@/lib/lead-request-presentation";
 import type { RequestDesignContext } from "@/lib/request-page-defaults";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,6 @@ type PublicRequestFormProps = {
   defaultDesignContext?: RequestDesignContext;
   publicPhone?: string;
   publicContactUrl?: string;
-  reserveHref: string;
   uploadFirst?: boolean;
 };
 
@@ -55,6 +54,9 @@ const contactMethodOptions: Array<{ value: LeadContactMethod; label: string }> =
 
 const projectTypeOptions = ["Home wall", "Business wall", "Event or pop-up", "Not sure yet"] as const;
 const preferredContactGroupId = "preferred-contact-method";
+const emailHelpId = "lead-email-help";
+const emailErrorId = "lead-email-error";
+const phoneHelpId = "lead-phone-help";
 
 export function PublicRequestForm({
   aiEnabled,
@@ -63,7 +65,6 @@ export function PublicRequestForm({
   defaultDesignContext,
   publicPhone,
   publicContactUrl,
-  reserveHref,
   uploadFirst = false
 }: PublicRequestFormProps) {
   const generateLeadUploadUrl = useMutation(leadRequestsApi.generateLeadUploadUrl);
@@ -72,10 +73,9 @@ export function PublicRequestForm({
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [preferredContactMethod, setPreferredContactMethod] = useState<LeadContactMethod>("either");
+  const [preferredContactMethod, setPreferredContactMethod] = useState<LeadContactMethod>("email");
   const [projectType, setProjectType] = useState<(typeof projectTypeOptions)[number]>("Home wall");
   const [businessName, setBusinessName] = useState("");
-  const [wallDescription, setWallDescription] = useState("");
   const [conceptPrompt, setConceptPrompt] = useState(defaultConceptPrompt ?? "");
   const reserveInterest = defaultIntent === "reserve";
   const [file, setFile] = useState<File | null>(null);
@@ -88,7 +88,7 @@ export function PublicRequestForm({
   const emailValid = isValidLeadEmail(normalizedEmail);
   const normalizedPhone = normalizeLeadPhone(contactPhone);
   const phoneEntered = Boolean(contactPhone.trim());
-  const phoneValid = Boolean(normalizedPhone);
+  const phoneValid = isValidLeadPhone(contactPhone);
   const preferredContactSatisfied =
     preferredContactMethod === "email" ? emailValid : preferredContactMethod === "phone" ? phoneValid : emailValid || phoneValid;
   const canSubmit = Boolean(
@@ -186,7 +186,6 @@ export function PublicRequestForm({
         preferredContactMethod,
         projectType,
         ...(businessName.trim() ? { businessName } : {}),
-        ...(wallDescription.trim() ? { wallDescription } : {}),
         ...(conceptPrompt.trim() ? { conceptPrompt } : {}),
         intent,
         reserveInterest,
@@ -243,11 +242,48 @@ export function PublicRequestForm({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="lead-email">Email</Label>
-          <Input id="lead-email" inputMode="email" onChange={(event) => setContactEmail(event.target.value)} type="email" value={contactEmail} />
+          <Input
+            aria-describedby={emailEntered && !emailValid ? `${emailHelpId} ${emailErrorId}` : emailHelpId}
+            aria-invalid={emailEntered && !emailValid}
+            autoComplete="email"
+            id="lead-email"
+            inputMode="email"
+            onChange={(event) => setContactEmail(event.target.value)}
+            required={preferredContactMethod === "email"}
+            type="email"
+            value={contactEmail}
+          />
+          <p className="text-xs leading-5 text-muted-foreground" id={emailHelpId}>
+            Best for sending your preview + estimate.
+          </p>
+          {emailEntered && !emailValid ? (
+            <p className="text-xs font-medium text-destructive" id={emailErrorId} role="alert">
+              Enter a valid email address.
+            </p>
+          ) : null}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="lead-phone">Phone</Label>
-          <Input id="lead-phone" inputMode="tel" onChange={(event) => setContactPhone(event.target.value)} type="tel" value={contactPhone} />
+          <Input
+            aria-describedby={phoneHelpId}
+            aria-invalid={phoneEntered && !phoneValid}
+            autoComplete="tel"
+            id="lead-phone"
+            inputMode="tel"
+            maxLength={30}
+            onChange={(event) => setContactPhone(event.target.value)}
+            required={preferredContactMethod === "phone"}
+            type="tel"
+            value={contactPhone}
+          />
+          <p className="text-xs leading-5 text-muted-foreground" id={phoneHelpId}>
+            Only used for questions about your wall.
+          </p>
+          {phoneEntered && !phoneValid ? (
+            <p className="text-xs font-medium text-destructive" role="alert">
+              Enter a valid phone number with 10 to 15 digits.
+            </p>
+          ) : null}
         </div>
         <div className="grid gap-2">
           <Label id={`${preferredContactGroupId}-label`}>Preferred contact</Label>
@@ -282,53 +318,36 @@ export function PublicRequestForm({
           </select>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="lead-business">Business or space</Label>
-          <Input id="lead-business" onChange={(event) => setBusinessName(event.target.value)} value={businessName} />
+          <Label htmlFor="lead-business">Business or space name</Label>
+          <Input
+            id="lead-business"
+            onChange={(event) => setBusinessName(event.target.value)}
+            placeholder="Ex: Joe’s Coffee lobby, kids’ playroom"
+            value={businessName}
+          />
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">Email or phone is required. Pick how Wall Print Pro should reply first.</p>
+      <p className="text-sm text-muted-foreground">Please provide at least one: email or phone.</p>
 
       <div className="grid gap-2">
-        <Label htmlFor="lead-wall">Wall context</Label>
-        <Textarea
-          id="lead-wall"
-          onChange={(event) => setWallDescription(event.target.value)}
-          rows={3}
-          value={wallDescription}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="lead-concept">Concept idea</Label>
+        <Label htmlFor="lead-wall-idea">Wall &amp; idea</Label>
         {defaultDesignContext ? (
           <p className="text-sm text-muted-foreground" data-testid="request-selected-design-context">
             Starting design: <span className="font-medium text-foreground">{defaultDesignContext.title}</span>
           </p>
         ) : null}
         <Textarea
-          id="lead-concept"
+          id="lead-wall-idea"
           maxLength={LEAD_CONCEPT_PROMPT_MAX_LENGTH}
           onChange={(event) => setConceptPrompt(event.target.value)}
-          placeholder="Logo wall, city skyline, kids area mural, seasonal promotion..."
-          rows={4}
+          placeholder="Where is the wall and what are you thinking? (Lobby logo, kids area mural, seasonal promo…)"
+          rows={5}
           value={conceptPrompt}
         />
       </div>
 
       {uploadFirst ? null : uploadField}
-
-      <section className="grid gap-4 rounded-lg border border-primary/25 bg-primary/5 p-5" data-testid="request-priority-reservation">
-        <div className="grid gap-1">
-          <h3 className="text-lg font-semibold text-foreground">Want the earliest estimate visit?</h3>
-          <p className="text-sm leading-6 text-muted-foreground">
-            Reserve priority scheduling for $100. The full reservation is credited toward your wall print.
-          </p>
-        </div>
-        <Button asChild className="w-fit min-h-11 rounded-full px-5" variant="outline">
-          <a href={reserveHref}>Reserve priority estimate — $100</a>
-        </Button>
-      </section>
 
       {!aiEnabled && conceptPrompt.trim() ? (
         <Alert>
@@ -347,7 +366,10 @@ export function PublicRequestForm({
         <Alert>
           <CheckCircle2 className="size-4" />
           <AlertDescription className="grid gap-2">
-            <span>{formatLeadRequestResultMessage(result)}</span>
+            <span>
+              <strong>Got it.</strong> Next: we review your wall, send a ballpark estimate, then schedule an on-site visit before
+              you reserve your print date.
+            </span>
             {result.publicPreviewUrl ? (
               <Button asChild className="w-fit rounded-full" size="sm">
                 <Link href={result.publicPreviewUrl}>Open draft preview</Link>
@@ -357,20 +379,27 @@ export function PublicRequestForm({
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button className="min-h-11 rounded-full px-5" disabled={!canSubmit} type="submit">
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-          Request an on-site estimate
-        </Button>
-        {publicPhone ? (
-          <Button asChild className="min-h-11 rounded-full px-5" variant="outline">
-            <a href={`tel:${publicPhone.replace(/\D/g, "")}`}>Call</a>
+      <div className="grid gap-3">
+        <div className="grid w-fit gap-1.5">
+          <Button className="min-h-11 rounded-full px-5" disabled={!canSubmit} type="submit">
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
+            Get estimate
           </Button>
-        ) : null}
-        {publicContactUrl ? (
-          <Button asChild className="min-h-11 rounded-full px-5" variant="ghost">
-            <a href={publicContactUrl}>Contact</a>
-          </Button>
+          <p className="text-center text-xs text-muted-foreground">We’ll reply within 1 business day.</p>
+        </div>
+        {publicPhone || publicContactUrl ? (
+          <div className="flex flex-wrap items-center gap-3">
+            {publicPhone ? (
+              <Button asChild className="min-h-11 rounded-full px-5" variant="outline">
+                <a href={`tel:${publicPhone.replace(/\D/g, "")}`}>Call</a>
+              </Button>
+            ) : null}
+            {publicContactUrl ? (
+              <Button asChild className="min-h-11 rounded-full px-5" variant="ghost">
+                <a href={publicContactUrl}>Contact</a>
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </form>

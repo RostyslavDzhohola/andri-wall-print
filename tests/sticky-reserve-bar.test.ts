@@ -12,7 +12,7 @@ async function renderStickyBar(pathname: string) {
   mockPathname = pathname;
   const { StickyReserveBar } = await import("@/components/site/sticky-reserve-bar");
 
-  return renderToStaticMarkup(createElement(StickyReserveBar, { reserveHref: "https://buy.stripe.com/test-link" }));
+  return renderToStaticMarkup(createElement(StickyReserveBar, { estimateHref: "/request" }));
 }
 
 afterEach(() => {
@@ -24,7 +24,9 @@ describe("sticky reserve bar", () => {
     for (const pathname of ["/", "/gallery", "/work", "/work/a-job"]) {
       const html = await renderStickyBar(pathname);
       expect(html, pathname).toContain('data-testid="home-sticky-reserve"');
-      expect(html, pathname).toContain('href="https://buy.stripe.com/test-link"');
+      expect(html, pathname).toContain('href="/request"');
+      expect(html, pathname).toContain("Get an estimate");
+      expect(html, pathname).not.toContain("$100");
     }
   });
 

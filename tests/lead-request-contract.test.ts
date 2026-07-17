@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { makeLeadRateLimitBucket, normalizeLeadPhone, normalizeLeadRequestInput } from "@/lib/lead-request-contract";
+import {
+  isValidLeadPhone,
+  leadRequestSchema,
+  makeLeadRateLimitBucket,
+  normalizeLeadPhone,
+  normalizeLeadRequestInput
+} from "@/lib/lead-request-contract";
 
 describe("lead request contract", () => {
   it("normalizes required contact fields and reserve intent", () => {
@@ -47,6 +53,21 @@ describe("lead request contract", () => {
     });
   });
 
+  it("accepts email-only leads when email is the preferred contact path", () => {
+    expect(
+      normalizeLeadRequestInput({
+        contactName: "Email Lead",
+        contactEmail: "lead@example.com",
+        preferredContactMethod: "email"
+      })
+    ).toMatchObject({
+      contactName: "Email Lead",
+      contactEmail: "lead@example.com",
+      normalizedContactEmail: "lead@example.com",
+      preferredContactMethod: "email"
+    });
+  });
+
   it("rejects missing name and missing or malformed contact paths before persistence", () => {
     expect(() =>
       normalizeLeadRequestInput({
@@ -76,6 +97,23 @@ describe("lead request contract", () => {
         preferredContactMethod: "phone"
       })
     ).toThrow("Phone is required when phone is the preferred contact method.");
+  });
+
+  it("uses Zod to require a realistic phone number", () => {
+    expect(leadRequestSchema.safeParse({ contactName: "Buyer", contactPhone: "3125550101", preferredContactMethod: "phone" }).success).toBe(true);
+    expect(isValidLeadPhone("+1 (312) 555-0101")).toBe(true);
+    expect(isValidLeadPhone("123456789012345")).toBe(true);
+    expect(isValidLeadPhone("1234567890123456")).toBe(false);
+    expect(isValidLeadPhone("555-0101")).toBe(false);
+    expect(isValidLeadPhone("call 312-555-0101")).toBe(false);
+
+    expect(() =>
+      normalizeLeadRequestInput({
+        contactName: "Buyer",
+        contactPhone: "555-0101",
+        preferredContactMethod: "phone"
+      })
+    ).toThrow("Enter a valid phone number with 10 to 15 digits.");
   });
 
   it("builds deterministic phone and daily rate-limit keys", () => {

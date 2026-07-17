@@ -14,7 +14,7 @@ async function renderHeader(pathname: string) {
   mockPathname = pathname;
   const { SiteHeader } = await import("@/components/site/site-header");
 
-  return renderToStaticMarkup(createElement(SiteHeader, { reserveHref: "https://buy.stripe.com/test-link" }));
+  return renderToStaticMarkup(createElement(SiteHeader, { estimateHref: "/request" }));
 }
 
 afterEach(() => {
@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe("shared site header", () => {
-  it("renders the brand nav links and the reserve CTA on a normal route", async () => {
+  it("renders the brand nav links and the estimate CTA on a normal route", async () => {
     const html = await renderHeader("/gallery");
 
     expect(html).toContain('href="/"');
@@ -34,10 +34,10 @@ describe("shared site header", () => {
     expect(html).toContain("border-0");
     expect(html).toContain("focus-visible:outline-none");
     expect(html).not.toContain("focus-visible:outline-2");
-    // Reserve CTA is present and points at the resolved payment link.
-    expect(html).toContain('href="https://buy.stripe.com/test-link"');
-    expect(html).toContain("Reserve a spot");
-    expect(html).toContain("Reserve $100");
+    expect(html).toContain('href="/request"');
+    expect(html).toContain("Get an estimate");
+    expect(html).toContain("Estimate");
+    expect(html).not.toContain("$100");
     expect(html).toContain('data-testid="home-nav-reserve"');
     // Not the /reserved confirmation chip.
     expect(html).not.toContain('data-testid="site-reserve-confirmation"');
@@ -61,7 +61,7 @@ describe("shared site header", () => {
     expect(html).toContain('data-testid="site-reserve-confirmation"');
     expect(html).toContain("Spot reserved");
     // The paying customer is never shown the reserve payment link again.
-    expect(html).not.toContain("https://buy.stripe.com/test-link");
+    expect(html).not.toContain('href="/request"');
     expect(html).not.toContain('data-testid="home-nav-reserve"');
   });
 
@@ -70,7 +70,7 @@ describe("shared site header", () => {
 
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/gallery"');
-    expect(html).not.toContain("https://buy.stripe.com/test-link");
+    expect(html).not.toContain('href="/request"');
     expect(html).not.toContain('data-testid="home-nav-reserve"');
     expect(html).not.toContain('data-testid="site-reserve-confirmation"');
   });
