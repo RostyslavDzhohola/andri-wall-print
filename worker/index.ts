@@ -26,6 +26,9 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+const AR_ASSET_ROUTE = "/api/ar/";
+const SAFE_AR_ASSET_NAME = /^chicago-final-[1-3]\.(?:glb|usdz)$/;
+
 function withArContentType(pathname: string, response: Response) {
   const contentType = pathname.endsWith(".glb")
     ? "model/gltf-binary"
@@ -55,11 +58,19 @@ const worker = {
   ): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/ar/")) {
+    if (url.pathname.startsWith(AR_ASSET_ROUTE)) {
+      const fileName = url.pathname.slice(AR_ASSET_ROUTE.length);
+
+      if (!SAFE_AR_ASSET_NAME.test(fileName)) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      const assetUrl = new URL(`/ar/${fileName}`, request.url);
+      const assetRequest = new Request(assetUrl, request);
       const assetResponse = env?.ASSETS
-        ? await env.ASSETS.fetch(request)
-        : await handler.fetch(request, env, ctx);
-      return withArContentType(url.pathname, assetResponse);
+        ? await env.ASSETS.fetch(assetRequest)
+        : await fetch(assetRequest);
+      return withArContentType(fileName, assetResponse);
     }
 
     if (url.pathname === "/_vinext/image") {

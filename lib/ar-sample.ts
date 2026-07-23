@@ -26,8 +26,8 @@ export const AR_SAMPLES: ArSample[] = [
     description: "Chicago skyline artwork with the Bean, students, and the Pathways to Success message.",
     print: makePreviewBundlePrintFromDimensions({ width: 60, height: 50, unit: "in" }),
     assets: {
-      glb: "/ar/chicago-final-1.glb",
-      usdz: "/ar/chicago-final-1.usdz",
+      glb: "/api/ar/chicago-final-1.glb",
+      usdz: "/api/ar/chicago-final-1.usdz",
       poster: "/artworks/chicago-final-1.jpg"
     }
   },
@@ -37,8 +37,8 @@ export const AR_SAMPLES: ArSample[] = [
     description: "Chicago lakefront artwork with the skyline, trail, sailboats, and summer shoreline activity.",
     print: makePreviewBundlePrintFromDimensions({ width: 36, height: 60, unit: "in" }),
     assets: {
-      glb: "/ar/chicago-final-2.glb",
-      usdz: "/ar/chicago-final-2.usdz",
+      glb: "/api/ar/chicago-final-2.glb",
+      usdz: "/api/ar/chicago-final-2.usdz",
       poster: "/artworks/chicago-final-2.jpg"
     }
   },
@@ -48,8 +48,8 @@ export const AR_SAMPLES: ArSample[] = [
     description: "Chicago train artwork with elevated tracks, river bridge, skyline, and commuters.",
     print: makePreviewBundlePrintFromDimensions({ width: 48, height: 60, unit: "in" }),
     assets: {
-      glb: "/ar/chicago-final-3.glb",
-      usdz: "/ar/chicago-final-3.usdz",
+      glb: "/api/ar/chicago-final-3.glb",
+      usdz: "/api/ar/chicago-final-3.usdz",
       poster: "/artworks/chicago-final-3.jpg"
     }
   }

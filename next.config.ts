@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/ar/:path*.usdz",
+        source: "/api/ar/:path*.usdz",
         headers: [
           {
             key: "Content-Type",
@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
         ]
       },
       {
-        source: "/ar/:path*.glb",
+        source: "/api/ar/:path*.glb",
         headers: [
           {
             key: "Content-Type",

@@ -5,7 +5,7 @@ import { DEFAULT_AR_SAMPLE } from "@/lib/ar-sample";
 
 describe("AR launcher helpers", () => {
   it("builds fixed-scale Quick Look links for local USDZ assets", () => {
-    expect(getFixedScaleQuickLookHref("/ar/chicago-final-1.usdz")).toBe("/ar/chicago-final-1.usdz#allowsContentScaling=0");
+    expect(getFixedScaleQuickLookHref("/api/ar/chicago-final-1.usdz")).toBe("/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
   });
 
   it("builds fixed-scale Quick Look links for absolute Convex USDZ URLs", () => {
@@ -15,8 +15,8 @@ describe("AR launcher helpers", () => {
   });
 
   it("overrides stale Quick Look scaling fragments", () => {
-    expect(getFixedScaleQuickLookHref("/ar/chicago-final-1.usdz#allowsContentScaling=1&canonicalWebPageURL=https%3A%2F%2Fexample.com")).toBe(
-      "/ar/chicago-final-1.usdz#allowsContentScaling=0&canonicalWebPageURL=https%3A%2F%2Fexample.com"
+    expect(getFixedScaleQuickLookHref("/api/ar/chicago-final-1.usdz#allowsContentScaling=1&canonicalWebPageURL=https%3A%2F%2Fexample.com")).toBe(
+      "/api/ar/chicago-final-1.usdz#allowsContentScaling=0&canonicalWebPageURL=https%3A%2F%2Fexample.com"
     );
   });
 

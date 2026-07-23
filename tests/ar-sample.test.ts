@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { AR_SAMPLES, DEFAULT_AR_SAMPLE, formatMeters, formatPrintSize } from "@/lib/ar-sample";
 
 function publicPath(pathname: string) {
-  return join(process.cwd(), "public", pathname.replace(/^\//, ""));
+  const staticPath = pathname.replace(/^\/api\/ar\//, "/ar/");
+  return join(process.cwd(), "public", staticPath.replace(/^\//, ""));
 }
 
 describe("AR_SAMPLES", () => {

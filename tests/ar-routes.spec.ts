@@ -136,12 +136,12 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText(/\d+\s*x\s*\d+\s*cm/i)).toHaveCount(0);
   await expect(page.getByText(/\d+\s*cm wide x \d+\s*cm tall/i)).toHaveCount(0);
   await expect(page.getByText("AR diagnostics")).toHaveCount(0);
-  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/ar/chicago-final-1.glb");
-  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/ar/chicago-final-1.usdz");
+  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/api/ar/chicago-final-1.glb");
+  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/api/ar/chicago-final-1.usdz");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-placement", "wall");
   await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-scale", "fixed");
   await expect(page.getByTestId("ar-launcher-model")).not.toHaveAttribute("camera-controls", "");
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
   await expect(page.getByTestId("ar-launcher-model")).toHaveCount(1);
   await expect(page.getByText("The gallery uses real GLB/USDZ wall-placement assets.")).toHaveCount(0);
@@ -285,8 +285,8 @@ test("homepage upload renders immediately, stays in place, and shares the durabl
           print: { aspectRatio: "6:5", widthMeters: 1.524, heightMeters: 1.27, label: "5 ft × 4 ft 2 in" },
           assets: {
             poster: "/artworks/chicago-final-1.jpg",
-            glb: "/ar/chicago-final-1.glb",
-            usdz: "/ar/chicago-final-1.usdz"
+            glb: "/api/ar/chicago-final-1.glb",
+            usdz: "/api/ar/chicago-final-1.usdz"
           },
           status: "ready"
         })
@@ -330,7 +330,7 @@ test("homepage upload renders immediately, stays in place, and shares the durabl
 
   if (testInfo.project.name === "mobile-safari-shape") {
     await expect(page.getByTestId("quick-look-link")).toBeVisible();
-    await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+    await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
     await expect(page.getByTestId("share-to-phone")).toHaveCount(0);
     expect(createInput).toMatchObject({ sourceStorageId: "storage-homepage-test", contentType: "image/png" });
     expect(page.url()).toBe(initialUrl);
@@ -390,8 +390,8 @@ test("homepage Describe flow preserves both steps and submits from the keyboard"
         },
         assets: {
           poster: "/artworks/chicago-final-1.jpg",
-          glb: "/ar/chicago-final-1.glb",
-          usdz: "/ar/chicago-final-1.usdz"
+          glb: "/api/ar/chicago-final-1.glb",
+          usdz: "/api/ar/chicago-final-1.usdz"
         }
       })
     });
@@ -433,7 +433,7 @@ test("homepage Describe flow preserves both steps and submits from the keyboard"
   await expect(page.getByTestId("homepage-concept-status")).toContainText("Artwork preview is ready for wall placement.");
   await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-1.jpg");
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
   expect(calls.map((call) => call.method)).toEqual(["POST", "GET"]);
   expect(calls[0].body).toMatchObject({
     contactEmail: "buyer@example.com",
@@ -521,7 +521,7 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-1");
   await expect(page.getByText("Try this artwork")).toHaveCount(0);
   await expect(page.getByText("Selected", { exact: true })).toHaveCount(0);
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
 
   await page.getByTestId("gallery-next-artwork").click();
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-2.jpg");
@@ -549,7 +549,7 @@ test("homepage selected design opens the public gallery before the request gate"
   await expect(page.getByRole("heading", { name: "Gallery" })).toHaveCount(1);
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-2.jpg");
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveCount(0);
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-2.usdz#allowsContentScaling=0");
   await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-2");
 });
 
@@ -674,16 +674,16 @@ test("bottom controls cycle the selected picture and native AR target", async ({
   await expect(page.getByTestId("selected-artwork-title")).toHaveCount(0);
   await expect(page.getByTestId("selected-artwork-size")).toHaveCount(0);
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.jpg");
-  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/ar/chicago-final-2.glb");
-  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/ar/chicago-final-2.usdz");
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
+  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("src", "/api/ar/chicago-final-2.glb");
+  await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ios-src", "/api/ar/chicago-final-2.usdz");
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-2.usdz#allowsContentScaling=0");
 
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-3.jpg");
 
   await page.getByTestId("previous-artwork").click();
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.jpg");
-  await expectWallPlacementEntryPoint(page, "/ar/chicago-final-2.usdz#allowsContentScaling=0");
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-2.usdz#allowsContentScaling=0");
 });
 
 test("homepage hides artwork names and places picture navigation on the bottom row at narrow widths", async ({ page }, testInfo) => {
@@ -849,7 +849,7 @@ test.describe("AR launcher access guidance", () => {
     test("keeps iPhone Safari on the direct Quick Look link", async ({ page }) => {
       await page.goto("/");
 
-      await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/ar/chicago-final-1.usdz#allowsContentScaling=0");
+      await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("rel", "ar");
       await expect(page.getByTestId("quick-look-link")).toContainText("Place on wall");
       await expect(page.getByTestId("share-to-phone")).toHaveCount(0);
@@ -1080,8 +1080,8 @@ test("launch-deleted routes return 404", async ({ page }) => {
 });
 
 test("static Phase 0 asset routes expose expected AR headers and size budgets", async ({ page }) => {
-  const glb = await page.request.get("/ar/chicago-final-1.glb");
-  const usdz = await page.request.get("/ar/chicago-final-1.usdz");
+  const glb = await page.request.get("/api/ar/chicago-final-1.glb");
+  const usdz = await page.request.get("/api/ar/chicago-final-1.usdz");
   const poster = await page.request.get("/artworks/chicago-final-1.jpg");
 
   expect(glb.status()).toBe(200);

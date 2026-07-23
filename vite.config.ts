@@ -14,7 +14,6 @@ const localBindingConfig = {
   compatibility_flags: ["nodejs_compat"],
   assets: {
     binding: "ASSETS",
-    run_worker_first: ["/ar/*"],
   },
   d1_databases: d1
     ? [

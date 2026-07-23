@@ -11,7 +11,8 @@ import {
 import { AR_SAMPLES } from "@/lib/ar-sample";
 
 function publicPath(pathname: string) {
-  return join(process.cwd(), "public", pathname.replace(/^\//, ""));
+  const staticPath = pathname.replace(/^\/api\/ar\//, "/ar/");
+  return join(process.cwd(), "public", staticPath.replace(/^\//, ""));
 }
 
 function readGlbJson(pathname: string) {
