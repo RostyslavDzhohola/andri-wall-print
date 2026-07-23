@@ -43,8 +43,9 @@ media plus placeholder Our Work photography with the approved local media.
 
 The approval authority is
 `assets/wall-print-pro-media-decisions-2026-07-23.json`. The derivative builder
-fails unless its Homepage and Our Work arrays exactly match that export in the
-same order.
+fails unless the unique Homepage and Our Work source files exactly match that
+export in the same order. One approved Homepage recording is intentionally cut
+into three short process moments without introducing another source file.
 
 Raw originals remain under `assets/wall-print-pro-media/originals/` and are not
 copied into `public/`, `dist/`, or the Sites deployment archive. Existing brand
@@ -57,6 +58,10 @@ Homepage project media:
 2. `IMG_1598.HEIC`
 3. `IMG_1595.HEIC`
 4. `IMG_0024.MOV`
+
+The three Homepage photos are physically normalized to portrait pixels instead
+of relying on HEIC/AVIF orientation metadata. `IMG_0024.MOV` supplies three
+upright process clips: setup, alignment, and printing.
 
 Our Work project media:
 

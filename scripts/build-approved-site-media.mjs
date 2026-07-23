@@ -38,9 +38,30 @@ const homepage = [
   },
   {
     source: "IMG_0024.MOV",
-    title: "Pathways print in progress",
+    outputSuffix: "setup",
+    clipStart: 0,
+    clipDuration: 8,
+    title: "Preparing the wall printer",
     label: "Workshop demonstration",
-    alt: "Vertical wall printer producing the Pathways to Success design during a workshop demonstration",
+    alt: "Wall Print Pro technicians preparing the vertical printer for a controlled workshop demonstration",
+  },
+  {
+    source: "IMG_0024.MOV",
+    outputSuffix: "alignment",
+    clipStart: 10,
+    clipDuration: 8,
+    title: "Aligning the print system",
+    label: "Workshop demonstration",
+    alt: "Wall Print Pro technicians aligning the vertical print system beside the workshop wall",
+  },
+  {
+    source: "IMG_0024.MOV",
+    outputSuffix: "printing",
+    clipStart: 20,
+    clipDuration: 12,
+    title: "Chicago mural taking shape",
+    label: "Workshop demonstration",
+    alt: "Vertical wall printer producing a Chicago illustration during a controlled workshop demonstration",
   },
 ];
 
@@ -139,6 +160,22 @@ function run(command, args) {
   }
 }
 
+function output(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: projectRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `${command} failed (${result.status ?? "unknown"}): ${result.stderr || result.stdout}`,
+    );
+  }
+
+  return result.stdout.trim();
+}
+
 function normalizedStem(source) {
   return basename(source, extname(source))
     .toLowerCase()
@@ -163,7 +200,7 @@ async function fileDescriptor(path) {
 
 function assertExactDecisionSet(decisions, section, expected) {
   const approved = decisions[section]?.keep;
-  const expectedSources = expected.map((item) => item.source);
+  const expectedSources = [...new Set(expected.map((item) => item.source))];
 
   if (
     !Array.isArray(approved) ||
@@ -183,7 +220,23 @@ async function buildImage(item, sectionDir) {
   const avif960Path = join(sectionDir, `${stem}-960.avif`);
   const avif1600Path = join(sectionDir, `${stem}-1600.avif`);
 
-  run("sips", [
+  const orientation = Number(
+    output("exiftool", ["-n", "-s3", "-Orientation", sourcePath]) || "1",
+  );
+  const rotation = new Map([
+    [1, 0],
+    [3, 180],
+    [6, 90],
+    [8, 270],
+  ]).get(orientation);
+
+  if (rotation === undefined) {
+    throw new Error(
+      `${item.source} uses unsupported mirrored EXIF orientation ${orientation}.`,
+    );
+  }
+
+  const imageArgs = [
     "-s",
     "format",
     "jpeg",
@@ -192,10 +245,20 @@ async function buildImage(item, sectionDir) {
     "86",
     "--resampleHeightWidthMax",
     "1600",
+  ];
+
+  if (rotation > 0) {
+    imageArgs.push("--rotate", String(rotation));
+  }
+
+  imageArgs.push(
     sourcePath,
     "--out",
     jpegPath,
-  ]);
+  );
+
+  run("sips", imageArgs);
+  run("exiftool", ["-overwrite_original", "-Orientation=", jpegPath]);
   run("sips", [
     "-s",
     "format",
@@ -240,15 +303,31 @@ async function buildImage(item, sectionDir) {
 async function buildVideo(item, sectionDir) {
   const sourcePath = join(originalsDir, item.source);
   const stem = normalizedStem(item.source);
-  const videoPath = join(sectionDir, `${stem}-480.mp4`);
-  const posterPath = join(sectionDir, `${stem}-poster.jpg`);
+  const suffix = item.outputSuffix ? `-${item.outputSuffix}` : "";
+  const videoPath = join(sectionDir, `${stem}${suffix}-480.mp4`);
+  const posterPath = join(sectionDir, `${stem}${suffix}-poster.jpg`);
 
-  run("ffmpeg", [
+  const videoArgs = [
     "-hide_banner",
     "-loglevel",
     "error",
+  ];
+
+  if (typeof item.clipStart === "number") {
+    videoArgs.push("-ss", String(item.clipStart));
+  }
+
+  videoArgs.push(
+    "-autorotate",
     "-i",
     sourcePath,
+  );
+
+  if (typeof item.clipDuration === "number") {
+    videoArgs.push("-t", String(item.clipDuration));
+  }
+
+  videoArgs.push(
     "-map",
     "0:V:0",
     "-map",
@@ -273,11 +352,15 @@ async function buildVideo(item, sectionDir) {
     "64k",
     "-movflags",
     "+faststart",
+    "-metadata:s:v:0",
+    "rotate=0",
     "-map_metadata",
     "-1",
     "-y",
     videoPath,
-  ]);
+  );
+
+  run("ffmpeg", videoArgs);
   run("ffmpeg", [
     "-hide_banner",
     "-loglevel",

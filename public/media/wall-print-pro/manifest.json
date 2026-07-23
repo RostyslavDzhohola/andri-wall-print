@@ -3,7 +3,7 @@
   "version": 1,
   "approvalSource": "wall-print-pro-media-decisions-2026-07-23.json",
   "approvalExportedAt": "2026-07-23T03:47:25.424Z",
-  "generatedAt": "2026-07-23T04:40:03.272Z",
+  "generatedAt": "2026-07-23T05:26:46.210Z",
   "policy": "Only approved client photos and videos are represented. Raw originals stay outside the published site.",
   "homepage": [
     {
@@ -15,18 +15,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/homepage/img-1646-960.avif",
-          "bytes": 27776,
-          "sha256": "c2cbd2e5a52f2ca458ecd854ba2b80585cfbe516c445ec52d1cd79d3b7bb5aa3"
+          "bytes": 27462,
+          "sha256": "9ba34017b412ebf992cafef540efe84f28399f447a07bc22e32e3e4887972c54"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/homepage/img-1646-1600.avif",
-          "bytes": 93906,
-          "sha256": "06fae35130921a9aa4c0c1b3053f910c7a59ef5c170f3020f9c1bfa745571ab8"
+          "bytes": 93548,
+          "sha256": "ad2f9643556c018c2fb66bcaa5e5bba3e754a4fc1fb49dc50a1e1dfc8ba62b99"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/homepage/img-1646-1600.jpg",
-          "bytes": 399973,
-          "sha256": "3a89741f4ef751c577461b296e4b34c1cab7a749e22aa95e75094926a7b0d76f"
+          "bytes": 400923,
+          "sha256": "e65af596f07169fd799016a2c840856e2b64b364358433eeecdacd24526a800a"
         }
       }
     },
@@ -39,18 +39,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/homepage/img-1598-960.avif",
-          "bytes": 24892,
-          "sha256": "318fdc8af79b0db4ffdedb0dffeb9f90e3ef521514e2c262e17ccc7794ca1061"
+          "bytes": 25274,
+          "sha256": "0948042683c5e3f9a2ba6aedfdf4b627734fd8668e861717044037bf52d945f8"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/homepage/img-1598-1600.avif",
-          "bytes": 53387,
-          "sha256": "2f49c452225ec82999c8bbf106a079457c4abe1bd58a4a8cc43b19a7159d145b"
+          "bytes": 53594,
+          "sha256": "521d6c1d778b5114bc2846f6a8477601c17c4b19f28fd239ce544b1673a8e360"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/homepage/img-1598-1600.jpg",
-          "bytes": 317903,
-          "sha256": "180ff59c9802f977c2f4949bcf5a2c513b6dd00d70b843faf44c8a530ace1cb3"
+          "bytes": 316684,
+          "sha256": "6b4979a86cd3457765ddde37b7fbfac68841edd115b531bdc3de52e42e55fcfb"
         }
       }
     },
@@ -63,37 +63,75 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/homepage/img-1595-960.avif",
-          "bytes": 32958,
-          "sha256": "38b65249ec4c9120717b55431d5ea3c7315776526f0de923daf0f10873ab36fb"
+          "bytes": 32513,
+          "sha256": "089d02766ed0fa6a515956ffd436a99f8c6ff2ecee19b137e5d35bdcb5c18862"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/homepage/img-1595-1600.avif",
-          "bytes": 69091,
-          "sha256": "ad2945d19d430f87e5ceb473860fc28ac981e2e95b5a066cfd6429c53d74fbcd"
+          "bytes": 68708,
+          "sha256": "81e843e7072fdd0b9b2871f3acefeed45a5baa3a5d2437414ce74ac71482419e"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/homepage/img-1595-1600.jpg",
-          "bytes": 322872,
-          "sha256": "f360a05a91bcb893252c9b4e0a40cef23732135c08d019d1719c369f2ff07ff7"
+          "bytes": 323319,
+          "sha256": "2361aa9071a72b24413737f70b785f4596542e3fcadf06f24bc61d7a2a11481f"
         }
       }
     },
     {
       "original": "IMG_0024.MOV",
       "kind": "video",
-      "title": "Pathways print in progress",
+      "title": "Preparing the wall printer",
       "label": "Workshop demonstration",
-      "alt": "Vertical wall printer producing the Pathways to Success design during a workshop demonstration",
+      "alt": "Wall Print Pro technicians preparing the vertical printer for a controlled workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/homepage/img-0024-480.mp4",
-          "bytes": 2728915,
-          "sha256": "eb2c8822ce06f64d428f83fe257367dae4aaa8486658fc99f0149221231c45a7"
+          "path": "/media/wall-print-pro/homepage/img-0024-setup-480.mp4",
+          "bytes": 839422,
+          "sha256": "1e35daa7c6e180ae7fecb4dfea6b350888f9d77f44fc8ed3dc7d1f69b79077e0"
         },
         "poster": {
-          "path": "/media/wall-print-pro/homepage/img-0024-poster.jpg",
+          "path": "/media/wall-print-pro/homepage/img-0024-setup-poster.jpg",
           "bytes": 44995,
           "sha256": "763289fc3dddbd9642696514b5b39f593a24dac65e9851eb0309110e45a5797b"
+        }
+      }
+    },
+    {
+      "original": "IMG_0024.MOV",
+      "kind": "video",
+      "title": "Aligning the print system",
+      "label": "Workshop demonstration",
+      "alt": "Wall Print Pro technicians aligning the vertical print system beside the workshop wall",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/homepage/img-0024-alignment-480.mp4",
+          "bytes": 863832,
+          "sha256": "c73967a60a4846471bf6a10e26b426e0af37b2a06ef402f9d3e3fad63bbe07aa"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/homepage/img-0024-alignment-poster.jpg",
+          "bytes": 44118,
+          "sha256": "d929af96bc7195f66382558240c8dd7bd03eed2e448b7e9ef7523295cf93d5ac"
+        }
+      }
+    },
+    {
+      "original": "IMG_0024.MOV",
+      "kind": "video",
+      "title": "Chicago mural taking shape",
+      "label": "Workshop demonstration",
+      "alt": "Vertical wall printer producing a Chicago illustration during a controlled workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/homepage/img-0024-printing-480.mp4",
+          "bytes": 655670,
+          "sha256": "8831bf707033b736473ebd257fb907956574df52e0c7308d56bb9afe75302158"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/homepage/img-0024-printing-poster.jpg",
+          "bytes": 46866,
+          "sha256": "29f8f2279860aec55e31c628a88235f27a55cb5e4114e3c40d3ee15385f4d6f6"
         }
       }
     }
@@ -108,18 +146,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/our-work/img-1591-960.avif",
-          "bytes": 27396,
-          "sha256": "677d411f54f2f87ba5fa109b26b283b32b8a24216ae7e49a40e9d45fc0aa1eb8"
+          "bytes": 28079,
+          "sha256": "0f207aaa34d1adb160930465fa2693c7769d0e5c482c8c3d8a972b9a996c8c5c"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/our-work/img-1591-1600.avif",
-          "bytes": 64349,
-          "sha256": "d4ebebd6f6860e631eaa703aea9849bc302234728875b04d22bac7bcc445a8f0"
+          "bytes": 66227,
+          "sha256": "7e0ce6f1164408fccb89422e0cd8fe9f633ecb14ef9b49b25eb4d9c465bc6fe7"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/our-work/img-1591-1600.jpg",
-          "bytes": 350248,
-          "sha256": "48bf460de8dc6899dce2e34348b9e9586d7ae05aa9f822eb80eaa4e501504cf1"
+          "bytes": 349969,
+          "sha256": "657694c20cbd0efa49aed01859f4420265ccd550a0604b7089a80c05f65d7cb0"
         }
       }
     },
@@ -132,18 +170,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/our-work/img-1594-960.avif",
-          "bytes": 37755,
-          "sha256": "2dbdd295c5671b6e12d67121123e33aab54f76ff7c82bc8123fe0ec5a5c54c8d"
+          "bytes": 37468,
+          "sha256": "26ef74915d160d27bf9711e570fa11e498bf625a0d00d3a9c3fab2c8105632c1"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/our-work/img-1594-1600.avif",
-          "bytes": 87495,
-          "sha256": "deb81395d7993b021ba39a09843fdc759e0a7396291d6a04b45773891816b7e3"
+          "bytes": 87349,
+          "sha256": "8c967a21f460e055070aa61af16ab3b40fdebc76c432f9a8c264c6eec403ed65"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/our-work/img-1594-1600.jpg",
-          "bytes": 363276,
-          "sha256": "ef3bfb7a65c16762703807a30141d4afeb4c9f6afad67269e3284a3c10a9c01c"
+          "bytes": 364632,
+          "sha256": "317523b3a3890562b566765cc92408fd7ba850d903a319fd359b1029cbb492c7"
         }
       }
     },
@@ -194,18 +232,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/our-work/img-1096-960.avif",
-          "bytes": 69769,
-          "sha256": "6649e53d48c26cec85467dfea78da7f5302a731bd01fe281fa93205c03f59fcf"
+          "bytes": 69757,
+          "sha256": "87d2ef722c73712bd42a66cf08cf1e2fe67b399c68e9462ddea4de2b03eae051"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/our-work/img-1096-1600.avif",
-          "bytes": 153725,
-          "sha256": "c76344db4aff5b6e3565c5d5e7b931aef379bc5c69a5fa22c6966f366bb7f002"
+          "bytes": 153713,
+          "sha256": "ae825443878a495e4657ee005d3ec1f6091055e71b29cc74ee8c339e283f55c6"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/our-work/img-1096-1600.jpg",
-          "bytes": 491656,
-          "sha256": "6312d9cc2dd88bd7872914a07e4ccb0695ea9cddc390acb5558085abc229de54"
+          "bytes": 491648,
+          "sha256": "028595084d0dfedd442e02c20b1a55add8c725ba0f23c1f2705759332776ce20"
         }
       }
     },
@@ -237,18 +275,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/our-work/img-69553977-6292-4757-8270-14dd2e01ca21-960.avif",
-          "bytes": 97469,
-          "sha256": "0ef32959fd6a45a71cf19c35748fb8587c062e16dea9c2322e723a6a2fc2d52e"
+          "bytes": 97823,
+          "sha256": "b03b6a1e87924d482d95cd1b3914c9e48b3eb0fb13cf6845b9f5d159f4262700"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/our-work/img-69553977-6292-4757-8270-14dd2e01ca21-1600.avif",
-          "bytes": 338047,
-          "sha256": "32d6c3d7740d1faa9911fdb2d74cd559219e03cc8e5caa8109f17e52b9edce7f"
+          "bytes": 337851,
+          "sha256": "33220d8d94832f726d3dfbe8e78e7e79acc1331de987bf5598691ca71b35129d"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/our-work/img-69553977-6292-4757-8270-14dd2e01ca21-1600.jpg",
-          "bytes": 734125,
-          "sha256": "9a7068140994539c717d0d7f62a881bd08f7d61074f3a0fc70d90e791fb4d412"
+          "bytes": 733971,
+          "sha256": "822e587bfbfcac9577bf12140bcd0b5af85bf57ec6a0dd3fb0796e59765704dc"
         }
       }
     },
@@ -280,18 +318,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/our-work/img-1001-960.avif",
-          "bytes": 50907,
-          "sha256": "b6b075a993965760954c6ab75e94f852e9dc3755df756828cdc0fde7b3cbcbbf"
+          "bytes": 51230,
+          "sha256": "c459feb41d6477ce0b97b9c38b9921a13c241e1e37e86fbac0a5e2b0da199cf3"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/our-work/img-1001-1600.avif",
-          "bytes": 151956,
-          "sha256": "116a308ebc8ebe8736ddb47a5e822b26481efd9fc0454f3b7533e2a783b88a54"
+          "bytes": 152001,
+          "sha256": "31c87fb15f4ff281a75b1bff8e0ee5ab727d6e96d8b55598e73c9f6740f2070b"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/our-work/img-1001-1600.jpg",
-          "bytes": 499971,
-          "sha256": "9cb710083d17f2d9be9fd048e172c3bbf1a43679412f5f04398e2247243c2b90"
+          "bytes": 501922,
+          "sha256": "e36193bcd26be3b064464e736e3d1757affde6edcdbbee5beb727ada0f2dacb0"
         }
       }
     },
@@ -342,18 +380,18 @@
       "sources": {
         "avif960": {
           "path": "/media/wall-print-pro/our-work/img-0196-960.avif",
-          "bytes": 101571,
-          "sha256": "09f129282caaa1c499eb394d253c2920f2d710597485c11a51fb70e2c3842884"
+          "bytes": 101316,
+          "sha256": "5b1e2c74136a4e94966d12db55e7556f6c8da058bb8c859142ce79260e4388bc"
         },
         "avif1600": {
           "path": "/media/wall-print-pro/our-work/img-0196-1600.avif",
-          "bytes": 250256,
-          "sha256": "697b0bd095300b5db5fd9da44f08defe805bb1895595ff8af3be8064f6f4a0da"
+          "bytes": 250080,
+          "sha256": "9225ce49cd1154e7e76d0f5f5ff1ea98585e7778190bd6f130997d181d5e7a3b"
         },
         "jpeg1600": {
           "path": "/media/wall-print-pro/our-work/img-0196-1600.jpg",
-          "bytes": 633338,
-          "sha256": "8bbc38b566310964922af9ebc4ccdce2f442c5ef751efef913b9e4c80af9b83b"
+          "bytes": 632880,
+          "sha256": "d96244d29c2f3f9c8cb7d3556c4f1fc38df6fb7bb394a63b9b05094baa278eff"
         }
       }
     },

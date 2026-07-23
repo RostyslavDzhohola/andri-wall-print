@@ -32,15 +32,54 @@ test("Sites migration renders approved media, navigation, and core public intera
   await expect(page.getByTestId("approved-homepage-media")).toBeVisible();
   await expect(
     page.getByTestId("approved-homepage-media").locator("figure"),
-  ).toHaveCount(4);
+  ).toHaveCount(6);
   await expect(
     page.getByTestId("approved-homepage-media").locator("video"),
-  ).toHaveCount(1);
+  ).toHaveCount(3);
   await expect(
     page
       .getByTestId("approved-homepage-media")
       .getByText("Workshop demonstration", { exact: true }),
-  ).toHaveCount(1);
+  ).toHaveCount(3);
+
+  const homepageImages = page
+    .getByTestId("approved-homepage-media")
+    .locator("img");
+  await expect(homepageImages).toHaveCount(3);
+  for (let index = 0; index < 3; index += 1) {
+    const image = homepageImages.nth(index);
+    await image.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        image.evaluate((element) => {
+          const imageElement = element as HTMLImageElement;
+          return (
+            imageElement.naturalWidth > 0 &&
+            imageElement.naturalHeight > imageElement.naturalWidth
+          );
+        }),
+      )
+      .toBe(true);
+  }
+
+  const homepageVideos = page
+    .getByTestId("approved-homepage-media")
+    .locator("video");
+  for (let index = 0; index < 3; index += 1) {
+    const video = homepageVideos.nth(index);
+    await video.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        video.evaluate((element) => {
+          const videoElement = element as HTMLVideoElement;
+          return (
+            videoElement.readyState >= HTMLMediaElement.HAVE_METADATA &&
+            videoElement.videoHeight > videoElement.videoWidth
+          );
+        }),
+      )
+      .toBe(true);
+  }
 
   await page.getByRole("link", { name: "Gallery" }).click();
   await expect(page).toHaveURL(/\/gallery$/);
@@ -71,7 +110,7 @@ test("Sites migration renders approved media, navigation, and core public intera
     (item) => Object.values(item.sources).map((source) => source.path),
   );
 
-  expect(mediaUrls).toHaveLength(43);
+  expect(mediaUrls).toHaveLength(47);
   for (const mediaUrl of mediaUrls) {
     const response = await request.get(mediaUrl);
     expect(response.ok(), `${mediaUrl} should load`).toBe(true);

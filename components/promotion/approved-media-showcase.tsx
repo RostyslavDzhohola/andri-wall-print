@@ -111,8 +111,8 @@ export function ApprovedHomepageMediaSection() {
               From blank wall to finished statement
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-              See finished Chicago-inspired wall prints, plus one clearly
-              labeled workshop demonstration of the vertical printing process.
+              See finished Chicago-inspired wall prints, plus three clearly
+              labeled moments from a vertical printing workshop demonstration.
             </p>
           </div>
           <Button asChild className="min-h-11 rounded-full px-6" size="lg">
@@ -123,9 +123,17 @@ export function ApprovedHomepageMediaSection() {
           </Button>
         </div>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {APPROVED_HOMEPAGE_MEDIA.map((item, index) => (
-            <MediaCard item={item} key={item.original} priority={index === 0} />
+            <MediaCard
+              item={item}
+              key={
+                item.kind === "image"
+                  ? item.sources.jpeg1600.path
+                  : item.sources.mp4.path
+              }
+              priority={index === 0}
+            />
           ))}
         </div>
       </div>

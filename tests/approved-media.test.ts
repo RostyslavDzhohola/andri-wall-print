@@ -10,9 +10,8 @@ describe("approved Sites media", () => {
     const homepage = manifest.homepage.map((item) => item.original);
     const ourWork = manifest.ourWork.map((item) => item.original);
 
-    expect(homepage).toEqual(decisions.homepage.keep);
+    expect([...new Set(homepage)]).toEqual(decisions.homepage.keep);
     expect(ourWork).toEqual(decisions.ourWork.keep);
-    expect(new Set(homepage).size).toBe(homepage.length);
     expect(new Set(ourWork).size).toBe(ourWork.length);
     expect(homepage.filter((source) => ourWork.includes(source))).toEqual([]);
   });
