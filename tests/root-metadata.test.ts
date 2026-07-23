@@ -29,7 +29,9 @@ describe("root layout metadata", () => {
   it("declares OG + Twitter defaults with a real work photo", () => {
     expect(metadata.openGraph?.title).toContain("Wall Print Pro");
     const ogImages = metadata.openGraph?.images as Array<{ url: string }>;
-    expect(ogImages[0]?.url).toContain("/artworks/chicago-final-1.png");
+    expect(ogImages[0]?.url).toContain(
+      "/media/wall-print-pro/homepage/img-1646-1600.jpg",
+    );
     expect(metadata.twitter).toBeTruthy();
   });
 

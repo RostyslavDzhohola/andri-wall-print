@@ -3,7 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
 import { HomepageDemoActions } from "@/components/promotion/homepage-demo-actions";
-import { SocialProofSection } from "@/components/promotion/social-proof-section";
+import { ApprovedHomepageMediaSection } from "@/components/promotion/approved-media-showcase";
 import { LocalBusinessJsonLd } from "@/components/seo/local-business-jsonld";
 import { Button } from "@/components/ui/button";
 import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
@@ -268,14 +268,9 @@ function SiteFooter() {
 function HomeSections({ reserveHref }: { reserveHref: string }) {
   return (
     <>
-      <SocialProofSection
-        beforeProjects={
-          <>
-            <ProcessSteps />
-            <ComparisonTable />
-          </>
-        }
-      />
+      <ApprovedHomepageMediaSection />
+      <ProcessSteps />
+      <ComparisonTable />
       <ReserveStrip href={reserveHref} />
       <FaqSection />
       <FinalQuoteCta />

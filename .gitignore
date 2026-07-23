@@ -9,3 +9,6 @@ tmp/
 .env*.local
 .vercel
 .superpowers/
+.vinext/
+.wrangler/
+dist/

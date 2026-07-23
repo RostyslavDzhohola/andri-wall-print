@@ -50,5 +50,5 @@ export function readWallPrintProAiConceptsEnabled() {
 }
 
 export function readWallPrintProAiConceptsConfigured() {
-  return readWallPrintProAiConceptsEnabled() && Boolean(readRuntimeEnv(ENV_KEYS.openaiApiKey));
+  return readWallPrintProAiConceptsEnabled() && Boolean(readConvexRuntimeUrl());
 }

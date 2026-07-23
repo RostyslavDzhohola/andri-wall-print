@@ -1,0 +1,380 @@
+{
+  "format": "wall-print-pro-sites-media",
+  "version": 1,
+  "approvalSource": "wall-print-pro-media-decisions-2026-07-23.json",
+  "approvalExportedAt": "2026-07-23T03:47:25.424Z",
+  "generatedAt": "2026-07-23T03:58:07.229Z",
+  "policy": "Only approved client photos and videos are represented. Raw originals stay outside the published site.",
+  "homepage": [
+    {
+      "original": "IMG_1646.HEIC",
+      "kind": "image",
+      "title": "Chicago train mural",
+      "label": "Finished wall print",
+      "alt": "Blue and orange Chicago train illustration printed directly on a light interior wall",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/homepage/img-1646-960.avif",
+          "bytes": 27776,
+          "sha256": "c2cbd2e5a52f2ca458ecd854ba2b80585cfbe516c445ec52d1cd79d3b7bb5aa3"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/homepage/img-1646-1600.avif",
+          "bytes": 93906,
+          "sha256": "06fae35130921a9aa4c0c1b3053f910c7a59ef5c170f3020f9c1bfa745571ab8"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/homepage/img-1646-1600.jpg",
+          "bytes": 399973,
+          "sha256": "3a89741f4ef751c577461b296e4b34c1cab7a749e22aa95e75094926a7b0d76f"
+        }
+      }
+    },
+    {
+      "original": "IMG_1598.HEIC",
+      "kind": "image",
+      "title": "Lakefront mural",
+      "label": "Finished wall print",
+      "alt": "Blue Chicago lakefront illustration printed directly on a light interior wall",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/homepage/img-1598-960.avif",
+          "bytes": 24892,
+          "sha256": "318fdc8af79b0db4ffdedb0dffeb9f90e3ef521514e2c262e17ccc7794ca1061"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/homepage/img-1598-1600.avif",
+          "bytes": 53387,
+          "sha256": "2f49c452225ec82999c8bbf106a079457c4abe1bd58a4a8cc43b19a7159d145b"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/homepage/img-1598-1600.jpg",
+          "bytes": 317903,
+          "sha256": "180ff59c9802f977c2f4949bcf5a2c513b6dd00d70b843faf44c8a530ace1cb3"
+        }
+      }
+    },
+    {
+      "original": "IMG_1595.HEIC",
+      "kind": "image",
+      "title": "Pathways to Success mural",
+      "label": "Finished wall print",
+      "alt": "Pathways to Success Chicago skyline illustration printed directly on an interior wall",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/homepage/img-1595-960.avif",
+          "bytes": 32958,
+          "sha256": "38b65249ec4c9120717b55431d5ea3c7315776526f0de923daf0f10873ab36fb"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/homepage/img-1595-1600.avif",
+          "bytes": 69091,
+          "sha256": "ad2945d19d430f87e5ceb473860fc28ac981e2e95b5a066cfd6429c53d74fbcd"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/homepage/img-1595-1600.jpg",
+          "bytes": 322872,
+          "sha256": "f360a05a91bcb893252c9b4e0a40cef23732135c08d019d1719c369f2ff07ff7"
+        }
+      }
+    },
+    {
+      "original": "IMG_0024.MOV",
+      "kind": "video",
+      "title": "Pathways print in progress",
+      "label": "Workshop demonstration",
+      "alt": "Vertical wall printer producing the Pathways to Success design during a workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/homepage/img-0024-720.mp4",
+          "bytes": 8920010,
+          "sha256": "6c46c51f3a507c1f061fedb9ba43feeb7f463b8bf983147c4b27e1078d5b5a78"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/homepage/img-0024-poster.jpg",
+          "bytes": 86875,
+          "sha256": "c775f81c24b17717db3aa314a1807e4bab0d52c72915b499f51a60de683d7bd8"
+        }
+      }
+    }
+  ],
+  "ourWork": [
+    {
+      "original": "IMG_1591.HEIC",
+      "kind": "image",
+      "title": "Lakefront illustration",
+      "label": "Finished wall print",
+      "alt": "Completed blue lakefront illustration printed directly on a light wall",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/our-work/img-1591-960.avif",
+          "bytes": 27396,
+          "sha256": "677d411f54f2f87ba5fa109b26b283b32b8a24216ae7e49a40e9d45fc0aa1eb8"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/our-work/img-1591-1600.avif",
+          "bytes": 64349,
+          "sha256": "d4ebebd6f6860e631eaa703aea9849bc302234728875b04d22bac7bcc445a8f0"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/our-work/img-1591-1600.jpg",
+          "bytes": 350248,
+          "sha256": "48bf460de8dc6899dce2e34348b9e9586d7ae05aa9f822eb80eaa4e501504cf1"
+        }
+      }
+    },
+    {
+      "original": "IMG_1594.HEIC",
+      "kind": "image",
+      "title": "Pathways to Success",
+      "label": "Finished wall print",
+      "alt": "Completed Pathways to Success mural beside the vertical wall printer",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/our-work/img-1594-960.avif",
+          "bytes": 37755,
+          "sha256": "2dbdd295c5671b6e12d67121123e33aab54f76ff7c82bc8123fe0ec5a5c54c8d"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/our-work/img-1594-1600.avif",
+          "bytes": 87495,
+          "sha256": "deb81395d7993b021ba39a09843fdc759e0a7396291d6a04b45773891816b7e3"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/our-work/img-1594-1600.jpg",
+          "bytes": 363276,
+          "sha256": "ef3bfb7a65c16762703807a30141d4afeb4c9f6afad67269e3284a3c10a9c01c"
+        }
+      }
+    },
+    {
+      "original": "IMG_0028.MOV",
+      "kind": "video",
+      "title": "Pathways production pass",
+      "label": "Workshop demonstration",
+      "alt": "Vertical printer applying the Pathways to Success mural in a controlled workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-0028-720.mp4",
+          "bytes": 4419763,
+          "sha256": "305626a94e1d3515a2fa6de490320d11ffb5c1c078c1ab6d06e556414e4c2979"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-0028-poster.jpg",
+          "bytes": 76984,
+          "sha256": "82d1650776502107f6a77253f9498db8267b0d5eebbda2a81d230128107a72ee"
+        }
+      }
+    },
+    {
+      "original": "IMG_1635.MOV",
+      "kind": "video",
+      "title": "Chicago mural detail pass",
+      "label": "Workshop demonstration",
+      "alt": "Close view of a vertical wall printer producing a Chicago-themed mural in the workshop",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-1635-720.mp4",
+          "bytes": 1495320,
+          "sha256": "82db1fee8c335d19fe0aca51b670d0622f3bd7d0e768bed2fb96de54a209a1bb"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-1635-poster.jpg",
+          "bytes": 51338,
+          "sha256": "cdf81f7c2b95d9205693632add6d8b9b1d5e9a872eba189d5452fc885c4300b5"
+        }
+      }
+    },
+    {
+      "original": "IMG_1096.HEIC",
+      "kind": "image",
+      "title": "Tropical wall scene",
+      "label": "Workshop demonstration",
+      "alt": "Tropical beach mural on a white wall with the wall-printing machine beside it",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/our-work/img-1096-960.avif",
+          "bytes": 69769,
+          "sha256": "6649e53d48c26cec85467dfea78da7f5302a731bd01fe281fa93205c03f59fcf"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/our-work/img-1096-1600.avif",
+          "bytes": 153725,
+          "sha256": "c76344db4aff5b6e3565c5d5e7b931aef379bc5c69a5fa22c6966f366bb7f002"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/our-work/img-1096-1600.jpg",
+          "bytes": 491656,
+          "sha256": "6312d9cc2dd88bd7872914a07e4ccb0695ea9cddc390acb5558085abc229de54"
+        }
+      }
+    },
+    {
+      "original": "IMG_1084.MOV",
+      "kind": "video",
+      "title": "Tropical mural in progress",
+      "label": "Workshop demonstration",
+      "alt": "Vertical printer producing a tropical beach mural during a workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-1084-720.mp4",
+          "bytes": 1568769,
+          "sha256": "d36b75fece233d46f4d3213c9a0ae1eb24ea1f558e2c9df4e918fb890814355c"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-1084-poster.jpg",
+          "bytes": 131352,
+          "sha256": "0e5b67e6a37f285d7d63152005e0265af4e69346e4c1e8bbb9b6c11a89c5b8a7"
+        }
+      }
+    },
+    {
+      "original": "IMG_69553977-6292-4757-8270-14DD2E01CA21.JPEG",
+      "kind": "image",
+      "title": "Chicago River wall print",
+      "label": "Finished wall print",
+      "alt": "Chicago River cityscape photograph printed directly on a white wall",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/our-work/img-69553977-6292-4757-8270-14dd2e01ca21-960.avif",
+          "bytes": 97469,
+          "sha256": "0ef32959fd6a45a71cf19c35748fb8587c062e16dea9c2322e723a6a2fc2d52e"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/our-work/img-69553977-6292-4757-8270-14dd2e01ca21-1600.avif",
+          "bytes": 338047,
+          "sha256": "32d6c3d7740d1faa9911fdb2d74cd559219e03cc8e5caa8109f17e52b9edce7f"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/our-work/img-69553977-6292-4757-8270-14dd2e01ca21-1600.jpg",
+          "bytes": 734125,
+          "sha256": "9a7068140994539c717d0d7f62a881bd08f7d61074f3a0fc70d90e791fb4d412"
+        }
+      }
+    },
+    {
+      "original": "IMG_0773.MOV",
+      "kind": "video",
+      "title": "Panoramic city print",
+      "label": "Workshop demonstration",
+      "alt": "Vertical printer producing a panoramic city scene during a workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-0773-720.mp4",
+          "bytes": 2883309,
+          "sha256": "096bea9f21e02a66d65aee3da46084ee54c884d5e2b17c4cb2f1213ef3efb4bb"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-0773-poster.jpg",
+          "bytes": 103244,
+          "sha256": "25697d8143daf121e1efa53ef3610bead7b9bf6d806d79c538856cae4b90b725"
+        }
+      }
+    },
+    {
+      "original": "IMG_1001.HEIC",
+      "kind": "image",
+      "title": "Forest wall scene",
+      "label": "Workshop demonstration",
+      "alt": "Misty evergreen forest mural on a white wall with the vertical printer beside it",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/our-work/img-1001-960.avif",
+          "bytes": 50907,
+          "sha256": "b6b075a993965760954c6ab75e94f852e9dc3755df756828cdc0fde7b3cbcbbf"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/our-work/img-1001-1600.avif",
+          "bytes": 151956,
+          "sha256": "116a308ebc8ebe8736ddb47a5e822b26481efd9fc0454f3b7533e2a783b88a54"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/our-work/img-1001-1600.jpg",
+          "bytes": 499971,
+          "sha256": "9cb710083d17f2d9be9fd048e172c3bbf1a43679412f5f04398e2247243c2b90"
+        }
+      }
+    },
+    {
+      "original": "IMG_0996.MOV",
+      "kind": "video",
+      "title": "Forest mural in progress",
+      "label": "Workshop demonstration",
+      "alt": "Vertical printer producing a misty evergreen forest mural in the workshop",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-0996-720.mp4",
+          "bytes": 4288333,
+          "sha256": "502b40219cd3322171076d52023b37681deaa6b8d7fd551ed6a19cde46cf0075"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-0996-poster.jpg",
+          "bytes": 51128,
+          "sha256": "1254a4cafc4463c4f105884766bf90a5ca9b6612d547b26efbd1e84edc4d320a"
+        }
+      }
+    },
+    {
+      "original": "IMG_0229.MOV",
+      "kind": "video",
+      "title": "Monochrome rose print",
+      "label": "Workshop demonstration",
+      "alt": "Vertical printer applying a monochrome rose image during a workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-0229-720.mp4",
+          "bytes": 1940209,
+          "sha256": "9126e3359a7ba19d75fbf95a019469bf1fc6ac4c023b7a53f78a165be944f50b"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-0229-poster.jpg",
+          "bytes": 73842,
+          "sha256": "f743cb17e95fa112a9814b0167d1b09ba3a19fee6afdce2e625412ef62ddb2ce"
+        }
+      }
+    },
+    {
+      "original": "IMG_0196.HEIC",
+      "kind": "image",
+      "title": "Arcade cabinet graphic",
+      "label": "Workshop demonstration",
+      "alt": "Colorful custom graphic printed on the side of an arcade cabinet demonstration piece",
+      "sources": {
+        "avif960": {
+          "path": "/media/wall-print-pro/our-work/img-0196-960.avif",
+          "bytes": 101571,
+          "sha256": "09f129282caaa1c499eb394d253c2920f2d710597485c11a51fb70e2c3842884"
+        },
+        "avif1600": {
+          "path": "/media/wall-print-pro/our-work/img-0196-1600.avif",
+          "bytes": 250256,
+          "sha256": "697b0bd095300b5db5fd9da44f08defe805bb1895595ff8af3be8064f6f4a0da"
+        },
+        "jpeg1600": {
+          "path": "/media/wall-print-pro/our-work/img-0196-1600.jpg",
+          "bytes": 633338,
+          "sha256": "8bbc38b566310964922af9ebc4ccdce2f442c5ef751efef913b9e4c80af9b83b"
+        }
+      }
+    },
+    {
+      "original": "IMG_0187.MOV",
+      "kind": "video",
+      "title": "Arcade graphic in progress",
+      "label": "Workshop demonstration",
+      "alt": "Wall-printing machine applying a colorful arcade graphic during a workshop demonstration",
+      "sources": {
+        "mp4": {
+          "path": "/media/wall-print-pro/our-work/img-0187-720.mp4",
+          "bytes": 2062188,
+          "sha256": "325d9b09f2e705d6ef90006a7b60f35dddfaf37cf75f149fcfc0de64d0bb1486"
+        },
+        "poster": {
+          "path": "/media/wall-print-pro/our-work/img-0187-poster.jpg",
+          "bytes": 94971,
+          "sha256": "6949cf910aa4f993fb75c26a22dd586d4caaec0063f98201173a515709076524"
+        }
+      }
+    }
+  ]
+}
