@@ -1085,11 +1085,21 @@ test("static Phase 0 asset routes expose expected AR headers and size budgets", 
   const poster = await page.request.get("/artworks/chicago-final-1.jpg");
 
   expect(glb.status()).toBe(200);
-  expect(["model/gltf-binary", "application/octet-stream"]).toContain(glb.headers()["content-type"]);
+  const glbContentType = glb.headers()["content-type"];
+  if (process.env.PLAYWRIGHT_BASE_URL?.includes("chatgpt.site")) {
+    expect(glbContentType).toContain("model/gltf-binary");
+  } else {
+    expect(["model/gltf-binary", "application/octet-stream"]).toContain(glbContentType);
+  }
   expect(await assetByteLength(glb)).toBeLessThanOrEqual(4_250_000);
 
   expect(usdz.status()).toBe(200);
-  expect(["model/vnd.usdz+zip", "application/octet-stream"]).toContain(usdz.headers()["content-type"]);
+  const usdzContentType = usdz.headers()["content-type"];
+  if (process.env.PLAYWRIGHT_BASE_URL?.includes("chatgpt.site")) {
+    expect(usdzContentType).toContain("model/vnd.usdz+zip");
+  } else {
+    expect(["model/vnd.usdz+zip", "application/octet-stream"]).toContain(usdzContentType);
+  }
   expect(await assetByteLength(usdz)).toBeLessThanOrEqual(4_250_000);
 
   expect(poster.status()).toBe(200);

@@ -55,6 +55,13 @@ const worker = {
   ): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.pathname.startsWith("/ar/")) {
+      const assetResponse = env?.ASSETS
+        ? await env.ASSETS.fetch(request)
+        : await handler.fetch(request, env, ctx);
+      return withArContentType(url.pathname, assetResponse);
+    }
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
 
