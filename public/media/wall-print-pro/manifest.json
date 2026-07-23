@@ -3,7 +3,7 @@
   "version": 1,
   "approvalSource": "wall-print-pro-media-decisions-2026-07-23.json",
   "approvalExportedAt": "2026-07-23T03:47:25.424Z",
-  "generatedAt": "2026-07-23T03:58:07.229Z",
+  "generatedAt": "2026-07-23T04:40:03.272Z",
   "policy": "Only approved client photos and videos are represented. Raw originals stay outside the published site.",
   "homepage": [
     {
@@ -86,14 +86,14 @@
       "alt": "Vertical wall printer producing the Pathways to Success design during a workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/homepage/img-0024-720.mp4",
-          "bytes": 8920010,
-          "sha256": "6c46c51f3a507c1f061fedb9ba43feeb7f463b8bf983147c4b27e1078d5b5a78"
+          "path": "/media/wall-print-pro/homepage/img-0024-480.mp4",
+          "bytes": 2728915,
+          "sha256": "eb2c8822ce06f64d428f83fe257367dae4aaa8486658fc99f0149221231c45a7"
         },
         "poster": {
           "path": "/media/wall-print-pro/homepage/img-0024-poster.jpg",
-          "bytes": 86875,
-          "sha256": "c775f81c24b17717db3aa314a1807e4bab0d52c72915b499f51a60de683d7bd8"
+          "bytes": 44995,
+          "sha256": "763289fc3dddbd9642696514b5b39f593a24dac65e9851eb0309110e45a5797b"
         }
       }
     }
@@ -155,14 +155,14 @@
       "alt": "Vertical printer applying the Pathways to Success mural in a controlled workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-0028-720.mp4",
-          "bytes": 4419763,
-          "sha256": "305626a94e1d3515a2fa6de490320d11ffb5c1c078c1ab6d06e556414e4c2979"
+          "path": "/media/wall-print-pro/our-work/img-0028-480.mp4",
+          "bytes": 1373591,
+          "sha256": "ee95bd148da1feea5c2871e6e2d1cfd81c95001c02cf32e482eb4178943d58a3"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-0028-poster.jpg",
-          "bytes": 76984,
-          "sha256": "82d1650776502107f6a77253f9498db8267b0d5eebbda2a81d230128107a72ee"
+          "bytes": 39972,
+          "sha256": "090abae9ca7f4b95259acea8bb460f4b053483533faef8185ef5c85a64eea5ae"
         }
       }
     },
@@ -174,14 +174,14 @@
       "alt": "Close view of a vertical wall printer producing a Chicago-themed mural in the workshop",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-1635-720.mp4",
-          "bytes": 1495320,
-          "sha256": "82db1fee8c335d19fe0aca51b670d0622f3bd7d0e768bed2fb96de54a209a1bb"
+          "path": "/media/wall-print-pro/our-work/img-1635-480.mp4",
+          "bytes": 513199,
+          "sha256": "59d9fd14173759882d6d2487c6d593953c2dbd8b85af73205ab9d9d223655fe6"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-1635-poster.jpg",
-          "bytes": 51338,
-          "sha256": "cdf81f7c2b95d9205693632add6d8b9b1d5e9a872eba189d5452fc885c4300b5"
+          "bytes": 27315,
+          "sha256": "aedefb955f3b200fd0e122250aeb496680bb1a3462d7dac7450455316be18be3"
         }
       }
     },
@@ -217,14 +217,14 @@
       "alt": "Vertical printer producing a tropical beach mural during a workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-1084-720.mp4",
-          "bytes": 1568769,
-          "sha256": "d36b75fece233d46f4d3213c9a0ae1eb24ea1f558e2c9df4e918fb890814355c"
+          "path": "/media/wall-print-pro/our-work/img-1084-480.mp4",
+          "bytes": 485824,
+          "sha256": "8d878e8e242ae820ee4d3442deb7d6b449b87298577ab8fb1aca5e99e7116d1b"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-1084-poster.jpg",
-          "bytes": 131352,
-          "sha256": "0e5b67e6a37f285d7d63152005e0265af4e69346e4c1e8bbb9b6c11a89c5b8a7"
+          "bytes": 65096,
+          "sha256": "05d91e922cec28e1a9a919b8e943f78892adb8a894ad8680f572161ef5f803b0"
         }
       }
     },
@@ -260,14 +260,14 @@
       "alt": "Vertical printer producing a panoramic city scene during a workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-0773-720.mp4",
-          "bytes": 2883309,
-          "sha256": "096bea9f21e02a66d65aee3da46084ee54c884d5e2b17c4cb2f1213ef3efb4bb"
+          "path": "/media/wall-print-pro/our-work/img-0773-480.mp4",
+          "bytes": 922878,
+          "sha256": "e31ff31df44d988d4c46781a0e0ace106801773e9a0d1c8b85bdaafaf7ebb25a"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-0773-poster.jpg",
-          "bytes": 103244,
-          "sha256": "25697d8143daf121e1efa53ef3610bead7b9bf6d806d79c538856cae4b90b725"
+          "bytes": 56686,
+          "sha256": "a964d7dbdbb5e6a9bd9ac3f2094b7a3bc9c27a605e292b48f4ec562fe3d58902"
         }
       }
     },
@@ -303,14 +303,14 @@
       "alt": "Vertical printer producing a misty evergreen forest mural in the workshop",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-0996-720.mp4",
-          "bytes": 4288333,
-          "sha256": "502b40219cd3322171076d52023b37681deaa6b8d7fd551ed6a19cde46cf0075"
+          "path": "/media/wall-print-pro/our-work/img-0996-480.mp4",
+          "bytes": 1327293,
+          "sha256": "3b3d351b73d3b2d601654f9b68eb7faef44337786a8f0401c8ac5bf26dd64af7"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-0996-poster.jpg",
-          "bytes": 51128,
-          "sha256": "1254a4cafc4463c4f105884766bf90a5ca9b6612d547b26efbd1e84edc4d320a"
+          "bytes": 25765,
+          "sha256": "d4c77a3ddf5c53c218e5ec783fa0f6a823cfbc04adc568d692c4b7a53bae3421"
         }
       }
     },
@@ -322,14 +322,14 @@
       "alt": "Vertical printer applying a monochrome rose image during a workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-0229-720.mp4",
-          "bytes": 1940209,
-          "sha256": "9126e3359a7ba19d75fbf95a019469bf1fc6ac4c023b7a53f78a165be944f50b"
+          "path": "/media/wall-print-pro/our-work/img-0229-480.mp4",
+          "bytes": 683661,
+          "sha256": "6e7d153e61cc2ed353d352fa788cf95806f757b84b44349fd99bc2323f1c9da3"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-0229-poster.jpg",
-          "bytes": 73842,
-          "sha256": "f743cb17e95fa112a9814b0167d1b09ba3a19fee6afdce2e625412ef62ddb2ce"
+          "bytes": 37111,
+          "sha256": "b8c8f7ae6778fc9c55388a991e6e37de1986b90f4c16541f80aa683bff6f90b0"
         }
       }
     },
@@ -365,14 +365,14 @@
       "alt": "Wall-printing machine applying a colorful arcade graphic during a workshop demonstration",
       "sources": {
         "mp4": {
-          "path": "/media/wall-print-pro/our-work/img-0187-720.mp4",
-          "bytes": 2062188,
-          "sha256": "325d9b09f2e705d6ef90006a7b60f35dddfaf37cf75f149fcfc0de64d0bb1486"
+          "path": "/media/wall-print-pro/our-work/img-0187-480.mp4",
+          "bytes": 732616,
+          "sha256": "e7a514752bbb95a45a6a1e6f9c86944f0c8bb6b1848e7f5dc58b3ee374eeafee"
         },
         "poster": {
           "path": "/media/wall-print-pro/our-work/img-0187-poster.jpg",
-          "bytes": 94971,
-          "sha256": "6949cf910aa4f993fb75c26a22dd586d4caaec0063f98201173a515709076524"
+          "bytes": 47430,
+          "sha256": "59d02edf4b77c7dbbb5521aa822cd3b2c767e31e4e51e41d848afcec3e5da238"
         }
       }
     }

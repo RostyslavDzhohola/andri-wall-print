@@ -28,7 +28,7 @@ export const AR_SAMPLES: ArSample[] = [
     assets: {
       glb: "/ar/chicago-final-1.glb",
       usdz: "/ar/chicago-final-1.usdz",
-      poster: "/artworks/chicago-final-1.png"
+      poster: "/artworks/chicago-final-1.jpg"
     }
   },
   {
@@ -39,7 +39,7 @@ export const AR_SAMPLES: ArSample[] = [
     assets: {
       glb: "/ar/chicago-final-2.glb",
       usdz: "/ar/chicago-final-2.usdz",
-      poster: "/artworks/chicago-final-2.png"
+      poster: "/artworks/chicago-final-2.jpg"
     }
   },
   {
@@ -50,7 +50,7 @@ export const AR_SAMPLES: ArSample[] = [
     assets: {
       glb: "/ar/chicago-final-3.glb",
       usdz: "/ar/chicago-final-3.usdz",
-      poster: "/artworks/chicago-final-3.png"
+      poster: "/artworks/chicago-final-3.jpg"
     }
   }
 ];

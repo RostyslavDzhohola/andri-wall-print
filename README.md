@@ -55,9 +55,9 @@ The current repo intentionally does not contain Clerk secrets. If Clerk is not c
 The current demo uses checked-in static samples with real-size GLB/USDZ planes:
 
 - Included samples:
-  - Chicago Final 1, 152 x 127 cm: `/ar/chicago-final-1.glb`, `/ar/chicago-final-1.usdz`, `/artworks/chicago-final-1.png`.
-  - Chicago Final 2, 91 x 152 cm: `/ar/chicago-final-2.glb`, `/ar/chicago-final-2.usdz`, `/artworks/chicago-final-2.png`.
-  - Chicago Final 3, 122 x 152 cm: `/ar/chicago-final-3.glb`, `/ar/chicago-final-3.usdz`, `/artworks/chicago-final-3.png`.
+  - Chicago Final 1, 152 x 127 cm: `/ar/chicago-final-1.glb`, `/ar/chicago-final-1.usdz`, `/artworks/chicago-final-1.jpg`.
+  - Chicago Final 2, 91 x 152 cm: `/ar/chicago-final-2.glb`, `/ar/chicago-final-2.usdz`, `/artworks/chicago-final-2.jpg`.
+  - Chicago Final 3, 122 x 152 cm: `/ar/chicago-final-3.glb`, `/ar/chicago-final-3.usdz`, `/artworks/chicago-final-3.jpg`.
 
 Open the deployed URL on iPhone Safari or Android Chrome. Cycle through the pictures, then tap `Place on wall`. On supported phones, this opens the native AR viewer so you can point at a wall and place the selected print.
 

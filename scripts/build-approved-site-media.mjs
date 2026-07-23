@@ -240,7 +240,7 @@ async function buildImage(item, sectionDir) {
 async function buildVideo(item, sectionDir) {
   const sourcePath = join(originalsDir, item.source);
   const stem = normalizedStem(item.source);
-  const videoPath = join(sectionDir, `${stem}-720.mp4`);
+  const videoPath = join(sectionDir, `${stem}-480.mp4`);
   const posterPath = join(sectionDir, `${stem}-poster.jpg`);
 
   run("ffmpeg", [
@@ -254,13 +254,13 @@ async function buildVideo(item, sectionDir) {
     "-map",
     "0:a:0?",
     "-vf",
-    "scale=720:-2:force_original_aspect_ratio=decrease",
+    "scale=480:-1:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2",
     "-c:v",
     "libx264",
     "-preset",
-    "slow",
+    "medium",
     "-crf",
-    "25",
+    "30",
     "-pix_fmt",
     "yuv420p",
     "-profile:v",
@@ -270,7 +270,7 @@ async function buildVideo(item, sectionDir) {
     "-c:a",
     "aac",
     "-b:a",
-    "96k",
+    "64k",
     "-movflags",
     "+faststart",
     "-map_metadata",
