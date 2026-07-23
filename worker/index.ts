@@ -26,6 +26,27 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+function withArContentType(pathname: string, response: Response) {
+  const contentType = pathname.endsWith(".glb")
+    ? "model/gltf-binary"
+    : pathname.endsWith(".usdz")
+      ? "model/vnd.usdz+zip"
+      : null;
+
+  if (!contentType || !response.ok) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+  headers.set("content-type", contentType);
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 const worker = {
   async fetch(
     request: Request,
@@ -53,7 +74,8 @@ const worker = {
       );
     }
 
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+    return withArContentType(url.pathname, response);
   },
 };
 

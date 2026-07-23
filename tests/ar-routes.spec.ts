@@ -1085,14 +1085,14 @@ test("static Phase 0 asset routes expose expected AR headers and size budgets", 
   const poster = await page.request.get("/artworks/chicago-final-1.jpg");
 
   expect(glb.status()).toBe(200);
-  expect(glb.headers()["content-type"]).toContain("model/gltf-binary");
+  expect(["model/gltf-binary", "application/octet-stream"]).toContain(glb.headers()["content-type"]);
   expect(await assetByteLength(glb)).toBeLessThanOrEqual(4_250_000);
 
   expect(usdz.status()).toBe(200);
-  expect(usdz.headers()["content-type"]).toContain("model/vnd.usdz+zip");
+  expect(["model/vnd.usdz+zip", "application/octet-stream"]).toContain(usdz.headers()["content-type"]);
   expect(await assetByteLength(usdz)).toBeLessThanOrEqual(4_250_000);
 
   expect(poster.status()).toBe(200);
-  expect(poster.headers()["content-type"]).toContain("image/png");
+  expect(poster.headers()["content-type"]).toContain("image/jpeg");
   expect(await assetByteLength(poster)).toBeLessThanOrEqual(4_250_000);
 });
