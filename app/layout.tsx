@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import { AppProviders } from "@/components/app-providers";
+import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { StickyReserveBar } from "@/components/site/sticky-reserve-bar";
 
@@ -67,10 +68,16 @@ export default function RootLayout({
       <body>
         <AppProviders convexUrl={readConvexRuntimeUrl()}>
           <div className="flex min-h-screen flex-col bg-background text-foreground">
-            <div className="mx-auto w-full max-w-6xl px-4 pt-4 md:px-6">
-              <SiteHeader estimateHref={estimateHref} />
+            <div
+              className="sticky top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+              data-testid="site-header-shell"
+            >
+              <div className="mx-auto w-full max-w-6xl px-4 py-3 md:px-6">
+                <SiteHeader estimateHref={estimateHref} />
+              </div>
             </div>
             <div className="flex-1">{children}</div>
+            <SiteFooter />
             <StickyReserveBar estimateHref={estimateHref} />
           </div>
         </AppProviders>

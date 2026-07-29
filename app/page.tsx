@@ -7,7 +7,6 @@ import { HomepageDemoActions } from "@/components/promotion/homepage-demo-action
 import { ApprovedHomepageMediaSection } from "@/components/promotion/approved-media-showcase";
 import { LocalBusinessJsonLd } from "@/components/seo/local-business-jsonld";
 import { Button } from "@/components/ui/button";
-import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
 import {
   HOME_COMPARISON_COLUMNS,
   HOME_COMPARISON_HEADING,
@@ -15,7 +14,6 @@ import {
   HOME_COMPARISON_ROWS,
   HOME_COMPARISON_SUBHEAD,
   HOME_AUDIENCE_LINE,
-  HOME_FOOTER_TAGLINE,
   HOME_HEADLINE,
   HOME_LOCATION_BADGE,
   HOME_PROCESS_HEADING,
@@ -236,36 +234,6 @@ function FinalQuoteCta() {
   );
 }
 
-function SiteFooter() {
-  // Footer NAP renders from the SAME lib/local-business.ts constants that feed
-  // the LocalBusiness JSON-LD (single source of truth).
-  // LAUNCH GATE: real NAP (name, address, phone) lives in lib/local-business.ts.
-  const telHref = `tel:${LOCAL_BUSINESS_NAP.telephone.replace(/[^\d+]/g, "")}`;
-
-  return (
-    <footer className="border-t bg-background px-4 py-12 md:px-6" data-testid="home-footer">
-      <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
-        <div className="grid gap-2">
-          <p className="text-lg font-semibold text-foreground">{LOCAL_BUSINESS_NAP.name}</p>
-          <p className="max-w-sm text-sm leading-6 text-muted-foreground">{HOME_FOOTER_TAGLINE}</p>
-        </div>
-        <address className="grid gap-1 text-sm not-italic text-muted-foreground md:justify-self-end md:text-right">
-          <span>{LOCAL_BUSINESS_NAP.streetAddress}</span>
-          <span>
-            {LOCAL_BUSINESS_NAP.addressLocality}, {LOCAL_BUSINESS_NAP.addressRegion} {LOCAL_BUSINESS_NAP.postalCode}
-          </span>
-          <a className="font-medium text-primary hover:underline" href={telHref}>
-            {LOCAL_BUSINESS_NAP.telephone}
-          </a>
-          <a className="font-medium text-primary hover:underline" href={`mailto:${LOCAL_BUSINESS_NAP.email}`}>
-            {LOCAL_BUSINESS_NAP.email}
-          </a>
-        </address>
-      </div>
-    </footer>
-  );
-}
-
 function HomeSections({ reserveHref }: { reserveHref: string }) {
   return (
     <>
@@ -276,7 +244,6 @@ function HomeSections({ reserveHref }: { reserveHref: string }) {
       <ReserveStrip href={reserveHref} />
       <FaqSection />
       <FinalQuoteCta />
-      <SiteFooter />
     </>
   );
 }

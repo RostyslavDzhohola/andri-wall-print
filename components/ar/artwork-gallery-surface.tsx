@@ -72,7 +72,7 @@ export function ArtworkGallerySurface({
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)] lg:items-start">
           <section
             aria-label="Selected artwork wall view"
-            className="grid gap-4 lg:sticky lg:top-6 lg:order-2"
+            className="grid gap-4 lg:sticky lg:top-24 lg:order-2"
             data-testid="gallery-selected-preview"
             ref={previewRef}
           >

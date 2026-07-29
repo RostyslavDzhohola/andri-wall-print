@@ -37,7 +37,7 @@ export function SiteHeader({ estimateHref }: SiteHeaderProps) {
   const hideReserveCta = pathname.startsWith("/preview");
 
   return (
-    <header className="flex items-center justify-between gap-1 pt-1 sm:gap-4 sm:pt-0">
+    <header className="flex items-center justify-between gap-1 sm:gap-4" data-testid="site-header">
       <BrandMark
         ariaLabel="Wall Print Pro homepage"
         className="min-w-0 text-base sm:text-lg"

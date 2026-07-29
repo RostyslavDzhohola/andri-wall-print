@@ -89,8 +89,9 @@ test("homepage renders a static artwork presentation with native AR assets", asy
     )
   ).toBeVisible();
   await expect(page.getByText("Offices · restaurants · home feature walls.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
-  await expect(page.getByRole("link", { name: "Our work" })).toHaveAttribute("href", "/work");
+  const siteHeader = page.getByTestId("site-header");
+  await expect(siteHeader.getByRole("link", { name: "Gallery", exact: true })).toHaveAttribute("href", "/gallery");
+  await expect(siteHeader.getByRole("link", { name: "Our work", exact: true })).toHaveAttribute("href", "/work");
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
   // Three-entry chooser: Describe opens on the compact email-first step.
   await expect(page.getByTestId("homepage-entry-choose")).toBeVisible();
@@ -224,7 +225,7 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("home-final-quote")).toBeVisible();
   await expect(page.getByTestId("home-final-quote-cta")).toHaveAttribute("href", "/request");
   await expect(page.getByTestId("home-final-quote-cta")).toContainText("Free preview");
-  await expect(page.getByTestId("home-footer")).toBeVisible();
+  await expect(page.getByTestId("site-footer")).toBeVisible();
   await expect(page.locator('source[src*="work-videos"]')).toHaveCount(0);
   await expectNoBannedRenderedTerms(page);
 });

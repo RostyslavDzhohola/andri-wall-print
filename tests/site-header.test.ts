@@ -25,6 +25,7 @@ describe("shared site header", () => {
   it("renders the brand nav links and the estimate CTA on a normal route", async () => {
     const html = await renderHeader("/gallery");
 
+    expect(html).toContain('data-testid="site-header"');
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/gallery"');
     expect(html).toContain('href="/work"');
