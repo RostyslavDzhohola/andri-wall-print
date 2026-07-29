@@ -10,6 +10,12 @@ const ROUTES = [
   "/missing-page"
 ] as const;
 
+const PRIMARY_NAVIGATION = [
+  { label: "Home", href: "/" },
+  { label: "Gallery", href: "/gallery" },
+  { label: "Our work", href: "/work" }
+] as const;
+
 async function blockThirdPartyMedia(page: Page) {
   await page.route(/(?:instagram\.com|facebook\.com|googleapis\.com|r2\.dev)/, (route) => route.abort());
 }
@@ -23,12 +29,20 @@ test("every user-facing route renders the shared header and footer", async ({ pa
     await page.goto(route, { waitUntil: "domcontentloaded" });
 
     const header = page.getByTestId("site-header");
+    const headerShell = page.getByTestId("site-header-shell");
     const footer = page.getByTestId("site-footer");
 
     await expect(header, route).toHaveCount(1);
     await expect(footer, route).toHaveCount(1);
     await expect(header.getByRole("link", { name: "Wall Print Pro homepage" }), route).toBeVisible();
     await expect(footer.getByRole("navigation", { name: "Social media" }), route).toBeVisible();
+    await expect(headerShell, route).toHaveCSS("position", "sticky");
+
+    for (const { label, href } of PRIMARY_NAVIGATION) {
+      const navigationLink = header.getByRole("link", { name: label, exact: true });
+      await expect(navigationLink, `${route}: ${label}`).toHaveCount(1);
+      await expect(navigationLink, `${route}: ${label}`).toHaveAttribute("href", href);
+    }
 
     const headerHeight = await header.evaluate((element) => element.getBoundingClientRect().height);
     expectedHeaderHeight ??= headerHeight;
@@ -47,19 +61,15 @@ test("every user-facing route renders the shared header and footer", async ({ pa
       }),
       route
     ).toBe(true);
+
+    const initialHeaderTop = (await headerShell.boundingBox())?.y;
+    await page.evaluate(() => {
+      document.documentElement.style.minHeight = "200vh";
+      document.body.style.minHeight = "200vh";
+      window.scrollTo(0, 300);
+    });
+    await expect.poll(async () => (await headerShell.boundingBox())?.y, { message: route }).toBe(initialHeaderTop);
   }
-});
-
-test("the header stays at the top while scrolling", async ({ page }) => {
-  await blockThirdPartyMedia(page);
-  await page.goto("/work", { waitUntil: "domcontentloaded" });
-
-  const shell = page.getByTestId("site-header-shell");
-  await expect(shell).toHaveCSS("position", "sticky");
-
-  const initialTop = (await shell.boundingBox())?.y;
-  await page.evaluate(() => window.scrollTo(0, 500));
-  await expect.poll(async () => (await shell.boundingBox())?.y).toBe(initialTop);
 });
 
 test("the desktop gallery preview reserves a sticky offset below the header", async ({ page }) => {
