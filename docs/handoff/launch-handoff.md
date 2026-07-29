@@ -34,16 +34,16 @@ Use `docs/handoff/stripe-reserve-sop.md` as the client operating procedure for t
 
 | Secret or Account | What It Is | Who Owns It | Where The Key Lives |
 |---|---|---|---|
-| OpenAI | API key for AI concept image generation; a hard usage limit must be set in the OpenAI dashboard before launch. | Client owns billing; developer installs env. | `OPENAI_API_KEY` in Convex/Vercel env as needed; dashboard usage limit is required by plan D11.1. |
+| OpenAI | API key for AI concept image generation; a hard usage limit must be set in the OpenAI dashboard before launch. | Client owns billing; developer installs env. | `OPENAI_API_KEY` in Convex/Sites env as needed; dashboard usage limit is required by plan D11.1. |
 | Convex deployment | Backend data, storage, public mutations, funnel events, and generated AR asset URLs. | Developer owns deployment access during launch; client should have owner/admin access before handoff. | Convex project dashboard; app reads `CONVEX_URL` / `NEXT_PUBLIC_CONVEX_URL`. |
 | Stripe account | Payment Link, reserve-deposit ledger, refunds, and mobile payment notifications. | Client. | Stripe dashboard; public site uses only `WALL_PRINT_PRO_RESERVE_URL`. |
-| Vercel project | Production hosting and public env vars. | Developer during launch; client should be added as owner/admin. | Vercel project settings; include `NEXT_PUBLIC_SITE_URL`, `WALL_PRINT_PRO_RESERVE_URL`, `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`, and Convex public URL. |
-| Domain registrar | DNS and domain ownership for the production domain. | Client. | Registrar account; DNS points production domain to Vercel. |
+| ChatGPT Sites project | Production hosting and public env vars. | Developer during launch; client should retain owner/admin access. | Sites project settings; include `NEXT_PUBLIC_SITE_URL`, `WALL_PRINT_PRO_RESERVE_URL`, `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`, and Convex public URL. |
+| Domain registrar | DNS and domain ownership for the production domain. | Client. | Registrar account; DNS points `www.thewallprintpro.com` to the Sites custom-domain target. |
 
 ## Deploy + Post-Deploy Checklist
 
 - Push Convex functions after the schema changes: `globalGenerationCap`, `funnelEvents`, concept AR fields on `aiConceptDrafts`, and the launch-deleted tables. Use Convex dev/sync/deploy flow only after confirming the target deployment.
-- Set env vars in Vercel and Convex: `NEXT_PUBLIC_SITE_URL`, `CONVEX_URL`, `NEXT_PUBLIC_CONVEX_URL`, `WALL_PRINT_PRO_RESERVE_URL`, `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`, `WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, and `OPENAI_API_KEY` where generation runs.
+- Set env vars in Sites and Convex: `NEXT_PUBLIC_SITE_URL`, `CONVEX_URL`, `NEXT_PUBLIC_CONVEX_URL`, `WALL_PRINT_PRO_RESERVE_URL`, `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`, `WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, and `OPENAI_API_KEY` where generation runs.
 - Day-4 production-device gate: on the production domain, test real iPhone Safari Quick Look and Android Chrome Scene Viewer. Include generated concept AR, gallery AR, Convex-storage asset URL headers, MIME types, and file sizes.
 - Payment Link phone round-trip: on a phone, open the Stripe Payment Link, pay in test mode or live/refund, land on `/reserved?session_id=...`, confirm the receipt reference appears, then reopen `/reserved` from the Stripe email link without `session_id`.
 - During the Payment Link phone round-trip, confirm a `reserved_visit` funnel event appears in the Convex dashboard (data → `funnelEvents`).

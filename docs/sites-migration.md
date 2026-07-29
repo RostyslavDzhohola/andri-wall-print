@@ -2,9 +2,9 @@
 
 ## Scope and outputs
 
-This migration moves the public Wall Print Pro site from its existing Vercel
-deployment to ChatGPT Sites without disabling the existing Vercel deployment
-during the cutover.
+This migration moved the public Wall Print Pro site from Vercel to ChatGPT
+Sites. The temporary parallel Vercel production deployment was retired after
+the Sites custom domain and customer-facing flows passed live validation.
 
 The migration produces:
 
@@ -15,8 +15,9 @@ The migration produces:
   derivative paths, byte sizes, and SHA-256 hashes;
 - a public production Sites URL;
 - a validated route, interaction, responsive-layout, and media checklist; and
-- a manual DNS/domain cutover note if the custom Wall Print Pro domain cannot
-  be transferred automatically.
+- an active custom domain at `https://www.thewallprintpro.com`; and
+- a documented rollback path for both Sites versions and the archived final
+  Vercel production source.
 
 ## Existing public application audit
 
@@ -31,13 +32,13 @@ site with:
 - optional AI-concept request/status APIs that proxy Convex;
 - optional Instagram Graph API and Meta embeds for public project media;
 - Clerk wiring left from an earlier protected-admin architecture, although no
-  admin/account/dashboard pages are present on this branch; and
-- an ignored local `.vercel/` link and a tracked `vercel.json` that keeps the
-  existing Vercel project on the Next.js build while Sites uses Vinext.
+  admin/account/dashboard pages are present on this branch.
 
 The Sites build keeps the public/Convex and AR behavior, removes unused Clerk
 runtime coupling from the public shell, and replaces external Meta project
 media plus placeholder Our Work photography with the approved local media.
+Sites is now the sole production host, and `pnpm build` is the only production
+build target.
 
 ## Approved project-media policy
 

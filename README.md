@@ -102,11 +102,11 @@ Do not run `pnpm dev` unless deliberately requested.
 
 ## Phone testing
 
-Use the Vercel production URL on your phone. Desktop verification only confirms the static page and model assets load.
+Use the live Sites custom domain, `https://www.thewallprintpro.com`, on your phone. Desktop verification only confirms the static page and model assets load.
 
 ### Fast phone testing with ngrok
 
-Use Vercel as the stable phone test URL. For faster local iteration on a real phone, use the local dev server through an existing authenticated `ngrok` install:
+Use the Sites custom domain as the stable phone test URL. For faster local iteration on a real phone, use the full local stack and tunnel the local app through an existing authenticated `ngrok` install:
 
 ```sh
 pnpm dev

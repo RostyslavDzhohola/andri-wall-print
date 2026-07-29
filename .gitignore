@@ -6,6 +6,7 @@ tsconfig.tsbuildinfo
 test-results/
 .gstack/
 tmp/
+.rollback/
 .env*.local
 .vercel
 .superpowers/
