@@ -1,0 +1,40 @@
+{
+  "format": "wall-print-pro-media-decisions",
+  "version": 1,
+  "exportedAt": "2026-07-23T03:47:25.424Z",
+  "note": "Exact upload candidates approved in the local Wall Print Pro media review page.",
+  "homepage": {
+    "keep": [
+      "IMG_1646.HEIC",
+      "IMG_1598.HEIC",
+      "IMG_1595.HEIC",
+      "IMG_0024.MOV"
+    ],
+    "remove": [
+      "IMG_1642.MOV"
+    ]
+  },
+  "ourWork": {
+    "keep": [
+      "IMG_1591.HEIC",
+      "IMG_1594.HEIC",
+      "IMG_0028.MOV",
+      "IMG_1635.MOV",
+      "IMG_1096.HEIC",
+      "IMG_1084.MOV",
+      "IMG_69553977-6292-4757-8270-14DD2E01CA21.JPEG",
+      "IMG_0773.MOV",
+      "IMG_1001.HEIC",
+      "IMG_0996.MOV",
+      "IMG_0229.MOV",
+      "IMG_0196.HEIC",
+      "IMG_0187.MOV"
+    ],
+    "remove": [
+      "IMG_1597.HEIC",
+      "IMG_1644.HEIC",
+      "IMG_0253.HEIC",
+      "147415BF-D18F-4D9F-A265-B3ED4B3447AB.jpg"
+    ]
+  }
+}

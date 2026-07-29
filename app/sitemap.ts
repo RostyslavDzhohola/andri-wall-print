@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 
 import { getSiteUrl } from "@/lib/site-url";
-import { getWorkSlugs } from "@/lib/work-content";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();
@@ -13,12 +12,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${siteUrl}/work`, lastModified, changeFrequency: "weekly", priority: 0.8 }
   ];
 
-  const workRoutes: MetadataRoute.Sitemap = getWorkSlugs().map((slug) => ({
-    url: `${siteUrl}/work/${slug}`,
-    lastModified,
-    changeFrequency: "monthly",
-    priority: 0.7
-  }));
-
-  return [...staticRoutes, ...workRoutes];
+  return staticRoutes;
 }

@@ -7,7 +7,7 @@ import { StickyReserveBar } from "@/components/site/sticky-reserve-bar";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { readClerkPublishableKey, readConvexRuntimeUrl } from "@/lib/runtime-env";
+import { readConvexRuntimeUrl } from "@/lib/runtime-env";
 import { absoluteUrl, getSiteUrl } from "@/lib/site-url";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -16,9 +16,7 @@ const SITE_NAME = "Wall Print Pro";
 const ROOT_TITLE = "Wall Print Pro — Custom wall printing in Chicago";
 const ROOT_DESCRIPTION =
   "Custom wall printing in Chicago. Choose a design, upload your art or logo, or describe an idea — then see it on your actual wall in AR before you commit. Wall prints from $500.";
-// Strong real work photo (the Chicago "Pathways to Success" skyline print) as the
-// default social share image.
-const OG_IMAGE = absoluteUrl("/artworks/chicago-final-1.png");
+const OG_IMAGE = absoluteUrl("/media/wall-print-pro/homepage/img-1646-1600.jpg");
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -35,7 +33,7 @@ export const metadata: Metadata = {
     title: ROOT_TITLE,
     description: ROOT_DESCRIPTION,
     url: getSiteUrl(),
-    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "Chicago skyline wall print by Wall Print Pro" }]
+    images: [{ url: OG_IMAGE, width: 1200, height: 1600, alt: "Chicago train illustration printed directly on a wall by Wall Print Pro" }]
   },
   twitter: {
     card: "summary_large_image",
@@ -67,10 +65,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body>
-        <AppProviders
-          clerkPublishableKey={readClerkPublishableKey()}
-          convexUrl={readConvexRuntimeUrl()}
-        >
+        <AppProviders convexUrl={readConvexRuntimeUrl()}>
           <div className="flex min-h-screen flex-col bg-background text-foreground">
             <div className="mx-auto w-full max-w-6xl px-4 pt-4 md:px-6">
               <SiteHeader estimateHref={estimateHref} />

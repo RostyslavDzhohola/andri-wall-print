@@ -34,7 +34,7 @@ export function buildLocalBusinessJsonLd() {
     url: siteUrl,
     telephone: LOCAL_BUSINESS_NAP.telephone,
     email: LOCAL_BUSINESS_NAP.email,
-    image: `${siteUrl}/artworks/chicago-final-1.png`,
+    image: `${siteUrl}/artworks/chicago-final-1.jpg`,
     address: {
       "@type": "PostalAddress",
       streetAddress: LOCAL_BUSINESS_NAP.streetAddress,

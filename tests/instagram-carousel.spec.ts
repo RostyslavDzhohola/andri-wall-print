@@ -33,7 +33,7 @@ test("authorized Instagram media uses one clean in-page viewport", async ({ page
             mediaId: "label808_media",
             kind: "video",
             mediaUrl: "https://cdn.example.test/label808.mp4",
-            posterUrl: "/artworks/chicago-final-1.png",
+            posterUrl: "/artworks/chicago-final-1.jpg",
             canonicalUrl: "https://www.instagram.com/wall_printpro/p/DY0fWs8jcoi/",
             title: "A recording studio brought to life",
             summary: "A commercial wall-printing project created for the Label808 music studio."
@@ -42,7 +42,7 @@ test("authorized Instagram media uses one clean in-page viewport", async ({ page
             projectId: "business-logo-wall",
             mediaId: "logo_media",
             kind: "image",
-            mediaUrl: "/artworks/chicago-final-2.png",
+            mediaUrl: "/artworks/chicago-final-2.jpg",
             posterUrl: null,
             canonicalUrl: "https://www.instagram.com/wall_printpro/reel/DZLMtbGseuj/",
             title: "A business logo, printed directly on the wall",
