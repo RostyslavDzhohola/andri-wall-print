@@ -19,7 +19,7 @@ import { absoluteUrl } from "@/lib/site-url";
 // never be statically cached with a stale receipt line.
 export const dynamic = "force-dynamic";
 
-const PAGE_TITLE = "Your print-job slot is reserved | Wall Print Pro";
+const PAGE_TITLE = "Your print-job slot is reserved";
 const PAGE_DESCRIPTION =
   "Thank you — your $100 deposit reserves your Wall Print Pro print-job slot and is credited toward your final print price. Here's what happens next.";
 

@@ -13,7 +13,23 @@ function normalizeBaseUrl(url: string) {
 export function getSiteUrl() {
   const configured = process.env[SITE_URL_ENV_KEY]?.trim();
 
-  return normalizeBaseUrl(configured && configured.length > 0 ? configured : PRODUCTION_SITE_URL);
+  if (!configured) {
+    return PRODUCTION_SITE_URL;
+  }
+
+  try {
+    const url = new URL(configured);
+    const isApprovedHostname =
+      url.hostname === "thewallprintpro.com" || url.hostname === "www.thewallprintpro.com";
+
+    if (url.protocol === "https:" && isApprovedHostname) {
+      return normalizeBaseUrl(configured);
+    }
+  } catch {
+    // Invalid configured URLs must not poison canonical, sitemap, or social URLs.
+  }
+
+  return PRODUCTION_SITE_URL;
 }
 
 export function absoluteUrl(path: string) {

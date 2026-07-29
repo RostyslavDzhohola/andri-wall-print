@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 
@@ -27,6 +28,10 @@ import {
 } from "@/lib/product-copy";
 import { resolveReserveHref } from "@/lib/reserve-url";
 import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" }
+};
 
 function ChicagoBadge() {
   return (

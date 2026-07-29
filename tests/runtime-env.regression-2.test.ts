@@ -25,12 +25,12 @@ describe("env-folding regression (newly-static homepage)", () => {
     const original = process.env[key];
 
     try {
-      process.env[key] = "https://runtime-a.example";
-      expect(getSiteUrl()).toBe("https://runtime-a.example");
+      process.env[key] = "https://www.thewallprintpro.com/runtime-a";
+      expect(getSiteUrl()).toBe("https://www.thewallprintpro.com/runtime-a");
 
       // Change it AFTER first call — a folded literal would ignore this.
-      process.env[key] = "https://runtime-b.example";
-      expect(getSiteUrl()).toBe("https://runtime-b.example");
+      process.env[key] = "https://www.thewallprintpro.com/runtime-b";
+      expect(getSiteUrl()).toBe("https://www.thewallprintpro.com/runtime-b");
     } finally {
       if (original === undefined) {
         delete process.env[key];

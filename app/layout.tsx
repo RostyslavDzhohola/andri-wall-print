@@ -27,7 +27,6 @@ export const metadata: Metadata = {
   },
   description: ROOT_DESCRIPTION,
   applicationName: SITE_NAME,
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -53,7 +52,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f6f5f1"
+  themeColor: "#fafafa"
 };
 
 export default function RootLayout({

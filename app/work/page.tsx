@@ -5,7 +5,7 @@ import { absoluteUrl } from "@/lib/site-url";
 
 export const revalidate = 3600;
 
-const PAGE_TITLE = "Wall Printing Chicago — Recent Work | Wall Print Pro";
+const PAGE_TITLE = "Wall Printing Chicago — Recent Work";
 const PAGE_DESCRIPTION =
   "See approved Wall Print Pro finished prints and clearly labeled wall-printing workshop demonstrations.";
 

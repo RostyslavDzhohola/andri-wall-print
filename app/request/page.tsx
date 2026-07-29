@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
@@ -13,6 +14,12 @@ import {
 import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Request a wall print estimate",
+  description: "Request a free estimate for custom wall printing in Chicago from Wall Print Pro.",
+  alternates: { canonical: "/request" }
+};
 
 type RequestPageProps = {
   searchParams?: Promise<RequestSearchParamsInput>;

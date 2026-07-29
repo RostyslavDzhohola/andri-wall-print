@@ -4,8 +4,9 @@ import { ArtworkGallerySurface } from "@/components/ar/artwork-gallery-surface";
 import { resolveGalleryInitialDesignId, type GallerySearchParamsInput } from "@/lib/gallery-page-defaults";
 
 export const metadata: Metadata = {
-  title: "Gallery | Wall Print Pro",
-  description: "Choose Wall Print Pro artwork and see it on your wall."
+  title: "Gallery",
+  description: "Choose Wall Print Pro artwork and see it on your wall.",
+  alternates: { canonical: "/gallery" }
 };
 
 type GalleryPageProps = {

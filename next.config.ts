@@ -9,21 +9,6 @@ const nextConfig: NextConfig = {
         has: [{ type: "host", value: "thewallprintpro.com" }],
         destination: "https://www.thewallprintpro.com/:path*",
         permanent: true
-      },
-      {
-        source: "/seller",
-        destination: "/admin",
-        permanent: false
-      },
-      {
-        source: "/seller/new",
-        destination: "/admin/new",
-        permanent: false
-      },
-      {
-        source: "/seller/bundles/:bundleId",
-        destination: "/admin/bundles/:bundleId",
-        permanent: false
       }
     ];
   },
