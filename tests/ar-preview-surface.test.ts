@@ -26,6 +26,10 @@ describe("AR preview surface", () => {
     );
 
     expect(html).toContain('src="/generated-concept-poster.png"');
+    expect(html).toContain('fetchPriority="high"');
+    expect(html).toContain('decoding="async"');
+    expect(html).toContain('width="1200"');
+    expect(html).toContain('height="1600"');
     expect(html).toContain('data-testid="ar-preview-unavailable"');
     expect(html).toContain("Preview only");
     expect(html).not.toContain('data-testid="quick-look-link"');

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     description: PAGE_DESCRIPTION,
     url: absoluteUrl("/work"),
     type: "website",
-    images: [{ url: absoluteUrl("/brand/wallprint-pro-original.png") }]
+    images: [{ url: absoluteUrl("/media/wall-print-pro/homepage/og-1200x630.jpg") }]
   }
 };
 
