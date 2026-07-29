@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 
 import { ArPreviewSurface } from "@/components/ar/ar-preview-surface";
+import { ClientReviewSection } from "@/components/promotion/client-review-section";
 import { HomepageDemoActions } from "@/components/promotion/homepage-demo-actions";
 import { ApprovedHomepageMediaSection } from "@/components/promotion/approved-media-showcase";
 import { LocalBusinessJsonLd } from "@/components/seo/local-business-jsonld";
@@ -268,6 +269,7 @@ function SiteFooter() {
 function HomeSections({ reserveHref }: { reserveHref: string }) {
   return (
     <>
+      <ClientReviewSection />
       <ApprovedHomepageMediaSection />
       <ProcessSteps />
       <ComparisonTable />

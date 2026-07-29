@@ -184,11 +184,11 @@ export const HOME_COMPARISON_ROWS: readonly HomeComparisonRow[] = [
   }
 ] as const;
 
-// Testimonial placeholder — replace with a verified quote and attribution.
+// Client review transcribed from the supplied Instagram comment screenshot.
 export const HOME_TESTIMONIAL = {
-  quote: "Customer testimonial coming soon.",
-  attribution: "Verified customer quote and project details will be added here.",
-  needsClientQuote: true
+  quote: "Thanks guys! You guys did such an amazing job. Can’t wait to work with you again.",
+  attribution: "@houseofhanainteriors",
+  needsClientQuote: false
 } as const;
 
 // Lower-funnel reservation strip. Payment stays below proof, process, comparison,

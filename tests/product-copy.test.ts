@@ -8,6 +8,7 @@ import {
   previewStatusGroup,
   previewStatusLabel,
   HOME_RESERVE_STRIP_HEADLINE,
+  HOME_TESTIMONIAL,
   wallPreviewIssueMessage
 } from "@/lib/product-copy";
 
@@ -48,5 +49,13 @@ describe("product UI copy helpers", () => {
 
   it("keeps the lower-funnel reservation headline explicit", () => {
     expect(HOME_RESERVE_STRIP_HEADLINE).toBe("Reserve your spot — $100");
+  });
+
+  it("keeps the verified homepage client review verbatim", () => {
+    expect(HOME_TESTIMONIAL).toEqual({
+      quote: "Thanks guys! You guys did such an amazing job. Can’t wait to work with you again.",
+      attribution: "@houseofhanainteriors",
+      needsClientQuote: false
+    });
   });
 });

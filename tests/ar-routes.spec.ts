@@ -152,7 +152,13 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByRole("heading", { name: "Wall printing vs. everything else" })).toBeVisible();
   await expect(page.getByTestId("home-comparison")).toBeVisible();
   await expect(page.getByText("Yes — only us")).toBeVisible();
-  await expect(page.getByTestId("home-testimonial")).toHaveCount(0);
+  await expect(page.getByTestId("home-client-review")).toBeVisible();
+  await expect(page.getByTestId("home-testimonial")).toBeVisible();
+  await expect(page.getByTestId("home-testimonial")).toContainText(
+    "Thanks guys! You guys did such an amazing job. Can’t wait to work with you again."
+  );
+  await expect(page.getByTestId("home-testimonial")).toContainText("@houseofhanainteriors");
+  await expect(page.getByTestId("home-client-review").getByRole("blockquote")).toHaveCount(1);
   await expect(page.getByText("About 1 day")).toBeVisible();
   await expect(page.getByText("Free before you commit")).toBeVisible();
   await expect(page.getByText("Typical turnkey project")).toHaveCount(0);
