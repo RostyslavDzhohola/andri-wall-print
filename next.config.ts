@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/:path*",
+        has: [{ type: "host", value: "thewallprintpro.com" }],
+        destination: "https://www.thewallprintpro.com/:path*",
+        permanent: true
+      },
+      {
         source: "/seller",
         destination: "/admin",
         permanent: false
