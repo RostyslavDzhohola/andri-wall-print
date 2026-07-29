@@ -25,6 +25,9 @@ remaining domains were Vercel-generated aliases.
   team's project list.
 - The ignored `.vercel` project link was moved to
   `.rollback/vercel-2026-07-29/local-project-link/`.
+- While removing the store, the Vercel CLI refreshed the ignored local
+  `.env.local` `CONVEX_DEPLOYMENT` entry from the project's development
+  environment.
 - The Vercel CLI added a development `VERCEL_OIDC_TOKEN` while deleting the
   Blob store; that transient token was removed from `.env.local`.
 
