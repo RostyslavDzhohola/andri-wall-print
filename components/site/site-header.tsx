@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check, GalleryHorizontal, House, MessageCircle } from "lucide-react";
+import { Check, GalleryHorizontal, House, Images } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ type SiteHeaderProps = {
 const NAV_LINKS = [
   { href: "/", label: "Home", icon: House },
   { href: "/gallery", label: "Gallery", icon: GalleryHorizontal },
-  { href: "/work", label: "Our work", icon: MessageCircle }
+  { href: "/work", label: "Our work", icon: Images }
 ] as const;
 
 function isActive(pathname: string, href: string) {

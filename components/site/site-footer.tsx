@@ -63,10 +63,13 @@ export function SiteFooter() {
           <span>
             {LOCAL_BUSINESS_NAP.addressLocality}, {LOCAL_BUSINESS_NAP.addressRegion} {LOCAL_BUSINESS_NAP.postalCode}
           </span>
-          <a className="font-medium text-primary hover:underline" href={telHref}>
+          <a className="inline-flex min-h-11 items-center font-medium text-primary hover:underline md:justify-end" href={telHref}>
             {LOCAL_BUSINESS_NAP.telephone}
           </a>
-          <a className="font-medium text-primary hover:underline" href={`mailto:${LOCAL_BUSINESS_NAP.email}`}>
+          <a
+            className="inline-flex min-h-11 items-center font-medium text-primary hover:underline md:justify-end"
+            href={`mailto:${LOCAL_BUSINESS_NAP.email}`}
+          >
             {LOCAL_BUSINESS_NAP.email}
           </a>
         </address>

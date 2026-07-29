@@ -508,7 +508,7 @@ test("homepage entry cards keep one compact responsive footprint", async ({ page
 test("gallery route lets users choose existing artwork for wall placement", async ({ page }) => {
   await page.goto("/gallery");
 
-  await expect(page.getByRole("heading", { name: "Gallery" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Wall print gallery" })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Go back" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("href", "/");
   // Shared site chrome renders on the gallery route: brand + nav + reserve CTA.
@@ -553,7 +553,7 @@ test("homepage selected design opens the public gallery before the request gate"
   await page.getByTestId("homepage-selected-design-handoff").click();
 
   await expect(page).toHaveURL(/\/gallery\?designId=chicago-final-2$/);
-  await expect(page.getByRole("heading", { name: "Gallery" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Wall print gallery" })).toHaveCount(1);
   await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-2.jpg");
   await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveCount(0);
   await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-2.usdz#allowsContentScaling=0");
