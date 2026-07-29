@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -27,10 +28,15 @@ describe("approved Sites media", () => {
       }
 
       for (const source of Object.values(item.sources)) {
+        const assetPath = join(process.cwd(), "public", source.path);
         expect(source.path).toMatch(/^\/media\/wall-print-pro\//);
         expect(source.bytes).toBeGreaterThan(0);
         expect(source.sha256).toMatch(/^[a-f0-9]{64}$/);
-        expect(existsSync(join(process.cwd(), "public", source.path))).toBe(true);
+        expect(existsSync(assetPath)).toBe(true);
+        expect(statSync(assetPath).size).toBe(source.bytes);
+        expect(
+          createHash("sha256").update(readFileSync(assetPath)).digest("hex"),
+        ).toBe(source.sha256);
       }
     }
   });

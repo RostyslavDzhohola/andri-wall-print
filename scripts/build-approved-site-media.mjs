@@ -146,20 +146,6 @@ const ourWork = [
   },
 ];
 
-function run(command, args) {
-  const result = spawnSync(command, args, {
-    cwd: projectRoot,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  if (result.status !== 0) {
-    throw new Error(
-      `${command} failed (${result.status ?? "unknown"}): ${result.stderr || result.stdout}`,
-    );
-  }
-}
-
 function output(command, args) {
   const result = spawnSync(command, args, {
     cwd: projectRoot,
@@ -174,6 +160,20 @@ function output(command, args) {
   }
 
   return result.stdout.trim();
+}
+
+function run(command, args) {
+  output(command, args);
+}
+
+function stripPublishedMetadata(path) {
+  run("exiftool", [
+    "-overwrite_original",
+    "-EXIF=",
+    "-XMP=",
+    "-IPTC=",
+    path,
+  ]);
 }
 
 function normalizedStem(source) {
@@ -258,7 +258,7 @@ async function buildImage(item, sectionDir) {
   );
 
   run("sips", imageArgs);
-  run("exiftool", ["-overwrite_original", "-Orientation=", jpegPath]);
+  stripPublishedMetadata(jpegPath);
   run("sips", [
     "-s",
     "format",
@@ -285,6 +285,8 @@ async function buildImage(item, sectionDir) {
     "--out",
     avif1600Path,
   ]);
+  stripPublishedMetadata(avif960Path);
+  stripPublishedMetadata(avif1600Path);
 
   return {
     original: item.source,
@@ -376,6 +378,7 @@ async function buildVideo(item, sectionDir) {
     "-y",
     posterPath,
   ]);
+  stripPublishedMetadata(posterPath);
 
   return {
     original: item.source,

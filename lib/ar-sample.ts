@@ -59,6 +59,12 @@ export const DEFAULT_AR_SAMPLE = AR_SAMPLES[0];
 
 export const AR_SAMPLE_IDS = AR_SAMPLES.map((sample) => sample.id);
 
+export const AR_ASSET_FILE_NAMES = new Set(
+  AR_SAMPLES.flatMap((sample) => [sample.assets.glb, sample.assets.usdz]).map(
+    (path) => path.slice(path.lastIndexOf("/") + 1),
+  ),
+);
+
 export function getArSample(id: string) {
   return AR_SAMPLES.find((sample) => sample.id === id) ?? DEFAULT_AR_SAMPLE;
 }

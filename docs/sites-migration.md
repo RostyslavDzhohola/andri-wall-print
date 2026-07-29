@@ -32,8 +32,8 @@ site with:
 - optional Instagram Graph API and Meta embeds for public project media;
 - Clerk wiring left from an earlier protected-admin architecture, although no
   admin/account/dashboard pages are present on this branch; and
-- an ignored local `.vercel/` link, with no tracked `vercel.json` or Vercel
-  runtime package.
+- an ignored local `.vercel/` link and a tracked `vercel.json` that keeps the
+  existing Vercel project on the Next.js build while Sites uses Vinext.
 
 The Sites build keeps the public/Convex and AR behavior, removes unused Clerk
 runtime coupling from the public shell, and replaces external Meta project

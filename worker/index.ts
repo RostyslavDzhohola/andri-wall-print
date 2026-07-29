@@ -5,6 +5,8 @@ import {
 } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
+import { AR_ASSET_FILE_NAMES } from "../lib/ar-sample";
+
 interface Env {
   ASSETS: {
     fetch(request: Request): Promise<Response>;
@@ -27,7 +29,7 @@ interface ExecutionContext {
 }
 
 const AR_ASSET_ROUTE = "/api/ar/";
-const SAFE_AR_ASSET_NAME = /^chicago-final-[1-3]\.(?:glb|usdz)$/;
+const SAFE_AR_ASSET_NAME = /^[a-z0-9-]+\.(?:glb|usdz)$/;
 
 function withArContentType(pathname: string, response: Response) {
   const contentType = pathname.endsWith(".glb")
@@ -61,7 +63,10 @@ const worker = {
     if (url.pathname.startsWith(AR_ASSET_ROUTE)) {
       const fileName = url.pathname.slice(AR_ASSET_ROUTE.length);
 
-      if (!SAFE_AR_ASSET_NAME.test(fileName)) {
+      if (
+        !SAFE_AR_ASSET_NAME.test(fileName) ||
+        !AR_ASSET_FILE_NAMES.has(fileName)
+      ) {
         return new Response("Not found", { status: 404 });
       }
 

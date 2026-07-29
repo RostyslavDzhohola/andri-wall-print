@@ -18,10 +18,7 @@ const manifest = JSON.parse(
   ourWork: Array<{ sources: Record<string, { path: string }> }>;
 };
 
-test("Sites migration renders approved media, navigation, and core public interactions", async ({
-  page,
-  request,
-}) => {
+test("Sites migration renders approved homepage media", async ({ page }) => {
   await page.goto("/");
 
   await expect(
@@ -80,7 +77,10 @@ test("Sites migration renders approved media, navigation, and core public intera
       )
       .toBe(true);
   }
+});
 
+test("Sites migration preserves gallery navigation", async ({ page }) => {
+  await page.goto("/");
   await page.getByRole("link", { name: "Gallery" }).click();
   await expect(page).toHaveURL(/\/gallery$/);
   await expect(page.getByTestId("gallery-selected-artwork")).toBeVisible();
@@ -89,12 +89,16 @@ test("Sites migration renders approved media, navigation, and core public intera
     .getAttribute("src");
   await page.getByTestId("gallery-next-artwork").click();
   await expect(page.getByTestId("gallery-selected-artwork")).not.toHaveAttribute(
-      "src",
-      initialArtwork ?? "",
-    );
+    "src",
+    initialArtwork ?? "",
+  );
+});
 
-  await page.getByRole("link", { name: "Our work" }).click();
-  await expect(page).toHaveURL(/\/work$/);
+test("Sites migration publishes approved work media", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/work");
   const gallery = page.getByTestId("approved-work-gallery");
   await expect(gallery).toBeVisible();
   await expect(gallery.locator("figure")).toHaveCount(13);
@@ -111,15 +115,24 @@ test("Sites migration renders approved media, navigation, and core public intera
   );
 
   expect(mediaUrls).toHaveLength(47);
-  for (const mediaUrl of mediaUrls) {
-    const response = await request.get(mediaUrl);
-    expect(response.ok(), `${mediaUrl} should load`).toBe(true);
-    expect((await response.body()).byteLength).toBeGreaterThan(0);
-  }
+  await Promise.all(
+    mediaUrls.map(async (mediaUrl) => {
+      const response = await request.get(mediaUrl);
+      expect(response.ok(), `${mediaUrl} should load`).toBe(true);
+      expect((await response.body()).byteLength).toBeGreaterThan(0);
+    }),
+  );
+});
 
+test("Sites migration redirects retired work slugs", async ({ page }) => {
   await page.goto("/work/lakefront-day-mural");
   await expect(page).toHaveURL(/\/work$/);
+});
 
+test("Sites migration preserves the request-form entry flow", async ({
+  page,
+}) => {
+  await page.goto("/");
   await page
     .getByRole("link", { name: "Get an estimate", exact: true })
     .first()
