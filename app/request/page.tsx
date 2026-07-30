@@ -34,7 +34,9 @@ function RequestSetupMissing() {
           <CardHeader>
             <BrandMark href={null} iconSize="lg" />
             <CardDescription className="font-semibold uppercase">Request form unavailable</CardDescription>
-            <CardTitle className="text-3xl md:text-5xl">Wall Print Pro requests are unavailable.</CardTitle>
+            <CardTitle asChild className="text-3xl md:text-5xl">
+              <h1>Wall Print Pro requests are unavailable.</h1>
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
             <p className="text-base leading-7 text-muted-foreground">Ask the admin to refresh the request setup before collecting leads.</p>

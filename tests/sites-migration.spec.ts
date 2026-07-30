@@ -83,6 +83,8 @@ test("Sites migration preserves gallery navigation", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Gallery" }).click();
   await expect(page).toHaveURL(/\/gallery$/);
+  await expect(page).toHaveTitle("Gallery | Wall Print Pro");
+  await expect(page.getByRole("heading", { name: "Wall print gallery" })).toBeVisible();
   await expect(page.getByTestId("gallery-selected-artwork")).toBeVisible();
   const initialArtwork = await page
     .getByTestId("gallery-selected-artwork")
@@ -129,7 +131,7 @@ test("Sites migration redirects retired work slugs", async ({ page }) => {
   await expect(page).toHaveURL(/\/work$/);
 });
 
-test("Sites migration preserves the request-form entry flow", async ({
+test("Sites migration preserves the request entry route when the form runtime is unavailable", async ({
   page,
 }) => {
   await page.goto("/");
@@ -139,10 +141,33 @@ test("Sites migration preserves the request-form entry flow", async ({
     .click();
   await expect(page).toHaveURL(/\/request$/);
   await expect(
-    page.getByRole("heading", { name: "Request a wall print estimate." }),
+    page.getByRole("heading", { name: "Wall Print Pro requests are unavailable." }),
   ).toBeVisible();
-  await expect(page.getByLabel("Name", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open gallery" })).toHaveAttribute(
+    "href",
+    "/gallery",
+  );
+  await expect(page.getByRole("link", { name: "Open draft preview" })).toHaveCount(0);
+});
+
+test("Sites migration serves security headers on HTML responses", async ({
+  request,
+}) => {
+  const response = await request.get("/");
+
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("text/html");
+  expect(response.headers()["strict-transport-security"]).toBe(
+    "max-age=31536000; includeSubDomains",
+  );
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["referrer-policy"]).toBe(
+    "strict-origin-when-cross-origin",
+  );
+  expect(response.headers()["x-frame-options"]).toBe("SAMEORIGIN");
+  expect(response.headers()["permissions-policy"]).toBe(
+    "camera=(self), microphone=(), geolocation=()",
+  );
 });
 
 test("Sites migration remains within a narrow mobile viewport", async ({

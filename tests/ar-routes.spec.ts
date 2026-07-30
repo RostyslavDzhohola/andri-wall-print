@@ -165,36 +165,10 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText("Typical turnkey project")).toHaveCount(0);
   await expect(page.getByText("$500+ turnkey")).toHaveCount(0);
   await expect(page.getByText("Design, installation & cleanup")).toBeVisible();
-  await expect(page.getByTestId("social-proof-homepage")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "See a real wall transformation" })).toBeVisible();
-  await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(1);
-  await expect(page.getByTestId("facebook-proof-embed")).toHaveAttribute("loading", "lazy");
-  await expect(page.getByTestId("facebook-proof-embed")).toHaveAttribute("title", "Wall Print Pro customer wall transformation on Facebook");
-  await expect(page.getByTestId("instagram-proof-container")).toHaveCount(5);
-  await expect
-    .poll(
-      async () =>
-        page.getByTestId("instagram-proof-container").evaluateAll((containers) =>
-          containers.filter((container) => container.querySelector("iframe") || container.getAttribute("data-embed-status") === "failed").length
-        ),
-      { timeout: 15_000 }
-    )
-    .toBe(5);
-  expect(
-    await page.getByTestId("instagram-proof-container").evaluateAll((containers) =>
-      containers.filter((container) => !container.querySelector("iframe") && container.getBoundingClientRect().height > 200).length
-    )
-  ).toBe(0);
-  await expect(page.getByRole("heading", { name: "See our projects" })).toBeVisible();
-  const socialProofTop = await page.getByTestId("social-proof-homepage").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
-  const processTop = await page.getByTestId("home-process").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
-  const comparisonTop = await page.getByTestId("home-comparison").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
-  const projectsTop = await page.getByRole("heading", { name: "See our projects" }).evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
-  const reserveTop = await page.getByTestId("home-reserve-strip").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
-  expect(socialProofTop).toBeLessThan(processTop);
-  expect(processTop).toBeLessThan(comparisonTop);
-  expect(comparisonTop).toBeLessThan(projectsTop);
-  expect(projectsTop).toBeLessThan(reserveTop);
+  await expect(page.getByTestId("social-proof-homepage")).toHaveCount(0);
+  await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(0);
+  await expect(page.getByTestId("instagram-proof-container")).toHaveCount(0);
+  await expect(page.locator('iframe[src*="facebook.com"], iframe[src*="instagram.com"], blockquote.instagram-media')).toHaveCount(0);
   await expect(page.getByRole("columnheader", { name: "Feature" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Wall Print Pro" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Vinyl wrap" })).toBeVisible();
@@ -203,9 +177,6 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByText("Wall Print Pro compared with vinyl wrap and hand-painted murals.")).toHaveCount(0);
   await expect(page.getByText("Customer testimonial coming soon.")).toHaveCount(0);
   await expect(page.getByText("Public project evidence")).toHaveCount(0);
-  await expect(page.getByTestId("social-proof-quote-cta")).toHaveAttribute("href", "/request");
-  await expect(page.getByTestId("social-proof-quote-cta")).toHaveText("Get estimate");
-  await expect(page.getByRole("link", { name: "Follow us on Facebook" })).toBeVisible();
   await expect(page.getByTestId("home-reserve-strip")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Reserve your spot — $100" })).toBeVisible();
   await expect(page.getByTestId("home-reserve-strip").locator("strong")).toHaveText("credited to your print");
@@ -225,35 +196,17 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("home-final-quote")).toBeVisible();
   await expect(page.getByTestId("home-final-quote-cta")).toHaveAttribute("href", "/request");
   await expect(page.getByTestId("home-final-quote-cta")).toContainText("Free preview");
-  await expect(page.getByTestId("site-footer")).toBeVisible();
+  const footer = page.getByTestId("site-footer");
+  await expect(footer).toBeVisible();
+  await expect(footer.getByTestId("site-footer-facebook")).toHaveAttribute(
+    "href",
+    "https://www.facebook.com/profile.php?id=61587045900230"
+  );
+  await expect(footer.getByTestId("site-footer-instagram")).toHaveAttribute("href", "https://www.instagram.com/wall_printpro/");
+  await expect(footer.getByTestId("site-footer-facebook")).toHaveAttribute("target", "_blank");
+  await expect(footer.getByTestId("site-footer-instagram")).toHaveAttribute("target", "_blank");
   await expect(page.locator('source[src*="work-videos"]')).toHaveCount(0);
   await expectNoBannedRenderedTerms(page);
-});
-
-test("Instagram failures become compact canonical-link fallbacks instead of blank boxes", async ({ page }) => {
-  await page.route("**/www.instagram.com/embed.js*", (route) => route.abort());
-  await page.goto("/");
-
-  const containers = page.getByTestId("instagram-proof-container");
-  await expect(containers).toHaveCount(5);
-  await expect
-    .poll(() => containers.evaluateAll((items) => items.map((item) => item.getAttribute("data-embed-status"))), { timeout: 12_000 })
-    .toEqual(Array(5).fill("failed"));
-  await expect(page.getByTestId("instagram-proof-fallback")).toHaveCount(5);
-
-  const fallbackState = await containers.evaluateAll((items) =>
-    items.map((item) => ({
-      hasIframe: Boolean(item.querySelector("iframe")),
-      height: item.getBoundingClientRect().height,
-      link: item.querySelector<HTMLAnchorElement>('a[href^="https://www.instagram.com/"]')?.href ?? null
-    }))
-  );
-
-  for (const item of fallbackState) {
-    expect(item.hasIframe).toBe(false);
-    expect(item.height).toBeLessThan(200);
-    expect(item.link).toMatch(/^https:\/\/www\.instagram\.com\//);
-  }
 });
 
 test("homepage upload renders immediately, stays in place, and shares the durable iPhone preview", async ({ page }, testInfo) => {
@@ -649,29 +602,6 @@ test.describe("mobile homepage layout", () => {
     expect(metrics.headingRight).toBeLessThanOrEqual(metrics.viewportWidth - 12);
   });
 
-  test("keeps the social-proof section inside the mobile viewport", async ({ page }) => {
-    await page.goto("/");
-    const metrics = await page.getByTestId("social-proof-homepage").evaluate((section) => {
-      const iframe = section.querySelector("iframe");
-      const sectionRect = section.getBoundingClientRect();
-      const iframeRect = iframe?.getBoundingClientRect();
-
-      return {
-        documentWidth: document.documentElement.scrollWidth,
-        iframeLeft: iframeRect?.left ?? -1,
-        iframeRight: iframeRect?.right ?? -1,
-        sectionLeft: sectionRect.left,
-        sectionRight: sectionRect.right,
-        viewportWidth: window.innerWidth
-      };
-    });
-
-    expect(metrics.sectionLeft).toBeGreaterThanOrEqual(0);
-    expect(metrics.sectionRight).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.documentWidth).toBe(metrics.viewportWidth);
-    expect(metrics.iframeLeft).toBeGreaterThanOrEqual(0);
-    expect(metrics.iframeRight).toBeLessThanOrEqual(metrics.viewportWidth);
-  });
 });
 
 test("bottom controls cycle the selected picture and native AR target", async ({ page }) => {
@@ -711,64 +641,6 @@ test("homepage hides artwork names and places picture navigation on the bottom r
   ).toBeLessThanOrEqual(16);
   await page.getByTestId("next-artwork").click();
   await expect(page.getByTestId("static-artwork-preview")).toHaveAttribute("src", "/artworks/chicago-final-2.jpg");
-});
-
-test("homepage places social-proof actions below the Facebook video on small screens", async ({ page }) => {
-  await page.setViewportSize({ width: 558, height: 785 });
-  await page.goto("/");
-
-  const videoBox = await page.getByTestId("facebook-proof-embed").boundingBox();
-  const actionsBox = await page.getByTestId("social-proof-actions").boundingBox();
-
-  expect(actionsBox?.y ?? 0).toBeGreaterThanOrEqual((videoBox?.y ?? 0) + (videoBox?.height ?? 0) + 8);
-  await expect(page.getByTestId("social-proof-actions").getByRole("link")).toHaveCount(2);
-});
-
-test("official Instagram embeds stay inside a 320px viewport", async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 785 });
-  await page.route("**/api/instagram-projects", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ ok: false, reason: "not-configured" })
-    })
-  );
-  await page.route("**/www.instagram.com/embed.js*", (route) =>
-    route.fulfill({
-      contentType: "application/javascript",
-      body: `
-        window.instgrm = {
-          Embeds: {
-            process() {
-              document.querySelectorAll("blockquote.instagram-media").forEach((blockquote) => {
-                const iframe = document.createElement("iframe");
-                iframe.className = "instagram-media instagram-media-rendered";
-                iframe.style.minWidth = "326px";
-                iframe.style.width = "100%";
-                blockquote.replaceWith(iframe);
-              });
-            }
-          }
-        };
-        window.instgrm.Embeds.process();
-      `
-    })
-  );
-
-  await page.goto("/");
-  await expect(page.locator("iframe.instagram-media")).toHaveCount(5);
-
-  const layout = await page.evaluate(() => ({
-    documentWidth: document.documentElement.scrollWidth,
-    embedOverflowCount: Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe.instagram-media")).filter((iframe) => {
-      const iframeBox = iframe.getBoundingClientRect();
-      const containerBox = iframe.parentElement?.getBoundingClientRect();
-      return !containerBox || iframeBox.left < containerBox.left || iframeBox.right > containerBox.right;
-    }).length,
-    viewportWidth: document.documentElement.clientWidth
-  }));
-
-  expect(layout.embedOverflowCount).toBe(0);
-  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
 });
 
 test("homepage keeps the hero in two columns at tablet width without horizontal overflow", async ({ page }) => {
@@ -956,6 +828,25 @@ test.describe("AR launcher access guidance", () => {
     });
   });
 
+  test.describe("Android Chrome", () => {
+    test.use({
+      hasTouch: true,
+      isMobile: true,
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36",
+      viewport: { width: 412, height: 915 }
+    });
+
+    test("exposes the native AR launch path without an iPhone-share control", async ({ page }) => {
+      await page.goto("/");
+
+      await expect(page.getByTestId("ar-launcher-model")).toHaveAttribute("ar-modes", "quick-look scene-viewer");
+      await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
+      await expect(page.getByTestId("quick-look-link")).toHaveAttribute("rel", "ar");
+      await expect(page.getByTestId("share-to-phone")).toHaveCount(0);
+    });
+  });
+
   test.describe("unknown touch browser", () => {
     test.use({
       hasTouch: true,
@@ -981,28 +872,14 @@ test("shared site header + reserve CTA render on the Our work routes", async ({ 
   await expect(page.getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "/gallery");
   await expect(page.getByRole("link", { name: "Our work" }).first()).toHaveAttribute("href", "/work");
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
+  await expect(page.getByTestId("social-proof-library")).toHaveCount(0);
+  await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(0);
+  await expect(page.getByTestId("instagram-proof-container")).toHaveCount(0);
+  await expect(page.locator('iframe[src*="facebook.com"], iframe[src*="instagram.com"], blockquote.instagram-media')).toHaveCount(0);
 
   await page.goto("/work/pathways-to-success-mural");
   await expect(page.getByRole("link", { name: "Wall Print Pro" })).toHaveAttribute("href", "/");
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
-});
-
-test("work route shows the complete public social-proof library", async ({ page }) => {
-  await page.goto("/work");
-
-  await expect(page.getByRole("heading", { name: "Real prints, shown where they were published" })).toBeVisible();
-  await expect(page.getByTestId("social-proof-library")).toBeVisible();
-  await expect(page.getByTestId("facebook-proof-embed")).toHaveCount(1);
-  await expect(page.getByTestId("instagram-proof-container")).toHaveCount(5);
-  await expect(page.getByTestId("social-proof-embed").nth(0)).toHaveAttribute("data-social-proof-id", "business-logo-wall");
-  await expect(page.getByTestId("social-proof-embed").nth(1)).toHaveAttribute("data-social-proof-id", "one-day-result");
-  await expect(page.getByTestId("social-proof-embed").nth(2)).toHaveAttribute("data-social-proof-id", "first-client-story");
-  await expect(page.getByTestId("social-proof-embed").nth(3)).toHaveAttribute("data-social-proof-id", "label808-studio");
-  await expect(page.getByTestId("social-proof-embed").nth(4)).toHaveAttribute("data-social-proof-id", "wall-printing-explained");
-  await expect(page.locator('source[src*="work-videos"]')).toHaveCount(0);
-
-  await page.goto("/work/pathways-to-success-mural");
-  await expect(page.getByTestId("work-detail-video")).toHaveCount(0);
 });
 
 test("/reserved keeps the shared header but swaps the CTA for a confirmation chip", async ({ page }) => {
@@ -1067,7 +944,7 @@ test("public preview route renders an unavailable state for missing Convex asset
   await expectNoBannedRenderedTerms(page);
 });
 
-test("launch-deleted routes return 404", async ({ page }) => {
+test("removed launch routes return direct 404 responses", async ({ page }) => {
   for (const pathname of [
     "/admin",
     "/admin/leads",
@@ -1083,6 +960,8 @@ test("launch-deleted routes return 404", async ({ page }) => {
     const response = await page.goto(pathname);
 
     expect(response?.status(), `${pathname} should be deleted`).toBe(404);
+    expect(response?.request().redirectedFrom(), `${pathname} should not redirect`).toBeNull();
+    expect(new URL(page.url()).pathname, `${pathname} should remain the requested route`).toBe(pathname);
   }
 });
 
