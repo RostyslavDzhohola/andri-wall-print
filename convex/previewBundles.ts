@@ -34,7 +34,6 @@ import {
   assertValidPrint,
   assetMetaValidator,
   assetStorageIdsValidator,
-  assetUrlsValidator,
   previewConfirmationAreaBasisValidator,
   printValidator
 } from "./validators";
@@ -370,7 +369,7 @@ export const submitPublicConfirmation = mutation({
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
       .first();
 
-    if (!bundle || bundle.status !== "ready") {
+    if (bundle?.status !== "ready") {
       throw new ConvexError({
         code: "PREVIEW_UNAVAILABLE",
         message: "This preview is not available for confirmation."
@@ -777,7 +776,7 @@ export const finalizeBundleReady = internalMutation({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.status !== "generating" || (bundle.job?.attempt ?? 1) !== args.attempt) {
+    if (bundle?.status !== "generating" || (bundle.job?.attempt ?? 1) !== args.attempt) {
       return false;
     }
 

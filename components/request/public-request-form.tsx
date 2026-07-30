@@ -2,7 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { ArrowRight, CheckCircle2, ImagePlus, Loader2, Sparkles } from "lucide-react";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -284,6 +284,7 @@ export function PublicRequestForm({
         </div>
         <div className="grid gap-2">
           <Label id={`${preferredContactGroupId}-label`}>Preferred contact</Label>
+          {/* biome-ignore lint/a11y/useSemanticElements: fieldset does not reliably support display:grid in Chromium; role=group is equivalent here */}
           <div aria-labelledby={`${preferredContactGroupId}-label`} className="grid grid-cols-3 gap-2" role="group">
             {contactMethodOptions.map((option) => (
               <Button

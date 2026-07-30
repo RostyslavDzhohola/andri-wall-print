@@ -13,7 +13,8 @@
     "test": "vitest run",
     "assets:phase0:chicago": "bash scripts/build-chicago-phase0-assets.sh",
     "convex:seed:phase0": "node scripts/seed-convex-phase0-assets.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lint": "biome lint ."
   },
   "dependencies": {
     "@google/model-viewer": "^4.2.0",
@@ -32,6 +33,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
     "@cloudflare/vite-plugin": "1.37.1",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "4.2.4",

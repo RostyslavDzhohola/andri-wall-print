@@ -147,9 +147,9 @@ function ProcessSteps() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">Process</p>
         <h2 className="mt-2 text-3xl font-semibold leading-tight md:text-4xl">{HOME_PROCESS_HEADING}</h2>
 
-        <div className="mt-8 grid gap-4" role="list">
+        <ul className="mt-8 grid list-none gap-4 p-0">
           {HOME_PROCESS_STEPS.map((step, index) => (
-            <div className="flex gap-4 rounded-lg border bg-card p-5 shadow-sm" key={step.title} role="listitem">
+            <li className="flex gap-4 rounded-lg border bg-card p-5 shadow-sm" key={step.title}>
               <span
                 aria-hidden="true"
                 className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
@@ -160,9 +160,9 @@ function ProcessSteps() {
                 <h3 className="text-lg font-semibold text-foreground">{step.title}</h3>
                 <p className="text-sm leading-6 text-muted-foreground">{step.body}</p>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

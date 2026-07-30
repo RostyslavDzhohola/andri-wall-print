@@ -57,7 +57,7 @@ function createFakeCtx(seed: Record<string, Row[]> = {}) {
     ctx: {
       db: {
         query(tableName: string) {
-          let filters: Array<{ field: string; value: unknown }> = [];
+          const filters: Array<{ field: string; value: unknown }> = [];
 
           return {
             withIndex(_indexName: string, build: (q: any) => any) {

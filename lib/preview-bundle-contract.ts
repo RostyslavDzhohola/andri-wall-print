@@ -174,9 +174,6 @@ function formatDecimal(value: number, decimals: number) {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(decimals).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-function formatCentimeters(valueCm: number) {
-  return formatDecimal(valueCm, valueCm % 1 === 0 ? 0 : 1);
-}
 
 function formatAspectRatioPart(valueCm: number) {
   return formatDecimal(valueCm, valueCm % 1 === 0 ? 0 : 1);

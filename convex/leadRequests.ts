@@ -493,7 +493,7 @@ export async function startConceptGenerationHandler(ctx: any, args: {
   print?: unknown;
 }) {
   const now = Date.now();
-  let normalized;
+  let normalized: ReturnType<typeof normalizeLeadRequestInput>;
 
   if (!args.contactEmail || !isValidLeadEmail(args.contactEmail)) {
     return {
@@ -680,7 +680,7 @@ type SubmitLeadRequestArgs = {
 
 export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequestArgs) {
   const now = Date.now();
-  let normalized;
+  let normalized: ReturnType<typeof normalizeLeadRequestInput>;
 
   try {
     normalized = normalizeLeadRequestInput(args);
@@ -816,7 +816,7 @@ export const getConceptGenerationStatus = query({
   handler: async (ctx, args) => {
     const lead = await ctx.db.get(args.leadRequestId);
 
-    if (!lead || !lead.aiConceptDraftId) {
+    if (!lead?.aiConceptDraftId) {
       return {
         ok: false as const,
         code: "NOT_FOUND",
@@ -863,7 +863,7 @@ export const getAiDraftForGeneration = internalQuery({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
 
-    if (!draft || draft.status !== "queued") {
+    if (draft?.status !== "queued") {
       return null;
     }
 
@@ -892,7 +892,7 @@ export const markAiDraftGenerating = internalMutation({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
 
-    if (!draft || draft.status !== "queued") {
+    if (draft?.status !== "queued") {
       return false;
     }
 
