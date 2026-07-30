@@ -10,9 +10,10 @@ describe("shared site footer", () => {
 
     expect(html).toContain('data-testid="site-footer"');
     expect(html).toContain("Wall Print Pro");
-    expect(html).toContain("123 W Example St, Suite 100");
-    expect(html).toContain("Chicago, IL 60601");
-    expect(html).toContain('href="tel:+13125550100"');
+    expect(html).toContain("Cook County");
+    expect(html).toContain("1453 E Walnut Ave");
+    expect(html).toContain("Des Plaines, IL 60016");
+    expect(html).toContain('href="tel:7085433826"');
     expect(html).toContain('href="mailto:hello@wallprintpro.com"');
     expect(html).toContain('data-testid="site-footer-facebook"');
     expect(html).toContain('href="https://www.facebook.com/profile.php?id=61587045900230"');

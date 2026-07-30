@@ -26,7 +26,6 @@ function InstagramIcon() {
 
 export function SiteFooter() {
   // Keep the visible business details aligned with the LocalBusiness JSON-LD.
-  // LAUNCH GATE: real NAP (name, address, phone) lives in lib/local-business.ts.
   const telHref = `tel:${LOCAL_BUSINESS_NAP.telephone.replace(/[^\d+]/g, "")}`;
 
   return (
@@ -59,6 +58,7 @@ export function SiteFooter() {
           </nav>
         </div>
         <address className="grid gap-1 text-sm not-italic text-muted-foreground md:justify-self-end md:text-right">
+          <span>{LOCAL_BUSINESS_NAP.county}</span>
           <span>{LOCAL_BUSINESS_NAP.streetAddress}</span>
           <span>
             {LOCAL_BUSINESS_NAP.addressLocality}, {LOCAL_BUSINESS_NAP.addressRegion} {LOCAL_BUSINESS_NAP.postalCode}

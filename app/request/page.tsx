@@ -11,6 +11,7 @@ import {
   readWallPrintProPublicContactUrl,
   readWallPrintProPublicPhone
 } from "@/lib/runtime-env";
+import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
 import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +77,7 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
               defaultDesignContext={requestDefaults.defaultDesignContext}
               defaultIntent={requestDefaults.defaultIntent}
               publicContactUrl={readWallPrintProPublicContactUrl()}
-              publicPhone={readWallPrintProPublicPhone()}
+              publicPhone={readWallPrintProPublicPhone()?.trim() || LOCAL_BUSINESS_NAP.telephone}
               uploadFirst={uploadFirst}
             />
           </CardContent>

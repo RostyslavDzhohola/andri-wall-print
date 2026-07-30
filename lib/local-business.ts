@@ -1,24 +1,15 @@
 import { getSiteUrl } from "./site-url";
 
-// LAUNCH GATE: real NAP (name, address, phone) from client.
-// Every field below except the site URL is a placeholder and must be replaced
-// with the client's verified business details before launch.
 export const LOCAL_BUSINESS_NAP = {
   name: "Wall Print Pro",
-  streetAddress: "123 W Example St, Suite 100",
-  addressLocality: "Chicago",
+  county: "Cook County",
+  streetAddress: "1453 E Walnut Ave",
+  addressLocality: "Des Plaines",
   addressRegion: "IL",
-  postalCode: "60601",
+  postalCode: "60016",
   addressCountry: "US",
-  telephone: "+1-312-555-0100",
+  telephone: "(708) 543-3826",
   email: "hello@wallprintpro.com"
-} as const;
-
-// Approximate Chicago city-center coordinates. LAUNCH GATE: replace with the
-// client's real service-area or storefront geo.
-const CHICAGO_GEO = {
-  latitude: 41.8781,
-  longitude: -87.6298
 } as const;
 
 export function buildLocalBusinessJsonLd() {
@@ -43,14 +34,9 @@ export function buildLocalBusinessJsonLd() {
       postalCode: LOCAL_BUSINESS_NAP.postalCode,
       addressCountry: LOCAL_BUSINESS_NAP.addressCountry
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: CHICAGO_GEO.latitude,
-      longitude: CHICAGO_GEO.longitude
-    },
     areaServed: {
-      "@type": "City",
-      name: "Chicago"
+      "@type": "AdministrativeArea",
+      name: LOCAL_BUSINESS_NAP.county
     }
   };
 }

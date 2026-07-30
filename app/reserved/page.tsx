@@ -4,6 +4,7 @@ import { ArrowRight, MessageSquareText, Phone } from "lucide-react";
 
 import { ReservedVisitLogger } from "@/components/reserved/reserved-visit-logger";
 import { Button } from "@/components/ui/button";
+import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
 import { readWallPrintProPublicContactUrl, readWallPrintProPublicPhone } from "@/lib/runtime-env";
 import {
   RESERVED_DEPOSIT_COPY,
@@ -31,11 +32,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-// LAUNCH GATE: real phone from client. The env override
-// (WALL_PRINT_PRO_PUBLIC_PHONE) wins when set; this placeholder keeps the
-// contact block functional in every environment until the real number lands.
-const PLACEHOLDER_PUBLIC_PHONE = "(312) 555-0100";
-
 type ReservedPageProps = {
   searchParams?: Promise<ReservedSearchParamsInput>;
 };
@@ -44,7 +40,7 @@ export default async function ReservedPage({ searchParams }: ReservedPageProps) 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const { sessionId, receiptLine } = resolveReservedPageModel(resolvedSearchParams);
 
-  const phone = readWallPrintProPublicPhone()?.trim() || PLACEHOLDER_PUBLIC_PHONE;
+  const phone = readWallPrintProPublicPhone()?.trim() || LOCAL_BUSINESS_NAP.telephone;
   const telHref = `tel:${phone.replace(/\D/g, "")}`;
   const smsHref = `sms:${phone.replace(/\D/g, "")}`;
   const contactUrl = readWallPrintProPublicContactUrl()?.trim();
