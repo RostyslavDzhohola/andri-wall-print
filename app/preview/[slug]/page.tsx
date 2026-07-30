@@ -6,7 +6,7 @@ import { PublicPreviewConfirmation } from "@/components/preview/public-preview-c
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { getPublicPreview } from "@/lib/convex-public-preview";
 
 export const dynamic = "force-dynamic";
@@ -70,9 +70,9 @@ export default async function PublicPreviewPage({ params }: PublicPreviewPagePro
           <CardHeader>
             <BrandMark href={null} iconSize="lg" />
             <CardDescription className="font-semibold uppercase">{isPreparing ? "Client preview preparing" : "Client preview unavailable"}</CardDescription>
-            <CardTitle className="text-3xl md:text-5xl">
+            <h1 className="font-heading text-3xl font-medium leading-snug md:text-5xl">
               {isPreparing ? "This client preview is being prepared. Check back shortly." : "This client preview is not available."}
-            </CardTitle>
+            </h1>
           </CardHeader>
           <CardContent className="grid gap-5">
             <p className="text-base leading-7 text-muted-foreground" data-testid="preview-unavailable-reason">

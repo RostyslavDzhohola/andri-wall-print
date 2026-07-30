@@ -76,8 +76,8 @@ export default function RootLayout({
               </div>
             </div>
             <div className="flex-1">{children}</div>
-            <SiteFooter />
             <StickyReserveBar estimateHref={estimateHref} />
+            <SiteFooter />
           </div>
         </AppProviders>
       </body>

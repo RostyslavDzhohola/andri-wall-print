@@ -90,6 +90,7 @@ test("the desktop gallery preview reserves a sticky offset below the header", as
 
 test("the mobile reserve bar keeps its route visibility rules and does not cover the footer", async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 0) >= 768, "Mobile reserve bar only");
+  await page.setViewportSize({ width: 390, height: 844 });
   await blockThirdPartyMedia(page);
 
   for (const route of ["/", "/gallery", "/work", "/missing-page"]) {
@@ -98,6 +99,37 @@ test("the mobile reserve bar keeps its route visibility rules and does not cover
     const footer = page.getByTestId("site-footer");
 
     await expect(reserveBar, route).toBeVisible();
+
+    if (route === "/") {
+      const viewportHeight = page.viewportSize()!.height;
+      const initialReserveBox = await reserveBar.locator("..").boundingBox();
+
+      expect(initialReserveBox, route).not.toBeNull();
+      expect(initialReserveBox!.y + initialReserveBox!.height, route).toBeCloseTo(viewportHeight, 0);
+
+      await page.evaluate(() => window.scrollTo(0, 400));
+      await expect
+        .poll(async () => {
+          const reserveBox = await reserveBar.locator("..").boundingBox();
+          return reserveBox ? reserveBox.y + reserveBox.height : null;
+        }, { message: `${route}: sticky reserve bar` })
+        .toBeCloseTo(viewportHeight, 0);
+    }
+
+    if (route === "/missing-page") {
+      const footerEmail = footer.locator('a[href^="mailto:"]');
+      const footerEmailBox = await footerEmail.boundingBox();
+      const initialReserveBox = await reserveBar.locator("..").boundingBox();
+
+      expect(footerEmailBox, route).not.toBeNull();
+      expect(initialReserveBox, route).not.toBeNull();
+      expect(
+        footerEmailBox!.y < initialReserveBox!.y + initialReserveBox!.height &&
+          footerEmailBox!.y + footerEmailBox!.height > initialReserveBox!.y,
+        route
+      ).toBe(false);
+    }
+
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
 
     const footerBox = await footer.boundingBox();
@@ -105,7 +137,11 @@ test("the mobile reserve bar keeps its route visibility rules and does not cover
 
     expect(footerBox, route).not.toBeNull();
     expect(reserveBox, route).not.toBeNull();
-    expect(reserveBox!.y + 1, route).toBeGreaterThanOrEqual(footerBox!.y + footerBox!.height);
+    expect(
+      reserveBox!.y + reserveBox!.height <= footerBox!.y + 1 ||
+        footerBox!.y + footerBox!.height <= reserveBox!.y + 1,
+      route
+    ).toBe(true);
   }
 
   for (const route of ["/request", "/reserved", "/preview/not-a-real-preview"]) {
