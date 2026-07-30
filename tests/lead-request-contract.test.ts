@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AI_CONCEPT_DRAFT_STATUSES,
+  canFinalizeAiDraft,
   isValidLeadPhone,
   leadRequestSchema,
   makeLeadRateLimitBucket,
@@ -10,6 +12,25 @@ import {
 } from "@/lib/lead-request-contract";
 
 describe("lead request contract", () => {
+  it("enforces the AI draft finalization truth table", () => {
+    const allowedTransitions = new Set([
+      "queued:failed",
+      "queued:rejected",
+      "generating:failed",
+      "generating:rejected",
+      "generating:ready",
+      "generating:composite_only"
+    ]);
+
+    for (const from of AI_CONCEPT_DRAFT_STATUSES) {
+      for (const to of AI_CONCEPT_DRAFT_STATUSES) {
+        expect(canFinalizeAiDraft(from, to), `${from} -> ${to}`).toBe(
+          allowedTransitions.has(`${from}:${to}`)
+        );
+      }
+    }
+  });
+
   it("normalizes required contact fields and reserve intent", () => {
     expect(
       normalizeLeadRequestInput({

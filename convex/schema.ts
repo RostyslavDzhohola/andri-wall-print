@@ -149,6 +149,7 @@ export default defineSchema({
     refusalReason: v.optional(v.string()),
     providerMetadata: v.optional(v.string()),
     providerFailureCode: v.optional(v.string()),
+    recoveryAttempts: v.optional(v.number()),
     requestedAt: v.number(),
     startedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),

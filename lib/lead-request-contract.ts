@@ -12,12 +12,25 @@ export const AI_CONCEPT_DRAFT_STATUSES = [
   "rate_limited",
   "disabled"
 ] as const;
+export const AI_DRAFT_ACTIVE_STATUSES = ["queued", "generating"] as const;
 export const LEAD_CONTACT_METHODS = ["email", "phone", "either"] as const;
 
 export type LeadRequestIntent = (typeof LEAD_REQUEST_INTENTS)[number];
 export type LeadRequestStatus = (typeof LEAD_REQUEST_STATUSES)[number];
 export type AiConceptDraftStatus = (typeof AI_CONCEPT_DRAFT_STATUSES)[number];
 export type LeadContactMethod = (typeof LEAD_CONTACT_METHODS)[number];
+
+export function canFinalizeAiDraft(from: AiConceptDraftStatus, to: AiConceptDraftStatus) {
+  if (to === "failed" || to === "rejected") {
+    return AI_DRAFT_ACTIVE_STATUSES.includes(from as (typeof AI_DRAFT_ACTIVE_STATUSES)[number]);
+  }
+
+  if (to === "ready" || to === "composite_only") {
+    return from === "generating";
+  }
+
+  return false;
+}
 
 export const LEAD_CONCEPT_PROMPT_MAX_LENGTH = 900;
 export const LEAD_TEXT_FIELD_MAX_LENGTH = 240;

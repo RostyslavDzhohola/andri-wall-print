@@ -1,11 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { mapOpenAiFailureToAiDraftFailure } from "@/convex/aiConcepts";
+import { generateConceptDraftHandler, mapOpenAiFailureToAiDraftFailure } from "@/convex/aiConcepts";
 import {
+  AI_DRAFT_GENERATING_STALE_MS,
+  AI_DRAFT_QUEUED_STALE_MS,
   GLOBAL_CONCEPT_GENERATION_DAILY_CAP,
+  finalizeAiDraftFailure,
   getChicagoGenerationDayKey,
+  getConceptGenerationStatus,
   logReservedVisitHandler,
+  recordAiDraftGeneratedImage,
+  recoverStaleAiConceptDrafts,
   selectConceptGenerationGate,
+  selectStaleAiDraftRecovery,
   startConceptGenerationHandler
 } from "@/convex/leadRequests";
 import { RESERVED_SESSION_ID_MAX_LENGTH } from "@/lib/reserved-session-id";
@@ -64,11 +71,19 @@ function createFakeCtx(seed: Record<string, Row[]> = {}) {
 
               return this;
             },
+            order() {
+              return this;
+            },
             async first() {
               return (
                 tables[tableName]?.find((row) => filters.every((filter) => row[filter.field] === filter.value)) ??
                 null
               );
+            },
+            async take(limit: number) {
+              return (tables[tableName] ?? [])
+                .filter((row) => filters.every((filter) => row[filter.field] === filter.value))
+                .slice(0, limit);
             }
           };
         },
@@ -96,9 +111,42 @@ function createFakeCtx(seed: Record<string, Row[]> = {}) {
         async runAfter(delay: number, fn: unknown, args: unknown) {
           scheduled.push({ delay, fn, args });
         }
+      },
+      storage: {
+        async getUrl(storageId: string) {
+          return `https://storage.test/${storageId}`;
+        }
       }
     }
   };
+}
+
+function makeTestPng() {
+  const ascii = (value: string) =>
+    Uint8Array.from(Array.from(value, (character) => character.charCodeAt(0)));
+  const u32be = (value: number) =>
+    Uint8Array.from([(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff]);
+  const parts = [
+    Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    u32be(13),
+    ascii("IHDR"),
+    u32be(128),
+    u32be(128),
+    Uint8Array.from([8, 6, 0, 0, 0]),
+    u32be(0),
+    u32be(0),
+    ascii("IEND"),
+    u32be(0)
+  ];
+  const output = new Uint8Array(parts.reduce((length, part) => length + part.byteLength, 0));
+  let offset = 0;
+
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.byteLength;
+  }
+
+  return output;
 }
 
 describe("concept generation gate", () => {
@@ -266,6 +314,352 @@ describe("concept generation gate", () => {
       args: {
         draftId: fake.tables.aiConceptDrafts[0]._id
       }
+    });
+  });
+
+  it("uses a neutral contact fallback and never exposes an email in concept status titles", async () => {
+    enableAiConcepts();
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx();
+
+    await startConceptGenerationHandler(fake.ctx, {
+      contactEmail: "private-buyer@example.com",
+      conceptPrompt: "Chicago skyline mural"
+    });
+
+    expect(fake.tables.leadRequests[0].contactName).toBe("Concept lead");
+
+    const status = await (getConceptGenerationStatus as any)._handler(fake.ctx, {
+      leadRequestId: fake.tables.leadRequests[0]._id as never
+    });
+
+    expect(status).toMatchObject({
+      ok: true,
+      title: "Wall print concept draft"
+    });
+    expect(JSON.stringify(status)).not.toContain("private-buyer@example.com");
+  });
+
+  it("builds neutral generated filenames, AR asset titles, and bundle titles", async () => {
+    const storedBlobs: Blob[] = [];
+    const mutationArgs: Array<Record<string, any>> = [];
+    const imageBytes = makeTestPng();
+    const ctx = {
+      async runQuery() {
+        return {
+          draftId: "draft_1",
+          leadRequestId: "lead_1",
+          prompt: "Chicago skyline mural"
+        };
+      },
+      async runMutation(_fn: unknown, args: Record<string, any>) {
+        mutationArgs.push(args);
+
+        if (mutationArgs.length === 1) {
+          return true;
+        }
+
+        if (args.aiConceptDraftId) {
+          return {
+            bundleId: "bundle_1",
+            publicSlug: "neutral-preview",
+            publicUrl: "/preview/neutral-preview",
+            status: "ready"
+          };
+        }
+
+        return null;
+      },
+      storage: {
+        async store(blob: Blob) {
+          storedBlobs.push(blob);
+          return `storage_${storedBlobs.length}`;
+        }
+      }
+    };
+
+    await generateConceptDraftHandler(
+      ctx,
+      { draftId: "draft_1" as never },
+      async () => ({
+        ok: true,
+        bytes: imageBytes,
+        contentType: "image/png",
+        model: "test-model",
+        quality: "auto",
+        size: "auto",
+        metadata: "{}"
+      })
+    );
+
+    const bundleArgs = mutationArgs.find((args) => args.aiConceptDraftId);
+    const generatedImageArgs = mutationArgs.find((args) => args.generatedImageMeta && !args.assetStorageIds);
+    const glb = storedBlobs.find((blob) => blob.type === "model/gltf-binary");
+
+    expect(bundleArgs).toMatchObject({
+      title: "Wall print concept draft",
+      originalFileName: "wall-print-concept-draft.png"
+    });
+    expect(generatedImageArgs?.generatedImageMeta.fileName).toBe("wall-print-concept-draft.png");
+    expect(glb).toBeDefined();
+
+    const glbText = Buffer.from(await (glb as Blob).arrayBuffer()).toString("utf8");
+    expect(glbText).toContain("Wall print concept draft");
+    expect(glbText).not.toContain("@");
+  });
+
+  it("records unexpected post-claim generation crashes as failed", async () => {
+    const mutationArgs: Array<Record<string, any>> = [];
+    const ctx = {
+      async runQuery() {
+        return {
+          draftId: "draft_1",
+          leadRequestId: "lead_1",
+          prompt: "Chicago skyline mural"
+        };
+      },
+      async runMutation(_fn: unknown, args: Record<string, any>) {
+        mutationArgs.push(args);
+        return mutationArgs.length === 1 ? true : null;
+      }
+    };
+
+    await generateConceptDraftHandler(
+      ctx,
+      { draftId: "draft_1" as never },
+      async () => {
+        throw new Error("provider transport crashed");
+      }
+    );
+
+    expect(mutationArgs.at(-1)).toMatchObject({
+      draftId: "draft_1",
+      status: "failed",
+      reason: "provider transport crashed"
+    });
+  });
+
+  it("falls back to composite_only when the public bundle cannot be created", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const imageBytes = makeTestPng();
+    const mutationArgs: Array<Record<string, any>> = [];
+    let storageCount = 0;
+    const ctx = {
+      async runQuery() {
+        return {
+          draftId: "draft_1",
+          leadRequestId: "lead_1",
+          prompt: "Chicago skyline mural",
+          businessName: "Studio"
+        };
+      },
+      async runMutation(_fn: unknown, args: Record<string, any>) {
+        mutationArgs.push(args);
+
+        if (mutationArgs.length === 1) {
+          return true;
+        }
+
+        if (args.aiConceptDraftId) {
+          throw new Error("bundle insert failed");
+        }
+
+        return null;
+      },
+      storage: {
+        async store() {
+          storageCount += 1;
+          return `storage_${storageCount}`;
+        }
+      }
+    };
+
+    await generateConceptDraftHandler(
+      ctx,
+      { draftId: "draft_1" as never },
+      async () => ({
+        ok: true,
+        bytes: imageBytes,
+        contentType: "image/png",
+        model: "test-model",
+        quality: "auto",
+        size: "auto",
+        metadata: "{}"
+      })
+    );
+
+    expect(mutationArgs.at(-1)).toMatchObject({
+      draftId: "draft_1",
+      reason: "Public preview page could not be created for this draft."
+    });
+    expect(mutationArgs.at(-1)).not.toHaveProperty("assetStorageIds");
+  });
+
+  it("does not overwrite a ready draft with a later failure", async () => {
+    const fake = createFakeCtx({
+      leadRequests: [{ _id: "lead_1", updatedAt: NOW }],
+      aiConceptDrafts: [
+        {
+          _id: "draft_1",
+          leadRequestId: "lead_1",
+          status: "ready",
+          completedAt: NOW - 1_000,
+          updatedAt: NOW - 1_000
+        }
+      ]
+    });
+
+    await (finalizeAiDraftFailure as any)._handler(fake.ctx, {
+      draftId: "draft_1" as never,
+      status: "failed",
+      reason: "late failure"
+    });
+
+    expect(fake.tables.aiConceptDrafts[0]).toMatchObject({
+      status: "ready",
+      completedAt: NOW - 1_000
+    });
+    expect(fake.tables.aiConceptDrafts[0]).not.toHaveProperty("failureReason");
+  });
+
+  it("does not record a generated image on a failed draft", async () => {
+    const fake = createFakeCtx({
+      leadRequests: [{ _id: "lead_1", updatedAt: NOW }],
+      aiConceptDrafts: [
+        {
+          _id: "draft_1",
+          leadRequestId: "lead_1",
+          status: "failed",
+          failureReason: "provider failed",
+          updatedAt: NOW
+        }
+      ]
+    });
+
+    await (recordAiDraftGeneratedImage as any)._handler(fake.ctx, {
+      draftId: "draft_1" as never,
+      generatedImageStorageId: "storage_1" as never,
+      generatedImageMeta: {
+        fileName: "late.png",
+        contentType: "image/png",
+        byteLength: 123
+      }
+    });
+
+    expect(fake.tables.aiConceptDrafts[0]).not.toHaveProperty("generatedImageStorageId");
+    expect(fake.tables.aiConceptDrafts[0]).not.toHaveProperty("generatedImageMeta");
+  });
+
+  it("selects stale AI draft recovery without retrying generating work", () => {
+    expect(
+      selectStaleAiDraftRecovery(
+        {
+          status: "queued",
+          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1,
+          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1
+        },
+        NOW
+      )
+    ).toEqual({ action: "ignore" });
+    expect(
+      selectStaleAiDraftRecovery(
+        {
+          status: "queued",
+          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS
+        },
+        NOW
+      )
+    ).toEqual({ action: "requeue", recoveryAttempts: 1 });
+    expect(
+      selectStaleAiDraftRecovery(
+        {
+          status: "queued",
+          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+          recoveryAttempts: 1
+        },
+        NOW
+      )
+    ).toEqual({
+      action: "fail",
+      reason: "Concept generation stalled. Please try again."
+    });
+    expect(
+      selectStaleAiDraftRecovery(
+        {
+          status: "generating",
+          requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+          startedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+          updatedAt: NOW - 1
+        },
+        NOW
+      )
+    ).toEqual({
+      action: "fail",
+      reason: "Concept generation stalled. Please try again."
+    });
+    expect(
+      selectStaleAiDraftRecovery(
+        {
+          status: "ready",
+          requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+          updatedAt: NOW - AI_DRAFT_GENERATING_STALE_MS
+        },
+        NOW
+      )
+    ).toEqual({ action: "ignore" });
+  });
+
+  it("requeues stale queued drafts once and fails stale generating drafts", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx({
+      leadRequests: [
+        { _id: "lead_queued", updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS },
+        { _id: "lead_generating", updatedAt: NOW - AI_DRAFT_GENERATING_STALE_MS }
+      ],
+      aiConceptDrafts: [
+        {
+          _id: "draft_queued",
+          leadRequestId: "lead_queued",
+          status: "queued",
+          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS
+        },
+        {
+          _id: "draft_generating",
+          leadRequestId: "lead_generating",
+          status: "generating",
+          requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+          startedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+          updatedAt: NOW - AI_DRAFT_GENERATING_STALE_MS
+        }
+      ]
+    });
+
+    const result = await (recoverStaleAiConceptDrafts as any)._handler(fake.ctx, {});
+
+    expect(result).toEqual({
+      requeued: 1,
+      failed: 1,
+      ignored: 0
+    });
+    expect(fake.tables.aiConceptDrafts[0]).toMatchObject({
+      status: "queued",
+      recoveryAttempts: 1,
+      updatedAt: NOW
+    });
+    expect(fake.scheduled).toEqual([
+      expect.objectContaining({
+        delay: 0,
+        args: { draftId: "draft_queued" }
+      })
+    ]);
+    expect(fake.tables.aiConceptDrafts[1]).toMatchObject({
+      status: "failed",
+      failureReason: "Concept generation stalled. Please try again.",
+      completedAt: NOW,
+      updatedAt: NOW
     });
   });
 

@@ -7,6 +7,7 @@ import { v } from "convex/values";
 
 import { generateFlatPrintAssets, type GeneratedFlatPrintAssets } from "../lib/ar-asset-generator";
 import { AR_ASSET_CONTENT_TYPES } from "../lib/ar-launcher";
+import { makeConceptDraftTitle } from "../lib/lead-request-presentation";
 import { generateOpenAiConceptImage, makeWallPrintConceptPrompt, type OpenAiImageFailure } from "../lib/openai-image-provider";
 import { DEFAULT_PREVIEW_BUNDLE_PRINT, PREVIEW_GENERATOR_VERSION, type PreviewBundlePrint } from "../lib/preview-bundle-contract";
 
@@ -113,49 +114,49 @@ export function generateAiConceptArAssets(input: {
   }
 }
 
-export const generateConceptDraft = internalAction({
-  args: {
-    draftId: v.id("aiConceptDrafts")
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const draft = (await ctx.runQuery(internal.leadRequests.getAiDraftForGeneration, {
-      draftId: args.draftId
-    })) as
-      | {
-          draftId: Id<"aiConceptDrafts">;
-          leadRequestId: Id<"leadRequests">;
-          prompt: string;
-          businessName?: string;
-          wallDescription?: string;
-          contactName: string;
-          print?: {
-            aspectRatio: string;
-            widthMeters: number;
-            heightMeters: number;
-            label: string;
-          };
-        }
-      | null;
+export async function generateConceptDraftHandler(
+  ctx: any,
+  args: { draftId: Id<"aiConceptDrafts"> },
+  generateImage: typeof generateOpenAiConceptImage = generateOpenAiConceptImage
+) {
+  const draft = (await ctx.runQuery(internal.leadRequests.getAiDraftForGeneration, {
+    draftId: args.draftId
+  })) as
+    | {
+        draftId: Id<"aiConceptDrafts">;
+        leadRequestId: Id<"leadRequests">;
+        prompt: string;
+        businessName?: string;
+        wallDescription?: string;
+        print?: {
+          aspectRatio: string;
+          widthMeters: number;
+          heightMeters: number;
+          label: string;
+        };
+      }
+    | null;
 
-    if (!draft) {
-      return null;
-    }
+  if (!draft) {
+    return null;
+  }
 
-    const claimed = await ctx.runMutation(internal.leadRequests.markAiDraftGenerating, {
-      draftId: args.draftId
-    });
+  const claimed = await ctx.runMutation(internal.leadRequests.markAiDraftGenerating, {
+    draftId: args.draftId
+  });
 
-    if (!claimed) {
-      return null;
-    }
+  if (!claimed) {
+    return null;
+  }
 
+  try {
+    const title = makeConceptDraftTitle({ businessName: draft.businessName });
     const prompt = makeWallPrintConceptPrompt({
       conceptPrompt: draft.prompt,
       businessName: draft.businessName,
       wallDescription: draft.wallDescription
     });
-    const result = await generateOpenAiConceptImage({
+    const result = await generateImage({
       apiKey: process.env.OPENAI_API_KEY,
       model: process.env.OPENAI_IMAGE_MODEL,
       print: draft.print,
@@ -174,7 +175,7 @@ export const generateConceptDraft = internalAction({
       return null;
     }
 
-    const fileName = `${fileStem(draft.contactName)}-concept.png`;
+    const fileName = `${fileStem(title)}.png`;
     let generatedImageStorageId: Id<"_storage">;
 
     try {
@@ -208,7 +209,7 @@ export const generateConceptDraft = internalAction({
       textureFileName: fileName,
       textureContentType: result.contentType,
       expectedTextureByteLength: result.bytes.byteLength,
-      title: `${draft.contactName} concept draft`,
+      title,
       print: draft.print,
       generator: PREVIEW_GENERATOR_VERSION
     });
@@ -265,7 +266,7 @@ export const generateConceptDraft = internalAction({
         originalFileName: fileName,
         contentType: result.contentType,
         byteLength: result.bytes.byteLength,
-        title: `${draft.contactName} concept draft`,
+        title,
         description: "Concept draft generated from a client request. Seller review required before artwork is final.",
         prompt: draft.prompt,
         print: draft.print,
@@ -285,22 +286,54 @@ export const generateConceptDraft = internalAction({
       created = null;
     }
 
+    if (!created) {
+      await ctx.runMutation(internal.leadRequests.finalizeAiDraftCompositeOnly, {
+        draftId: args.draftId,
+        generatedImageStorageId,
+        generatedImageMeta,
+        reason: "Public preview page could not be created for this draft.",
+        providerMetadata: result.metadata,
+        model: result.model
+      });
+      return null;
+    }
+
     await ctx.runMutation(internal.leadRequests.finalizeAiDraftReady, {
       draftId: args.draftId,
       generatedImageStorageId,
       generatedImageMeta,
       assetStorageIds,
       assetMeta: arAssets.assetMeta,
-      ...(created
-        ? {
-            previewBundleId: created.bundleId,
-            publicPreviewSlug: created.publicSlug
-          }
-        : {}),
+      previewBundleId: created.bundleId,
+      publicPreviewSlug: created.publicSlug,
       providerMetadata: result.metadata,
       model: result.model
     });
 
     return null;
+  } catch (error) {
+    try {
+      await ctx.runMutation(internal.leadRequests.finalizeAiDraftFailure, {
+        draftId: args.draftId,
+        status: "failed",
+        reason: generationErrorMessage(error)
+      });
+    } catch (finalizationError) {
+      console.error("Failed to record an AI concept generation crash.", {
+        draftId: args.draftId,
+        error,
+        finalizationError
+      });
+    }
+
+    return null;
   }
+}
+
+export const generateConceptDraft = internalAction({
+  args: {
+    draftId: v.id("aiConceptDrafts")
+  },
+  returns: v.null(),
+  handler: generateConceptDraftHandler
 });

@@ -4,9 +4,9 @@ import type { Id } from "./_generated/dataModel";
 import { ConvexError, v } from "convex/values";
 
 import {
-  AI_CONCEPT_DRAFT_STATUSES,
   LEAD_CONTACT_METHODS,
   LEAD_AI_RATE_LIMIT_PER_DAY,
+  canFinalizeAiDraft,
   getChicagoGenerationDayKey,
   isValidLeadEmail,
   makeLeadRateLimitKey,
@@ -15,6 +15,7 @@ import {
   type AiConceptDraftStatus,
   type NormalizedLeadContact
 } from "../lib/lead-request-contract";
+import { makeConceptDraftTitle } from "../lib/lead-request-presentation";
 import { normalizeReservedSessionId } from "../lib/reserved-session-id";
 import {
   FUNNEL_VISIT_DAILY_CAP,
@@ -33,8 +34,11 @@ const internal = generatedInternal as any;
 
 // Client-adjustable launch throttle for public AI concept generation.
 export const GLOBAL_CONCEPT_GENERATION_DAILY_CAP = 50;
+export const AI_DRAFT_QUEUED_STALE_MS = 120_000;
+export const AI_DRAFT_GENERATING_STALE_MS = 600_000;
 export const LEAD_LIMIT_MESSAGE = "We've received several requests from you today. Call us to talk it through.";
 const UPLOAD_CAP_MESSAGE = "Wall previews are at capacity today. Please call us or try again tomorrow.";
+const AI_DRAFT_STALLED_REASON = "Concept generation stalled. Please try again.";
 
 export { getChicagoGenerationDayKey };
 
@@ -100,7 +104,6 @@ const aiDraftGenerationValidator = v.union(
     prompt: v.string(),
     businessName: v.optional(v.string()),
     wallDescription: v.optional(v.string()),
-    contactName: v.string(),
     print: v.optional(printValidator)
   })
 );
@@ -138,6 +141,57 @@ function toPublicUrl(publicSlug: string) {
 }
 
 type PublicConceptStatus = "queued" | "generating" | "ready" | "composite_only" | "failed";
+
+type AiDraftRecoveryRecord = {
+  status: string;
+  requestedAt: number;
+  startedAt?: number;
+  updatedAt: number;
+  recoveryAttempts?: number;
+};
+
+export type StaleAiDraftRecoveryDecision =
+  | { action: "ignore" }
+  | { action: "requeue"; recoveryAttempts: number }
+  | { action: "fail"; reason: string };
+
+export function selectStaleAiDraftRecovery(
+  draft: AiDraftRecoveryRecord,
+  now = Date.now()
+): StaleAiDraftRecoveryDecision {
+  if (draft.status === "queued") {
+    if (now - draft.requestedAt < AI_DRAFT_QUEUED_STALE_MS) {
+      return { action: "ignore" };
+    }
+
+    if ((draft.recoveryAttempts ?? 0) >= 1) {
+      return {
+        action: "fail",
+        reason: AI_DRAFT_STALLED_REASON
+      };
+    }
+
+    return {
+      action: "requeue",
+      recoveryAttempts: (draft.recoveryAttempts ?? 0) + 1
+    };
+  }
+
+  if (draft.status === "generating") {
+    const generatingSince = draft.startedAt ?? draft.updatedAt;
+
+    if (now - generatingSince < AI_DRAFT_GENERATING_STALE_MS) {
+      return { action: "ignore" };
+    }
+
+    return {
+      action: "fail",
+      reason: AI_DRAFT_STALLED_REASON
+    };
+  }
+
+  return { action: "ignore" };
+}
 
 function mapPublicConceptStatus(status: string): PublicConceptStatus {
   if (status === "queued" || status === "generating" || status === "ready" || status === "composite_only") {
@@ -453,7 +507,7 @@ export async function startConceptGenerationHandler(ctx: any, args: {
   try {
     normalized = normalizeLeadRequestInput({
       ...args,
-      contactName: args.contactName || args.contactEmail,
+      contactName: args.contactName || "Concept lead",
       preferredContactMethod: "email",
       intent: "concept",
       reserveInterest: false
@@ -791,7 +845,7 @@ export const getConceptGenerationStatus = query({
       draftId: draft._id,
       status,
       message: publicConceptStatusMessage(status, reason),
-      title: `${lead.contactName} concept draft`,
+      title: makeConceptDraftTitle({ businessName: lead.businessName }),
       description: "Concept draft generated from a client request. Seller review required before artwork is final.",
       ...(lead.print ? { print: lead.print } : {}),
       ...(assets ? { assets } : {}),
@@ -826,7 +880,6 @@ export const getAiDraftForGeneration = internalQuery({
       prompt: draft.prompt,
       businessName: lead.businessName,
       wallDescription: lead.wallDescription,
-      contactName: lead.contactName,
       print: lead.print
     };
   }
@@ -867,7 +920,7 @@ export const finalizeAiDraftFailure = internalMutation({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
 
-    if (!draft || !AI_CONCEPT_DRAFT_STATUSES.includes(draft.status)) {
+    if (!draft || !canFinalizeAiDraft(draft.status, args.status)) {
       return null;
     }
 
@@ -906,7 +959,7 @@ export const recordAiDraftGeneratedImage = internalMutation({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
 
-    if (!draft) {
+    if (!draft || !canFinalizeAiDraft(draft.status, "ready")) {
       return null;
     }
 
@@ -946,7 +999,7 @@ export const finalizeAiDraftReady = internalMutation({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
 
-    if (!draft) {
+    if (!draft || !canFinalizeAiDraft(draft.status, "ready")) {
       return null;
     }
 
@@ -993,7 +1046,7 @@ export const finalizeAiDraftCompositeOnly = internalMutation({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
 
-    if (!draft) {
+    if (!draft || !canFinalizeAiDraft(draft.status, "composite_only")) {
       return null;
     }
 
@@ -1016,5 +1069,118 @@ export const finalizeAiDraftCompositeOnly = internalMutation({
     });
 
     return null;
+  }
+});
+
+export const recoverStaleAiConceptDrafts = internalMutation({
+  args: {},
+  returns: v.object({
+    requeued: v.number(),
+    failed: v.number(),
+    ignored: v.number()
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const [queuedDrafts, generatingDrafts] = await Promise.all([
+      ctx.db
+        .query("aiConceptDrafts")
+        .withIndex("by_status_requestedAt", (q: any) => q.eq("status", "queued"))
+        .order("asc")
+        .take(100),
+      ctx.db
+        .query("aiConceptDrafts")
+        .withIndex("by_status_requestedAt", (q: any) => q.eq("status", "generating"))
+        .order("asc")
+        .take(100)
+    ]);
+    let requeued = 0;
+    let failed = 0;
+    let ignored = 0;
+
+    for (const draft of [...queuedDrafts, ...generatingDrafts]) {
+      const decision = selectStaleAiDraftRecovery(draft, now);
+
+      if (decision.action === "requeue") {
+        await ctx.db.patch(draft._id, {
+          recoveryAttempts: decision.recoveryAttempts,
+          updatedAt: now
+        });
+        await ctx.scheduler.runAfter(0, internal.aiConcepts.generateConceptDraft, {
+          draftId: draft._id
+        });
+        requeued += 1;
+        continue;
+      }
+
+      if (decision.action === "fail") {
+        await ctx.db.patch(draft._id, {
+          status: "failed",
+          failureReason: decision.reason,
+          refusalReason: undefined,
+          completedAt: now,
+          updatedAt: now
+        });
+        await ctx.db.patch(draft.leadRequestId, {
+          updatedAt: now
+        });
+        failed += 1;
+        continue;
+      }
+
+      ignored += 1;
+    }
+
+    return {
+      requeued,
+      failed,
+      ignored
+    };
+  }
+});
+
+export const retitleAiConceptBundles = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    let updated = 0;
+    let afterCreationTime = -1;
+
+    while (true) {
+      const bundles = await ctx.db
+        .query("previewBundles")
+        .withIndex("by_creation_time", (q: any) => q.gt("_creationTime", afterCreationTime))
+        .order("asc")
+        .take(100);
+
+      if (bundles.length === 0) {
+        break;
+      }
+
+      for (const bundle of bundles) {
+        if (bundle.source.kind !== "ai_concept") {
+          continue;
+        }
+
+        const lead = await ctx.db.get(bundle.source.leadRequestId);
+
+        if (!lead) {
+          continue;
+        }
+
+        await ctx.db.patch(bundle._id, {
+          title: makeConceptDraftTitle({ businessName: lead.businessName }),
+          updatedAt: Date.now()
+        });
+        updated += 1;
+      }
+
+      afterCreationTime = bundles[bundles.length - 1]._creationTime;
+
+      if (bundles.length < 100) {
+        break;
+      }
+    }
+
+    return updated;
   }
 });
