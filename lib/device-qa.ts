@@ -19,6 +19,7 @@ export const PHASE0_DEVICE_MATRIX: Phase0DeviceMatrixEntry[] = [
     device: "ARCore-capable Android phone",
     browser: "Chrome",
     expectedViewer: "Scene Viewer",
-    acceptance: "Tap Place on wall, confirm the print opens in native AR and can be pinch-resized."
+    acceptance:
+      "Tap Place on wall and confirm Chrome opens Scene Viewer when AR is supported. Without ARCore support, confirm the artwork remains visible in-page and the AR-not-available notice appears."
   }
 ];

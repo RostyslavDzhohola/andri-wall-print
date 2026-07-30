@@ -1,7 +1,31 @@
 import { describe, expect, it } from "vitest";
 
-import { getAssetContentType, getFixedScaleQuickLookHref, hasReadyArAssetUrls } from "@/lib/ar-launcher";
+import {
+  getArAccessNotice,
+  getArActionLabel,
+  getAssetContentType,
+  getFixedScaleQuickLookHref,
+  hasReadyArAssetUrls,
+  isChromeBrowserUserAgent,
+  type ArDiagnostics
+} from "@/lib/ar-launcher";
 import { DEFAULT_AR_SAMPLE } from "@/lib/ar-sample";
+
+function diagnostics(overrides: Partial<ArDiagnostics> = {}): ArDiagnostics {
+  return {
+    quickLookRel: false,
+    isIPhone: false,
+    isIOS: false,
+    isAndroid: false,
+    isLikelyPhoneOrTablet: false,
+    isSafari: false,
+    isChrome: false,
+    isBrowserUnknown: false,
+    isWKWebViewLike: false,
+    canActivateModelViewerAR: null,
+    ...overrides
+  };
+}
 
 describe("AR launcher helpers", () => {
   it("builds fixed-scale Quick Look links for local USDZ assets", () => {
@@ -50,5 +74,123 @@ describe("AR launcher helpers", () => {
         }
       })
     ).toBe(false);
+  });
+
+  it("allows Android Chrome to launch wall placement when AR capability is available", () => {
+    const accessNotice = getArAccessNotice(
+      diagnostics({
+        isAndroid: true,
+        isLikelyPhoneOrTablet: true,
+        isChrome: true,
+        canActivateModelViewerAR: true
+      })
+    );
+
+    expect(accessNotice).toBeNull();
+    expect(getArActionLabel(diagnostics({ isAndroid: true, isLikelyPhoneOrTablet: true, isChrome: true }), accessNotice)).toBe(
+      "Place on wall"
+    );
+  });
+
+  it("allows Android Chrome to try wall placement while model-viewer capability is still unknown", () => {
+    expect(
+      getArAccessNotice(
+        diagnostics({
+          isAndroid: true,
+          isLikelyPhoneOrTablet: true,
+          isChrome: true,
+          canActivateModelViewerAR: null
+        })
+      )
+    ).toBeNull();
+  });
+
+  it("guides Android users in non-Chrome browsers to Chrome", () => {
+    const androidFirefox = diagnostics({
+      isAndroid: true,
+      isLikelyPhoneOrTablet: true,
+      isBrowserUnknown: true
+    });
+    const accessNotice = getArAccessNotice(androidFirefox);
+
+    expect(accessNotice).toEqual({
+      message: "Use Chrome on Android.",
+      title: "Use Chrome on this Android phone",
+      description:
+        "This browser is not Chrome, so wall placement will not start here. Open this same link in Chrome on your Android phone, then tap Place on wall again.",
+      blockLaunch: true
+    });
+    expect(getArActionLabel(androidFirefox, accessNotice)).toBe("Open in Chrome");
+  });
+
+  it("distinguishes Android Chrome from Chromium-based non-Chrome browsers", () => {
+    expect(
+      isChromeBrowserUserAgent(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36"
+      )
+    ).toBe(true);
+    expect(
+      isChromeBrowserUserAgent(
+        "Mozilla/5.0 (Linux; Android 14; SM-S928U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36"
+      )
+    ).toBe(false);
+    expect(
+      isChromeBrowserUserAgent(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A; wv) AppleWebKit/537.36 Version/4.0 Chrome/143.0.0.0 Mobile Safari/537.36"
+      )
+    ).toBe(false);
+  });
+
+  it("shows an honest in-page fallback when Android cannot activate AR", () => {
+    expect(
+      getArAccessNotice(
+        diagnostics({
+          isAndroid: true,
+          isLikelyPhoneOrTablet: true,
+          isChrome: true,
+          canActivateModelViewerAR: false
+        })
+      )
+    ).toEqual({
+      message: "AR is not available here.",
+      title: "AR not available on this device",
+      description:
+        "This device can preview the artwork here. For wall placement, open this link on a recent iPhone or an AR-capable Android phone.",
+      blockLaunch: true
+    });
+  });
+
+  it("keeps iPhone Safari allowed and iPhone non-Safari guidance blocked", () => {
+    expect(
+      getArAccessNotice(
+        diagnostics({
+          isIPhone: true,
+          isIOS: true,
+          isLikelyPhoneOrTablet: true,
+          isSafari: true
+        })
+      )
+    ).toBeNull();
+
+    expect(
+      getArAccessNotice(
+        diagnostics({
+          isIPhone: true,
+          isIOS: true,
+          isLikelyPhoneOrTablet: true,
+          isChrome: true
+        })
+      )
+    ).toMatchObject({
+      title: "Use Safari on this iPhone",
+      blockLaunch: true
+    });
+  });
+
+  it("keeps desktop launch blocked behind the iPhone handoff", () => {
+    expect(getArAccessNotice(diagnostics())).toMatchObject({
+      title: "Open this on your iPhone",
+      blockLaunch: true
+    });
   });
 });

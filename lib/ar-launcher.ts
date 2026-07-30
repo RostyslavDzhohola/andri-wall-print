@@ -1,5 +1,139 @@
 import type { ArSample } from "./ar-sample";
 
+export type ArDiagnostics = {
+  quickLookRel: boolean;
+  isIPhone: boolean;
+  isIOS: boolean;
+  isAndroid: boolean;
+  isLikelyPhoneOrTablet: boolean;
+  isSafari: boolean;
+  isChrome: boolean;
+  isBrowserUnknown: boolean;
+  isWKWebViewLike: boolean;
+  canActivateModelViewerAR: boolean | null;
+};
+
+export type ArAccessNotice = {
+  message: string;
+  title: string;
+  description: string;
+  blockLaunch: boolean;
+};
+
+export function getAndroidArUnavailableNotice(): ArAccessNotice {
+  return {
+    message: "AR is not available here.",
+    title: "AR not available on this device",
+    description:
+      "This device can preview the artwork here. For wall placement, open this link on a recent iPhone or an AR-capable Android phone.",
+    blockLaunch: true
+  };
+}
+
+export function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | null {
+  if (!diagnostics) {
+    return {
+      message: "Checking device and browser.",
+      title: "Checking your browser",
+      description: "Wall placement only works on iPhone in Safari. Try again after this browser check finishes.",
+      blockLaunch: true
+    };
+  }
+
+  if (!diagnostics.isLikelyPhoneOrTablet) {
+    return {
+      message: "Open on iPhone.",
+      title: "Open this on your iPhone",
+      description:
+        "Desktop browsers can preview the artwork, but wall placement starts on iPhone Safari. Share this page to your phone, then tap Place on wall there.",
+      blockLaunch: true
+    };
+  }
+
+  if (diagnostics.isIPhone && diagnostics.isSafari) {
+    return null;
+  }
+
+  if (diagnostics.isIPhone && !diagnostics.isBrowserUnknown) {
+    return {
+      message: "Use Safari on iPhone.",
+      title: "Use Safari on this iPhone",
+      description:
+        "This browser is not Safari, so wall placement will not start here. Open this same link in Safari on your iPhone, then tap Place on wall again.",
+      blockLaunch: true
+    };
+  }
+
+  if (diagnostics.isAndroid && !diagnostics.isChrome) {
+    return {
+      message: "Use Chrome on Android.",
+      title: "Use Chrome on this Android phone",
+      description:
+        "This browser is not Chrome, so wall placement will not start here. Open this same link in Chrome on your Android phone, then tap Place on wall again.",
+      blockLaunch: true
+    };
+  }
+
+  if (diagnostics.isAndroid && diagnostics.canActivateModelViewerAR === false) {
+    return getAndroidArUnavailableNotice();
+  }
+
+  if (diagnostics.isAndroid) {
+    return null;
+  }
+
+  if (diagnostics.isBrowserUnknown) {
+    return {
+      message: "Browser not confirmed.",
+      title: "Browser not confirmed",
+      description: "We could not confirm that this is iPhone Safari. This wall placement only works on iPhone in Safari.",
+      blockLaunch: true
+    };
+  }
+
+  return {
+    message: "Open on iPhone.",
+    title: "Open this on your iPhone",
+    description: "This wall placement only works on iPhone in Safari.",
+    blockLaunch: true
+  };
+}
+
+export function getArActionLabel(diagnostics: ArDiagnostics | null, accessNotice: ArAccessNotice | null) {
+  if (!diagnostics) {
+    return "Checking";
+  }
+
+  if (!accessNotice) {
+    return "Place on wall";
+  }
+
+  if (diagnostics.isIPhone) {
+    return "Open in Safari";
+  }
+
+  if (diagnostics.isAndroid && !diagnostics.isChrome) {
+    return "Open in Chrome";
+  }
+
+  if (diagnostics.isAndroid) {
+    return "AR unavailable";
+  }
+
+  return "Open on iPhone";
+}
+
+export function isChromeBrowserUserAgent(userAgent: string) {
+  const hasChromeToken = /Chrome\/|CriOS\//.test(userAgent);
+  const isAlternativeChromiumBrowser =
+    /Edg\/|EdgA\/|EdgiOS\/|OPR\/|SamsungBrowser\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\/|Telegram|MicroMessenger|WhatsApp|GSA\/|LinkedInApp|Pinterest|TikTok/i.test(
+      userAgent
+    );
+  const isAndroidWebView = /;\s*wv\)/i.test(userAgent);
+
+  return hasChromeToken && !isAlternativeChromiumBrowser && !isAndroidWebView;
+}
+
 export type ArAssetKind = "poster" | "glb" | "usdz";
 
 export const AR_ASSET_CONTENT_TYPES: Record<ArAssetKind, string> = {
