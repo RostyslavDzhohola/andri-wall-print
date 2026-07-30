@@ -11,7 +11,7 @@ import { makeConceptDraftTitle } from "../lib/lead-request-presentation";
 import { generateOpenAiConceptImage, makeWallPrintConceptPrompt, type OpenAiImageFailure } from "../lib/openai-image-provider";
 import { DEFAULT_PREVIEW_BUNDLE_PRINT, PREVIEW_GENERATOR_VERSION, type PreviewBundlePrint } from "../lib/preview-bundle-contract";
 
-const internal = generatedInternal as any;
+const internal = generatedInternal;
 
 export function mapOpenAiFailureToAiDraftFailure(failure: OpenAiImageFailure) {
   return {

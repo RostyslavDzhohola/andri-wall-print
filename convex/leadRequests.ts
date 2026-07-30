@@ -30,7 +30,7 @@ import {
 import { validateStoredPreviewUpload } from "./uploadValidation";
 import { assertValidPrint, assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
 
-const internal = generatedInternal as any;
+const internal = generatedInternal;
 
 // Client-adjustable launch throttle for public AI concept generation.
 export const GLOBAL_CONCEPT_GENERATION_DAILY_CAP = 50;
@@ -78,7 +78,6 @@ const submittedLeadValidator = v.object({
   status: v.string(),
   aiDraftStatus: v.optional(v.string()),
   code: v.optional(v.string()),
-  publicPreviewUrl: v.optional(v.string()),
   message: v.string()
 });
 

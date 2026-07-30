@@ -5,5 +5,6 @@ const crons = cronJobs();
 
 crons.interval("recover stale wall-preview generations", { minutes: 1 }, internal.previewBundles.recoverStaleGenerationJobs, {});
 crons.interval("recover stale ai concept drafts", { minutes: 1 }, internal.leadRequests.recoverStaleAiConceptDrafts, {});
+crons.interval("prune old operational data", { hours: 1 }, internal.retention.pruneOldOperationalData, {});
 
 export default crons;

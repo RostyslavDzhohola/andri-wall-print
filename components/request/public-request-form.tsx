@@ -2,7 +2,6 @@
 
 import { useMutation } from "convex/react";
 import { ArrowRight, CheckCircle2, ImagePlus, Loader2, Sparkles } from "lucide-react";
-import Link from "next/link";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import {
   fingerprintBuilderUpload,
   normalizeBuilderUploadToPng,
@@ -28,8 +28,6 @@ import {
 import type { RequestDesignContext } from "@/lib/request-page-defaults";
 import { cn } from "@/lib/utils";
 
-const leadRequestsApi = api.leadRequests as any;
-
 type PublicRequestFormProps = {
   aiEnabled: boolean;
   defaultIntent: LeadRequestIntent;
@@ -43,7 +41,6 @@ type PublicRequestFormProps = {
 type SubmissionResult = {
   message: string;
   aiDraftStatus?: string;
-  publicPreviewUrl?: string;
 };
 
 const contactMethodOptions: Array<{ value: LeadContactMethod; label: string }> = [
@@ -67,8 +64,8 @@ export function PublicRequestForm({
   publicContactUrl,
   uploadFirst = false
 }: PublicRequestFormProps) {
-  const generateLeadUploadUrl = useMutation(leadRequestsApi.generateLeadUploadUrl);
-  const submitLeadRequest = useMutation(leadRequestsApi.submitLeadRequest);
+  const generateLeadUploadUrl = useMutation(api.leadRequests.generateLeadUploadUrl);
+  const submitLeadRequest = useMutation(api.leadRequests.submitLeadRequest);
   const intent = defaultIntent;
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -136,7 +133,7 @@ export function PublicRequestForm({
     try {
       let upload:
         | {
-            storageId: string;
+            storageId: Id<"_storage">;
             originalFileName: string;
             contentType: string;
             byteLength: number;
@@ -169,7 +166,7 @@ export function PublicRequestForm({
           throw new Error("Upload could not be saved.");
         }
 
-        const { storageId } = (await uploadResponse.json()) as { storageId: string };
+        const { storageId } = (await uploadResponse.json()) as { storageId: Id<"_storage"> };
         upload = {
           storageId,
           originalFileName: normalized.file.name,
@@ -179,7 +176,7 @@ export function PublicRequestForm({
         };
       }
 
-      const saved = (await submitLeadRequest({
+      const saved = await submitLeadRequest({
         contactName,
         ...(normalizedEmail ? { contactEmail: normalizedEmail } : {}),
         ...(normalizedPhone ? { contactPhone: normalizedPhone } : {}),
@@ -190,7 +187,7 @@ export function PublicRequestForm({
         intent,
         reserveInterest,
         ...(upload ? { upload } : {})
-      })) as SubmissionResult;
+      });
       setResult(saved);
       setFile(null);
       setUploadError(null);
@@ -370,11 +367,6 @@ export function PublicRequestForm({
               <strong>Got it.</strong> Next: we review your wall, send a ballpark estimate, then schedule an on-site visit before
               you reserve your print date.
             </span>
-            {result.publicPreviewUrl ? (
-              <Button asChild className="w-fit rounded-full" size="sm">
-                <Link href={result.publicPreviewUrl}>Open draft preview</Link>
-              </Button>
-            ) : null}
           </AlertDescription>
         </Alert>
       ) : null}

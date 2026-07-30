@@ -453,6 +453,74 @@ type CreateHomepageUploadBundleArgs = {
   print: PreviewBundlePrint;
 };
 
+type IdempotentBundleCandidate = {
+  source: {
+    kind: string;
+    sourceFingerprint?: string;
+    byteLength?: number;
+    contentType?: string;
+  };
+  print: Pick<PreviewBundlePrint, "aspectRatio" | "widthMeters" | "heightMeters">;
+  crop: {
+    mode: string;
+  };
+  status: string;
+  job?: {
+    attempt?: number;
+  };
+};
+
+export type IdempotentBundleExpected = {
+  kind: "upload";
+  sourceFingerprint: string;
+  byteLength: number;
+  contentType: string;
+  print: PreviewBundlePrint;
+  cropMode?: "contain" | "cover";
+};
+
+export type IdempotentBundleReuseDecision =
+  | { action: "insert" }
+  | { action: "reuse" }
+  | { action: "requeue"; attempt: number }
+  | { action: "unavailable" };
+
+export function selectIdempotentBundleReuse(
+  existing: IdempotentBundleCandidate | null | undefined,
+  expected: IdempotentBundleExpected
+): IdempotentBundleReuseDecision {
+  if (
+    !existing ||
+    existing.source.kind !== expected.kind ||
+    existing.source.sourceFingerprint !== expected.sourceFingerprint ||
+    existing.source.byteLength !== expected.byteLength ||
+    existing.source.contentType !== expected.contentType ||
+    existing.print.aspectRatio !== expected.print.aspectRatio ||
+    existing.print.widthMeters !== expected.print.widthMeters ||
+    existing.print.heightMeters !== expected.print.heightMeters ||
+    existing.crop.mode !== (expected.cropMode ?? DEFAULT_PREVIEW_BUNDLE_CROP.mode)
+  ) {
+    return { action: "insert" };
+  }
+
+  if (["uploaded", "validating", "generating", "ready"].includes(existing.status)) {
+    return { action: "reuse" };
+  }
+
+  if (existing.status === "failed") {
+    return {
+      action: "requeue",
+      attempt: (existing.job?.attempt ?? 0) + 1
+    };
+  }
+
+  if (existing.status === "rejected" || existing.status === "revoked") {
+    return { action: "unavailable" };
+  }
+
+  return { action: "insert" };
+}
+
 export async function createHomepageUploadBundleHandler(ctx: any, args: CreateHomepageUploadBundleArgs) {
   assertValidPrint(args.print);
   const verifiedUpload = await validateStoredPreviewUpload(ctx, {
@@ -480,14 +548,40 @@ export async function createHomepageUploadBundleHandler(ctx: any, args: CreateHo
     .query("previewBundles")
     .withIndex("by_idempotency_key", (q: any) => q.eq("idempotencyKey", idempotencyKey))
     .first();
+  const reuseDecision = selectIdempotentBundleReuse(existing, {
+    kind: "upload",
+    sourceFingerprint: verifiedUpload.sourceFingerprint,
+    byteLength: verifiedUpload.byteLength,
+    contentType: verifiedUpload.contentType,
+    print: args.print,
+    cropMode: crop.mode
+  });
 
-  if (existing && existing.source.kind === "upload") {
+  if (reuseDecision.action === "reuse" && existing) {
     return {
       bundleId: existing._id,
       publicSlug: existing.publicSlug,
       publicUrl: toPublicUrl(existing.publicSlug),
       status: existing.status
     };
+  }
+
+  if (reuseDecision.action === "requeue" && existing) {
+    await scheduleBundleGenerationJob(ctx, existing._id, reuseDecision.attempt, now);
+
+    return {
+      bundleId: existing._id,
+      publicSlug: existing.publicSlug,
+      publicUrl: toPublicUrl(existing.publicSlug),
+      status: "uploaded"
+    };
+  }
+
+  if (reuseDecision.action === "unavailable") {
+    throw new ConvexError({
+      code: "PREVIEW_UNAVAILABLE",
+      message: "This artwork can not be previewed. Please try a different image."
+    });
   }
 
   const dayKey = getChicagoGenerationDayKey(now);

@@ -8,6 +8,7 @@ import {
   createPreviewBundlePublicSlug,
   formatPreviewBundlePrintArea,
   formatPreviewBundlePrintDimensions,
+  hashStableString64,
   makePreviewBundlePrintFromDimensions,
   makePreviewBundlePrintFromCentimeters,
   makePreviewBundleIdempotencyKey,
@@ -32,7 +33,15 @@ describe("preview bundle contract", () => {
     };
 
 	    expect(makePreviewBundleIdempotencyKey(input)).toBe(makePreviewBundleIdempotencyKey({ ...input }));
+    expect(makePreviewBundleIdempotencyKey(input)).toMatch(/^ts-flat-plane-v2:/);
 	  });
+
+  it("pins the persisted 64-bit hash vectors", () => {
+    expect(hashStableString64("")).toBe("33niihzj4ux45");
+    expect(hashStableString64("a")).toBe("2o0ongoiv4rrg");
+    expect(hashStableString64("hello")).toBe("2hvyo96lq8v0r");
+    expect(hashStableString64("Wall Print Pro")).toBe("ortc15qui2qh");
+  });
 
 	  it("keeps AI concept source keys distinct from uploads and samples", () => {
 	    const base = {
