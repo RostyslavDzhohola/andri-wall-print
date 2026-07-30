@@ -25,6 +25,8 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number()
   }).index("by_slug", ["slug"]),
+  // Keep this table until `migrations.wipeSellerPricingSettings` has removed every row.
+  // The follow-up Convex push can then remove the empty table.
   sellerPricingSettings: defineTable({
     sellerSubject: v.string(),
     currency: v.literal("USD"),

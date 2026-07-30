@@ -204,15 +204,6 @@ export function serializeReusablePublicConfirmationForBundle(
   return serializePublicConfirmation(confirmation);
 }
 
-async function listBundleConfirmations(ctx: any, bundleId: string, limit?: number) {
-  const queryResult = ctx.db
-    .query("previewConfirmations")
-    .withIndex("by_preview_bundle_createdAt", (q: any) => q.eq("previewBundleId", bundleId))
-    .order("desc");
-
-  return limit === undefined ? await queryResult.collect() : await queryResult.take(limit);
-}
-
 function generationAttempt(bundle: Pick<PreviewBundleGenerationRecord, "job">) {
   return bundle.job?.attempt ?? 1;
 }
@@ -915,49 +906,5 @@ export const recoverStaleGenerationJobs = internalMutation({
       failed,
       ignored
     };
-  }
-});
-
-export const getReadyPublicBundle = internalQuery({
-  args: {
-    publicSlug: v.string()
-  },
-  returns: v.union(
-    v.null(),
-    v.object({
-      id: v.string(),
-      slug: v.string(),
-      title: v.string(),
-      description: v.string(),
-      print: printValidator,
-	      assetStorageIds: v.optional(assetStorageIdsValidator),
-	      assetUrls: v.optional(assetUrlsValidator),
-	      assetMeta: v.optional(assetMetaValidator),
-	      sourceKind: v.union(v.literal("upload"), v.literal("sample"), v.literal("ai_concept")),
-	      status: v.string()
-	    })
-  ),
-  handler: async (ctx, args) => {
-    const bundle = await ctx.db
-      .query("previewBundles")
-      .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.publicSlug))
-      .first();
-
-    if (!bundle) {
-      return null;
-    }
-
-    return {
-      id: bundle.publicSlug,
-      slug: bundle.publicSlug,
-      title: bundle.status === "ready" ? bundle.title : "Wall Print Pro preview",
-      description: bundle.status === "ready" ? bundle.description : "Your wall preview is being prepared.",
-      print: normalizePreviewBundlePrintDisplay(bundle.print),
-	      assetStorageIds: bundle.assetStorageIds,
-	      assetUrls: bundle.assetUrls,
-	      assetMeta: bundle.assetMeta,
-	      sourceKind: bundle.source.kind,
-	      status: bundle.status
-	    };
   }
 });

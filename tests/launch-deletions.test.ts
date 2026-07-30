@@ -22,6 +22,16 @@ const survivingPublicRoutes = [
   "app/work/page.tsx"
 ];
 
+const deletedInfrastructure = [
+  "proxy.ts",
+  "convex/auth.config.ts",
+  "convex/sellerPricing.ts",
+  "lib/account-routing.ts",
+  "lib/builder-invite-contract.ts",
+  "lib/seller-admin.ts",
+  "lib/pricing-estimator.ts"
+];
+
 describe("launch route surface", () => {
   it("keeps launch-deleted route segments absent from the app router tree", () => {
     for (const route of deletedRoutes) {
@@ -32,6 +42,12 @@ describe("launch route surface", () => {
   it("keeps surviving public route entrypoints present", () => {
     for (const route of survivingPublicRoutes) {
       expect(existsSync(join(process.cwd(), route)), `${route} should exist`).toBe(true);
+    }
+  });
+
+  it("keeps retired Clerk and seller-admin infrastructure absent", () => {
+    for (const file of deletedInfrastructure) {
+      expect(existsSync(join(process.cwd(), file)), `${file} should be absent`).toBe(false);
     }
   });
 });

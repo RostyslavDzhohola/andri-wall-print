@@ -75,7 +75,7 @@ describe("env-folding regression (newly-static homepage)", () => {
     // Matches `process.env.NEXT_PUBLIC_FOO` and `process.env.WALL_PRINT_PRO_FOO`
     // written as a *dotted literal* — the foldable form. Bracket reads
     // (process.env[KEY]) and split-string keys are allowed.
-    const foldablePattern = /process\.env\.(NEXT_PUBLIC|WALL_PRINT_PRO|CONVEX|CLERK|OPENAI)_[A-Z0-9_]+/;
+    const foldablePattern = /process\.env\.(NEXT_PUBLIC|WALL_PRINT_PRO|CONVEX|OPENAI)_[A-Z0-9_]+/;
 
     for (const relativePath of files) {
       const source = readFileSync(join(process.cwd(), relativePath), "utf8");

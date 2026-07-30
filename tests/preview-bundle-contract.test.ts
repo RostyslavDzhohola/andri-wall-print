@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { isWallPrintProSellerIdentity } from "@/lib/seller-admin";
 import {
   DEFAULT_PREVIEW_BUNDLE_CROP,
   DEFAULT_PREVIEW_BUNDLE_PRINT,
@@ -153,47 +152,4 @@ describe("preview bundle contract", () => {
     });
   });
 
-  it("allowlists admins by Clerk subject or email", () => {
-    expect(
-      isWallPrintProSellerIdentity(
-        { subject: "user_123", email: "admin@example.com" },
-        {
-          WALL_PRINT_PRO_SELLER_USER_IDS: "user_123",
-          WALL_PRINT_PRO_SELLER_EMAILS: ""
-        }
-      )
-    ).toBe(true);
-
-    expect(
-      isWallPrintProSellerIdentity(
-        { subject: "user_456", email: "admin@example.com" },
-        {
-          WALL_PRINT_PRO_SELLER_USER_IDS: "",
-          WALL_PRINT_PRO_SELLER_EMAILS: "admin@example.com"
-        }
-      )
-    ).toBe(true);
-
-    expect(
-      isWallPrintProSellerIdentity(
-        { subject: "user_456", email: "lead@example.com" },
-        {
-          WALL_PRINT_PRO_SELLER_USER_IDS: "user_123",
-          WALL_PRINT_PRO_SELLER_EMAILS: "admin@example.com"
-        }
-      )
-    ).toBe(false);
-  });
-
-  it("allows an admin email from a comma-separated admin allowlist", () => {
-    expect(
-      isWallPrintProSellerIdentity(
-        { subject: "user_789", email: "admin2@example.com" },
-        {
-          WALL_PRINT_PRO_SELLER_USER_IDS: "",
-          WALL_PRINT_PRO_SELLER_EMAILS: "admin1@example.com,admin2@example.com"
-        }
-      )
-    ).toBe(true);
-  });
 });

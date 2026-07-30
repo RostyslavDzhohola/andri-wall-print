@@ -111,8 +111,7 @@ Vite-based Next.js-compatible dev/build tool), not the Next.js CLI directly.
 ## Further reading
 
 - `DESIGN.md` — the current design system (colors, type, motion, a11y baseline).
-- `TODOS.md` — open work, including the still-dormant Clerk plumbing left over from
-  the pre-launch admin architecture (scheduled for teardown) and other post-launch
-  polish items.
+- `TODOS.md` — open work and post-launch polish items. Clerk authentication has been
+  fully removed along with the pre-launch admin architecture.
 - `docs/handoff/launch-handoff.md` — launch gates, secrets ownership, deploy checklist,
   and how to add a new portfolio job.
