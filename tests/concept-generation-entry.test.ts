@@ -9,7 +9,11 @@ import {
   startConceptGenerationHandler
 } from "@/convex/leadRequests";
 import { RESERVED_SESSION_ID_MAX_LENGTH } from "@/lib/reserved-session-id";
-import { LEAD_AI_RATE_LIMIT_PER_DAY, makeLeadRateLimitBucket } from "@/lib/lead-request-contract";
+import {
+  LEAD_AI_RATE_LIMIT_PER_DAY,
+  makeLeadRateLimitBucket,
+  makeLeadRateLimitKey
+} from "@/lib/lead-request-contract";
 
 const NOW = Date.parse("2026-07-04T17:30:00.000Z");
 const originalEnv = { ...process.env };
@@ -146,7 +150,7 @@ describe("concept generation gate", () => {
       leadRateLimits: [
         {
           _id: "leadRateLimits_existing",
-          contactKey: "buyer@example.com",
+          contactKey: makeLeadRateLimitKey("buyer@example.com"),
           bucket: makeLeadRateLimitBucket(NOW),
           count: LEAD_AI_RATE_LIMIT_PER_DAY,
           firstRequestAt: NOW - 1_000,
@@ -167,7 +171,9 @@ describe("concept generation gate", () => {
       message: expect.stringContaining("Try again tomorrow")
     });
     expect(fake.scheduled).toHaveLength(0);
-    expect(fake.tables.globalGenerationCap).toHaveLength(0);
+    expect(fake.tables.globalGenerationCap).not.toContainEqual(
+      expect.objectContaining({ dayKey: getChicagoGenerationDayKey(NOW) })
+    );
     expect(fake.tables.funnelEvents[0]).toMatchObject({
       kind: "concept_generation_contact_rate_limited",
       code: "CONTACT_RATE_LIMITED"
@@ -202,7 +208,9 @@ describe("concept generation gate", () => {
       message: expect.stringContaining("at capacity today")
     });
     expect(fake.tables.globalGenerationCap[0].count).toBe(GLOBAL_CONCEPT_GENERATION_DAILY_CAP);
-    expect(fake.tables.leadRateLimits).toHaveLength(0);
+    expect(fake.tables.leadRateLimits).not.toContainEqual(
+      expect.objectContaining({ contactKey: makeLeadRateLimitKey("buyer@example.com") })
+    );
     expect(fake.scheduled).toHaveLength(0);
     expect(fake.tables.funnelEvents[0]).toMatchObject({
       kind: "concept_generation_global_cap_hit",
@@ -236,7 +244,9 @@ describe("concept generation gate", () => {
       intent: "concept",
       status: "new"
     });
-    expect(fake.tables.globalGenerationCap[0]).toMatchObject({
+    expect(
+      fake.tables.globalGenerationCap.find((row) => row.dayKey === getChicagoGenerationDayKey(NOW))
+    ).toMatchObject({
       dayKey: getChicagoGenerationDayKey(NOW),
       count: 1
     });
@@ -337,9 +347,13 @@ describe("concept generation gate", () => {
         code: "GENERATION_UNAVAILABLE"
       })
     ]);
-    // But no quota consumed, no draft queued, nothing scheduled.
-    expect(fake.tables.leadRateLimits).toHaveLength(0);
-    expect(fake.tables.globalGenerationCap).toHaveLength(0);
+    // Lead-insert quota is consumed, but generation quota is not.
+    expect(fake.tables.leadRateLimits).not.toContainEqual(
+      expect.objectContaining({ contactKey: makeLeadRateLimitKey("buyer@example.com") })
+    );
+    expect(fake.tables.globalGenerationCap).not.toContainEqual(
+      expect.objectContaining({ dayKey: getChicagoGenerationDayKey(NOW) })
+    );
     expect(fake.tables.aiConceptDrafts).toHaveLength(0);
     expect(fake.scheduled).toHaveLength(0);
   });

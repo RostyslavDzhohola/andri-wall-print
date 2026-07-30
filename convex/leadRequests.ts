@@ -7,19 +7,36 @@ import {
   AI_CONCEPT_DRAFT_STATUSES,
   LEAD_CONTACT_METHODS,
   LEAD_AI_RATE_LIMIT_PER_DAY,
+  getChicagoGenerationDayKey,
   isValidLeadEmail,
+  makeLeadRateLimitKey,
   makeLeadRateLimitBucket,
   normalizeLeadRequestInput,
   type AiConceptDraftStatus,
   type NormalizedLeadContact
 } from "../lib/lead-request-contract";
 import { normalizeReservedSessionId } from "../lib/reserved-session-id";
-import { assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
+import {
+  FUNNEL_VISIT_DAILY_CAP,
+  LEADS_DAILY_CAP,
+  LEAD_INSERTS_PER_CONTACT_PER_DAY,
+  UPLOAD_URL_DAILY_CAP,
+  getContactBucketCount,
+  getDailyCapCount,
+  reserveContactBucket,
+  reserveDailyCap
+} from "./dailyCaps";
+import { validateStoredPreviewUpload } from "./uploadValidation";
+import { assertValidPrint, assetMetaValidator, assetStorageIdsValidator, printValidator } from "./validators";
 
 const internal = generatedInternal as any;
 
 // Client-adjustable launch throttle for public AI concept generation.
 export const GLOBAL_CONCEPT_GENERATION_DAILY_CAP = 50;
+export const LEAD_LIMIT_MESSAGE = "We've received several requests from you today. Call us to talk it through.";
+const UPLOAD_CAP_MESSAGE = "Wall previews are at capacity today. Please call us or try again tomorrow.";
+
+export { getChicagoGenerationDayKey };
 
 export const CONCEPT_GENERATION_GATE_CODES = [
   "INVALID_EMAIL",
@@ -184,38 +201,6 @@ function aiConceptsEnabled() {
   return (value === "1" || value === "true") && Boolean(process.env.OPENAI_API_KEY);
 }
 
-export function getChicagoGenerationDayKey(now: number) {
-  const utcYear = new Date(now).getUTCFullYear();
-  const dstStart = getChicagoDstStartUtcMs(utcYear);
-  const dstEnd = getChicagoDstEndUtcMs(utcYear);
-  const utcOffsetHours = now >= dstStart && now < dstEnd ? -5 : -6;
-  const chicagoDate = new Date(now + utcOffsetHours * 60 * 60 * 1_000);
-  const year = chicagoDate.getUTCFullYear();
-  const month = String(chicagoDate.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(chicagoDate.getUTCDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function getChicagoDstStartUtcMs(year: number) {
-  const secondSunday = getNthSundayOfMonth(year, 2, 2);
-
-  return Date.UTC(year, 2, secondSunday, 8, 0, 0, 0);
-}
-
-function getChicagoDstEndUtcMs(year: number) {
-  const firstSunday = getNthSundayOfMonth(year, 10, 1);
-
-  return Date.UTC(year, 10, firstSunday, 7, 0, 0, 0);
-}
-
-function getNthSundayOfMonth(year: number, monthIndex: number, nth: number) {
-  const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1)).getUTCDay();
-  const firstSunday = 1 + ((7 - firstDayOfMonth) % 7);
-
-  return firstSunday + (nth - 1) * 7;
-}
-
 export function selectConceptGenerationGate(input: {
   contactEmail?: string;
   contactRequestCount: number;
@@ -262,76 +247,6 @@ export function selectConceptGenerationGate(input: {
   };
 }
 
-async function getAiRateLimitCount(ctx: any, contactKey: string, now: number) {
-  const bucket = makeLeadRateLimitBucket(now);
-  const existing = await ctx.db
-    .query("leadRateLimits")
-    .withIndex("by_contact_bucket", (q: any) => q.eq("contactKey", contactKey).eq("bucket", bucket))
-    .first();
-
-  return existing?.count ?? 0;
-}
-
-async function reserveAiRateLimit(ctx: any, contactKey: string, now: number) {
-  const bucket = makeLeadRateLimitBucket(now);
-  const existing = await ctx.db
-    .query("leadRateLimits")
-    .withIndex("by_contact_bucket", (q: any) => q.eq("contactKey", contactKey).eq("bucket", bucket))
-    .first();
-
-  if (existing && existing.count >= LEAD_AI_RATE_LIMIT_PER_DAY) {
-    return false;
-  }
-
-  if (existing) {
-    await ctx.db.patch(existing._id, {
-      count: existing.count + 1,
-      updatedAt: now
-    });
-    return true;
-  }
-
-  await ctx.db.insert("leadRateLimits", {
-    contactKey,
-    bucket,
-    count: 1,
-    firstRequestAt: now,
-    updatedAt: now
-  });
-  return true;
-}
-
-async function getGlobalGenerationCapCounter(ctx: any, dayKey: string) {
-  return await ctx.db
-    .query("globalGenerationCap")
-    .withIndex("by_day_key", (q: any) => q.eq("dayKey", dayKey))
-    .first();
-}
-
-async function reserveGlobalGenerationCap(ctx: any, dayKey: string, now: number) {
-  const existing = await getGlobalGenerationCapCounter(ctx, dayKey);
-
-  if (existing && existing.count >= GLOBAL_CONCEPT_GENERATION_DAILY_CAP) {
-    return false;
-  }
-
-  if (existing) {
-    await ctx.db.patch(existing._id, {
-      count: existing.count + 1,
-      updatedAt: now
-    });
-    return true;
-  }
-
-  await ctx.db.insert("globalGenerationCap", {
-    dayKey,
-    count: 1,
-    createdAt: now,
-    updatedAt: now
-  });
-  return true;
-}
-
 type FunnelEventInput = {
   leadRequestId?: Id<"leadRequests">;
   sessionId?: string;
@@ -344,15 +259,16 @@ async function insertFunnelEvent(ctx: any, input: FunnelEventInput) {
   await ctx.db.insert("funnelEvents", input);
 }
 
-async function reserveConceptGenerationGate(ctx: any, normalized: NormalizedLeadContact, now: number) {
-  const contactKey = normalized.normalizedContactEmail;
-  const contactRequestCount = await getAiRateLimitCount(ctx, contactKey, now);
+export async function reserveConceptGenerationGate(ctx: any, normalized: NormalizedLeadContact, now: number) {
+  const contactKey = makeLeadRateLimitKey(normalized.normalizedContactEmail);
+  const bucket = makeLeadRateLimitBucket(now);
+  const contactRequestCount = await getContactBucketCount(ctx, contactKey, bucket);
   const dayKey = getChicagoGenerationDayKey(now);
-  const globalCounter = await getGlobalGenerationCapCounter(ctx, dayKey);
+  const globalRequestCount = await getDailyCapCount(ctx, dayKey);
   const decision = selectConceptGenerationGate({
     contactEmail: normalized.contactEmail,
     contactRequestCount,
-    globalRequestCount: globalCounter?.count ?? 0,
+    globalRequestCount,
     now
   });
 
@@ -360,29 +276,30 @@ async function reserveConceptGenerationGate(ctx: any, normalized: NormalizedLead
     return decision;
   }
 
-  const contactReserved = await reserveAiRateLimit(ctx, contactKey, now);
-
-  if (!contactReserved) {
-    return {
-      ok: false,
-      code: "CONTACT_RATE_LIMITED" as const,
-      dayKey,
-      message: "You have reached today's AI concept draft limit. Try again tomorrow."
-    };
-  }
-
-  const globalReserved = await reserveGlobalGenerationCap(ctx, dayKey, now);
-
-  if (!globalReserved) {
-    return {
-      ok: false,
-      code: "GLOBAL_DAILY_CAP_REACHED" as const,
-      dayKey,
-      message: "AI concept drafting is at capacity today. Try again tomorrow."
-    };
-  }
+  await reserveContactBucket(ctx, contactKey, bucket, LEAD_AI_RATE_LIMIT_PER_DAY, now);
+  await reserveDailyCap(ctx, dayKey, GLOBAL_CONCEPT_GENERATION_DAILY_CAP, now);
 
   return decision;
+}
+
+function makeLeadInsertRateLimitKey(email: string) {
+  return `lead:${makeLeadRateLimitKey(email).slice("ai:".length)}`;
+}
+
+async function reserveLeadInsertGate(ctx: any, normalizedEmail: string, now: number) {
+  const dayKey = getChicagoGenerationDayKey(now);
+  const contactKey = makeLeadInsertRateLimitKey(normalizedEmail);
+  const contactCount = await getContactBucketCount(ctx, contactKey, dayKey);
+  const globalDayKey = `leads:${dayKey}`;
+  const globalCount = await getDailyCapCount(ctx, globalDayKey);
+
+  if (contactCount >= LEAD_INSERTS_PER_CONTACT_PER_DAY || globalCount >= LEADS_DAILY_CAP) {
+    return false;
+  }
+
+  await reserveContactBucket(ctx, contactKey, dayKey, LEAD_INSERTS_PER_CONTACT_PER_DAY, now);
+  await reserveDailyCap(ctx, globalDayKey, LEADS_DAILY_CAP, now);
+  return true;
 }
 
 async function recordRateLimitedDraft(
@@ -488,11 +405,26 @@ async function queueConceptDraftForLead(
   };
 }
 
+export async function generateLeadUploadUrlHandler(ctx: any) {
+  const now = Date.now();
+  const dayKey = `uploadUrls:${getChicagoGenerationDayKey(now)}`;
+  const reserved = await reserveDailyCap(ctx, dayKey, UPLOAD_URL_DAILY_CAP, now);
+
+  if (!reserved) {
+    throw new ConvexError({
+      code: "UPLOAD_CAP_REACHED",
+      message: UPLOAD_CAP_MESSAGE
+    });
+  }
+
+  return await ctx.storage.generateUploadUrl();
+}
+
 export const generateLeadUploadUrl = mutation({
   args: {},
   returns: v.string(),
   handler: async (ctx) => {
-    return await ctx.storage.generateUploadUrl();
+    return await generateLeadUploadUrlHandler(ctx);
   }
 });
 
@@ -539,6 +471,20 @@ export async function startConceptGenerationHandler(ctx: any, args: {
       ok: false,
       code: "INVALID_EMAIL",
       message: "Enter a valid email address to generate a concept draft."
+    };
+  }
+
+  if (args.print) {
+    assertValidPrint(args.print as Parameters<typeof assertValidPrint>[0]);
+  }
+
+  const leadReserved = await reserveLeadInsertGate(ctx, normalized.normalizedContactEmail, now);
+
+  if (!leadReserved) {
+    return {
+      ok: false,
+      code: "LEAD_LIMIT_REACHED",
+      message: LEAD_LIMIT_MESSAGE
     };
   }
 
@@ -625,6 +571,16 @@ export async function logReservedVisitHandler(ctx: any, args: { sessionId: strin
   }
 
   const now = Date.now();
+  const dayKey = `funnel:${getChicagoGenerationDayKey(now)}`;
+  const reserved = await reserveDailyCap(ctx, dayKey, FUNNEL_VISIT_DAILY_CAP, now);
+
+  if (!reserved) {
+    return {
+      ok: true as const,
+      sessionId
+    };
+  }
+
   await insertFunnelEvent(ctx, {
     sessionId,
     kind: "reserved_visit",
@@ -648,6 +604,136 @@ export const logReservedVisit = mutation({
   }
 });
 
+type SubmitLeadRequestArgs = {
+  contactName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  preferredContactMethod?: string;
+  projectType?: string;
+  businessName?: string;
+  wallDescription?: string;
+  conceptPrompt?: string;
+  intent?: string;
+  reserveInterest?: boolean;
+  upload?: {
+    storageId: string;
+    originalFileName: string;
+    contentType: string;
+    byteLength: number;
+    sourceFingerprint?: string;
+  };
+  print?: unknown;
+};
+
+export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequestArgs) {
+  const now = Date.now();
+  let normalized;
+
+  try {
+    normalized = normalizeLeadRequestInput(args);
+  } catch (error) {
+    throw new ConvexError({
+      code: "INVALID_LEAD_REQUEST",
+      message: error instanceof Error ? error.message : "This request could not be saved."
+    });
+  }
+
+  if (args.print) {
+    assertValidPrint(args.print as Parameters<typeof assertValidPrint>[0]);
+  }
+
+  const verifiedUpload = args.upload
+    ? await validateStoredPreviewUpload(ctx, {
+        sourceStorageId: args.upload.storageId,
+        contentType: args.upload.contentType,
+        byteLength: args.upload.byteLength,
+        sourceFingerprint: args.upload.sourceFingerprint
+      })
+    : undefined;
+  const leadReserved = await reserveLeadInsertGate(ctx, normalized.normalizedContactEmail, now);
+
+  if (!leadReserved) {
+    throw new ConvexError({
+      code: "LEAD_LIMIT_REACHED",
+      message: LEAD_LIMIT_MESSAGE
+    });
+  }
+
+  const leadRequestId = await ctx.db.insert("leadRequests", {
+    ...normalized,
+    ...(args.upload && verifiedUpload
+      ? {
+          upload: {
+            storageId: args.upload.storageId,
+            originalFileName: args.upload.originalFileName,
+            contentType: verifiedUpload.contentType,
+            byteLength: verifiedUpload.byteLength,
+            sourceFingerprint: verifiedUpload.sourceFingerprint
+          }
+        }
+      : {}),
+    ...(args.print ? { print: args.print } : {}),
+    status: "new",
+    createdAt: now,
+    updatedAt: now
+  });
+  let draftStatus: AiConceptDraftStatus | undefined;
+  let code: string | undefined;
+  let message = "Request saved. We'll review it and text you to schedule your estimate.";
+
+  if (normalized.conceptPrompt) {
+    if (!normalized.normalizedContactEmail || !isValidLeadEmail(normalized.normalizedContactEmail)) {
+      const outcome = await queueConceptDraftForLead(ctx, {
+        leadRequestId,
+        normalized,
+        print: args.print,
+        now
+      });
+      code = outcome?.code;
+      message = outcome?.message ?? "Request saved. Add an email address to generate a concept draft.";
+    } else if (!aiConceptsEnabled()) {
+      const aiConceptDraftId = await ctx.db.insert("aiConceptDrafts", {
+        leadRequestId,
+        prompt: normalized.conceptPrompt,
+        status: "disabled",
+        provider: "openai",
+        failureReason: "AI concept drafting is not configured.",
+        requestedAt: now,
+        completedAt: now,
+        updatedAt: now
+      });
+      await ctx.db.patch(leadRequestId, { aiConceptDraftId, updatedAt: now });
+      draftStatus = "disabled";
+      await insertFunnelEvent(ctx, {
+        leadRequestId,
+        kind: "concept_generation_disabled",
+        code: "DISABLED",
+        createdAt: now
+      });
+      code = "DISABLED";
+      message = "Request saved. We'll review it and text you to schedule your estimate.";
+    } else {
+      const outcome = await queueConceptDraftForLead(ctx, {
+        leadRequestId,
+        normalized,
+        print: args.print,
+        now
+      });
+      draftStatus = outcome?.aiDraftStatus;
+      code = outcome?.code;
+      message = outcome?.message ?? message;
+    }
+  }
+
+  return {
+    leadRequestId,
+    status: "new",
+    ...(draftStatus ? { aiDraftStatus: draftStatus } : {}),
+    ...(code ? { code } : {}),
+    message
+  };
+}
+
 export const submitLeadRequest = mutation({
   args: {
     contactName: v.string(),
@@ -665,81 +751,7 @@ export const submitLeadRequest = mutation({
   },
   returns: submittedLeadValidator,
   handler: async (ctx, args) => {
-    const now = Date.now();
-    let normalized;
-
-    try {
-      normalized = normalizeLeadRequestInput(args);
-    } catch (error) {
-      throw new ConvexError({
-        code: "INVALID_LEAD_REQUEST",
-        message: error instanceof Error ? error.message : "This request could not be saved."
-      });
-    }
-
-    const leadRequestId = await ctx.db.insert("leadRequests", {
-      ...normalized,
-      ...(args.upload ? { upload: args.upload } : {}),
-      ...(args.print ? { print: args.print } : {}),
-      status: "new",
-      createdAt: now,
-      updatedAt: now
-    });
-    let draftStatus: AiConceptDraftStatus | undefined;
-    let code: string | undefined;
-    let message = "Request saved. We'll review it and text you to schedule your estimate.";
-
-    if (normalized.conceptPrompt) {
-      if (!normalized.normalizedContactEmail || !isValidLeadEmail(normalized.normalizedContactEmail)) {
-        const outcome = await queueConceptDraftForLead(ctx, {
-          leadRequestId,
-          normalized,
-          print: args.print,
-          now
-        });
-        code = outcome?.code;
-        message = outcome?.message ?? "Request saved. Add an email address to generate a concept draft.";
-      } else if (!aiConceptsEnabled()) {
-        const aiConceptDraftId = await ctx.db.insert("aiConceptDrafts", {
-          leadRequestId,
-          prompt: normalized.conceptPrompt,
-          status: "disabled",
-          provider: "openai",
-          failureReason: "AI concept drafting is not configured.",
-          requestedAt: now,
-          completedAt: now,
-          updatedAt: now
-        });
-        await ctx.db.patch(leadRequestId, { aiConceptDraftId, updatedAt: now });
-        draftStatus = "disabled";
-        await insertFunnelEvent(ctx, {
-          leadRequestId,
-          kind: "concept_generation_disabled",
-          code: "DISABLED",
-          createdAt: now
-        });
-        code = "DISABLED";
-        message = "Request saved. We'll review it and text you to schedule your estimate.";
-      } else {
-        const outcome = await queueConceptDraftForLead(ctx, {
-          leadRequestId,
-          normalized,
-          print: args.print,
-          now
-        });
-        draftStatus = outcome?.aiDraftStatus;
-        code = outcome?.code;
-        message = outcome?.message ?? message;
-      }
-    }
-
-    return {
-      leadRequestId,
-      status: "new",
-      ...(draftStatus ? { aiDraftStatus: draftStatus } : {}),
-      ...(code ? { code } : {}),
-      message
-    };
+    return await submitLeadRequestHandler(ctx, args);
   }
 });
 

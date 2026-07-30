@@ -4,6 +4,7 @@ import {
   isValidLeadPhone,
   leadRequestSchema,
   makeLeadRateLimitBucket,
+  makeLeadRateLimitKey,
   normalizeLeadPhone,
   normalizeLeadRequestInput
 } from "@/lib/lead-request-contract";
@@ -119,5 +120,27 @@ describe("lead request contract", () => {
   it("builds deterministic phone and daily rate-limit keys", () => {
     expect(normalizeLeadPhone("+1 (555) 000-1212")).toBe("15550001212");
     expect(makeLeadRateLimitBucket(Date.UTC(2026, 5, 17, 12))).toBe("2026-06-17");
+  });
+
+  it.each([
+    [" Buyer+promo@Example.com ", "ai:buyer@example.com"],
+    ["first.last+summer@gmail.com", "ai:firstlast@gmail.com"],
+    ["first.last+summer@googlemail.com", "ai:firstlast@googlemail.com"],
+    ["first.last+summer@example.com", "ai:first.last@example.com"],
+    ["plain@example.com", "ai:plain@example.com"]
+  ])("folds lead rate-limit email %s to %s", (email, expected) => {
+    expect(makeLeadRateLimitKey(email)).toBe(expected);
+  });
+
+  it("uses the Chicago calendar bucket across DST transitions", () => {
+    const beforeSpringForward = Date.parse("2026-03-08T07:59:59.000Z");
+    const afterSpringForward = Date.parse("2026-03-08T08:00:00.000Z");
+    const beforeFallBack = Date.parse("2026-11-01T06:59:59.000Z");
+    const afterFallBack = Date.parse("2026-11-01T07:00:00.000Z");
+
+    expect(makeLeadRateLimitBucket(beforeSpringForward)).toBe("2026-03-08");
+    expect(makeLeadRateLimitBucket(afterSpringForward)).toBe("2026-03-08");
+    expect(makeLeadRateLimitBucket(beforeFallBack)).toBe("2026-11-01");
+    expect(makeLeadRateLimitBucket(afterFallBack)).toBe("2026-11-01");
   });
 });

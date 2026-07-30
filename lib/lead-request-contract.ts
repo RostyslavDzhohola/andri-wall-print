@@ -68,6 +68,24 @@ export function normalizeLeadEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+export function makeLeadRateLimitKey(email: string) {
+  const normalized = normalizeLeadEmail(email);
+  const atIndex = normalized.lastIndexOf("@");
+
+  if (atIndex < 0) {
+    return `ai:${normalized.split("+", 1)[0]}`;
+  }
+
+  const domain = normalized.slice(atIndex + 1);
+  let localPart = normalized.slice(0, atIndex).split("+", 1)[0];
+
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    localPart = localPart.replace(/\./g, "");
+  }
+
+  return `ai:${localPart}@${domain}`;
+}
+
 export function normalizeLeadPhone(value: string | undefined) {
   const digits = (value ?? "").replace(/\D/g, "");
 
@@ -222,6 +240,38 @@ export function normalizeLeadRequestInput(input: LeadContactInput): NormalizedLe
   return parsed.data;
 }
 
+export function getChicagoGenerationDayKey(now: number) {
+  const utcYear = new Date(now).getUTCFullYear();
+  const dstStart = getChicagoDstStartUtcMs(utcYear);
+  const dstEnd = getChicagoDstEndUtcMs(utcYear);
+  const utcOffsetHours = now >= dstStart && now < dstEnd ? -5 : -6;
+  const chicagoDate = new Date(now + utcOffsetHours * 60 * 60 * 1_000);
+  const year = chicagoDate.getUTCFullYear();
+  const month = String(chicagoDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(chicagoDate.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getChicagoDstStartUtcMs(year: number) {
+  const secondSunday = getNthSundayOfMonth(year, 2, 2);
+
+  return Date.UTC(year, 2, secondSunday, 8, 0, 0, 0);
+}
+
+function getChicagoDstEndUtcMs(year: number) {
+  const firstSunday = getNthSundayOfMonth(year, 10, 1);
+
+  return Date.UTC(year, 10, firstSunday, 7, 0, 0, 0);
+}
+
+function getNthSundayOfMonth(year: number, monthIndex: number, nth: number) {
+  const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1)).getUTCDay();
+  const firstSunday = 1 + ((7 - firstDayOfMonth) % 7);
+
+  return firstSunday + (nth - 1) * 7;
+}
+
 export function makeLeadRateLimitBucket(now = Date.now()) {
-  return new Date(now).toISOString().slice(0, 10);
+  return getChicagoGenerationDayKey(now);
 }
