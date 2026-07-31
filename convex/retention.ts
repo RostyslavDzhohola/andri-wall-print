@@ -13,7 +13,8 @@ export const RETENTION_CUTOFFS = {
 export function selectExpiredRows<Row extends Record<string, unknown>, Field extends keyof Row>(
   rows: readonly Row[],
   field: Field,
-  cutoffMs: number
+  cutoffMs: number,
+  options: { stopAtFirstLive?: boolean } = {}
 ) {
   const expired: Row[] = [];
 
@@ -21,7 +22,11 @@ export function selectExpiredRows<Row extends Record<string, unknown>, Field ext
     const timestamp = row[field];
 
     if (typeof timestamp !== "number" || timestamp >= cutoffMs) {
-      break;
+      if (options.stopAtFirstLive) {
+        break;
+      }
+
+      continue;
     }
 
     expired.push(row);
@@ -37,7 +42,12 @@ export const pruneOldOperationalData = internalMutation({
     const now = Date.now();
     const funnelEvents = await ctx.db.query("funnelEvents").order("asc").take(RETENTION_BATCH_SIZE);
 
-    for (const row of selectExpiredRows(funnelEvents, "createdAt", now - RETENTION_CUTOFFS.funnelEvents)) {
+    for (const row of selectExpiredRows(
+      funnelEvents,
+      "createdAt",
+      now - RETENTION_CUTOFFS.funnelEvents,
+      { stopAtFirstLive: true }
+    )) {
       await ctx.db.delete(row._id);
     }
 

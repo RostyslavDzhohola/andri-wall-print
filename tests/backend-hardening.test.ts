@@ -13,6 +13,7 @@ import {
   getChicagoGenerationDayKey,
   logReservedVisitHandler,
   reserveConceptGenerationGate,
+  reserveLeadInsertGate,
   startConceptGenerationHandler,
   submitLeadRequestHandler
 } from "@/convex/leadRequests";
@@ -22,6 +23,7 @@ import {
 } from "@/convex/previewBundles";
 import {
   LEAD_AI_RATE_LIMIT_PER_DAY,
+  foldLeadContactEmail,
   makeLeadRateLimitBucket,
   makeLeadRateLimitKey,
   normalizeLeadRequestInput
@@ -317,6 +319,57 @@ describe("backend quota hardening", () => {
     ).toMatchObject({ count: LEAD_INSERTS_PER_CONTACT_PER_DAY });
   });
 
+  it("uses separate per-phone buckets for phone-only leads", async () => {
+    const fake = createFakeCtx();
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+
+    for (let index = 0; index < LEAD_INSERTS_PER_CONTACT_PER_DAY; index += 1) {
+      await submitLeadRequestHandler(fake.ctx, {
+        contactName: `Phone buyer ${index}`,
+        contactPhone: "+1 (312) 555-0100",
+        preferredContactMethod: "phone"
+      });
+    }
+
+    await expect(
+      submitLeadRequestHandler(fake.ctx, {
+        contactName: "Phone buyer 11",
+        contactPhone: "1-312-555-0100",
+        preferredContactMethod: "phone"
+      })
+    ).rejects.toMatchObject({
+      data: { code: "LEAD_LIMIT_REACHED" }
+    });
+    await expect(
+      submitLeadRequestHandler(fake.ctx, {
+        contactName: "Different phone buyer",
+        contactPhone: "+1 (312) 555-0101",
+        preferredContactMethod: "phone"
+      })
+    ).resolves.toMatchObject({ status: "new" });
+
+    expect(
+      fake.tables.leadRateLimits.find((row) => row.contactKey === "lead:phone:13125550100")
+    ).toMatchObject({ count: LEAD_INSERTS_PER_CONTACT_PER_DAY });
+    expect(
+      fake.tables.leadRateLimits.find((row) => row.contactKey === "lead:phone:13125550101")
+    ).toMatchObject({ count: 1 });
+  });
+
+  it("skips the per-contact bucket when no contact is available but still reserves the global cap", async () => {
+    const fake = createFakeCtx();
+
+    await expect(reserveLeadInsertGate(fake.ctx, {}, NOW)).resolves.toBe(true);
+
+    expect(fake.tables.leadRateLimits).toHaveLength(0);
+    expect(fake.tables.globalGenerationCap).toEqual([
+      expect.objectContaining({
+        dayKey: `leads:${DAY_KEY}`,
+        count: 1
+      })
+    ]);
+  });
+
   it("returns a normal reserved-visit result without inserting after the funnel cap", async () => {
     const fake = createFakeCtx({
       seed: {
@@ -403,7 +456,7 @@ describe("backend quota hardening", () => {
   });
 
   it("returns a lead-limit failure from concept start without inserting", async () => {
-    const folded = makeLeadRateLimitKey("buyer@example.com").slice("ai:".length);
+    const folded = foldLeadContactEmail("buyer@example.com");
     const fake = createFakeCtx({
       seed: {
         leadRateLimits: [

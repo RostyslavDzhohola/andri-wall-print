@@ -498,6 +498,10 @@ export function selectIdempotentBundleReuse(
   }
 
   if (existing.status === "failed") {
+    if ((existing.job?.attempt ?? 0) >= GENERATION_MAX_AUTO_ATTEMPTS) {
+      return { action: "unavailable" };
+    }
+
     return {
       action: "requeue",
       attempt: (existing.job?.attempt ?? 0) + 1

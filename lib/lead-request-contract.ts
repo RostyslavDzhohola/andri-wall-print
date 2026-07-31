@@ -81,12 +81,12 @@ export function normalizeLeadEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-export function makeLeadRateLimitKey(email: string) {
+export function foldLeadContactEmail(email: string) {
   const normalized = normalizeLeadEmail(email);
   const atIndex = normalized.lastIndexOf("@");
 
   if (atIndex < 0) {
-    return `ai:${normalized.split("+", 1)[0]}`;
+    return normalized.split("+", 1)[0];
   }
 
   const domain = normalized.slice(atIndex + 1);
@@ -96,7 +96,11 @@ export function makeLeadRateLimitKey(email: string) {
     localPart = localPart.replace(/\./g, "");
   }
 
-  return `ai:${localPart}@${domain}`;
+  return `${localPart}@${domain}`;
+}
+
+export function makeLeadRateLimitKey(email: string) {
+  return `ai:${foldLeadContactEmail(email)}`;
 }
 
 export function normalizeLeadPhone(value: string | undefined) {

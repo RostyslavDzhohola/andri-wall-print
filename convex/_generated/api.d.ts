@@ -14,7 +14,6 @@ import type * as bundleGeneration from "../bundleGeneration.js";
 import type * as crons from "../crons.js";
 import type * as dailyCaps from "../dailyCaps.js";
 import type * as leadRequests from "../leadRequests.js";
-import type * as migrations from "../migrations.js";
 import type * as previewBundles from "../previewBundles.js";
 import type * as retention from "../retention.js";
 import type * as uploadValidation from "../uploadValidation.js";
@@ -33,7 +32,6 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   dailyCaps: typeof dailyCaps;
   leadRequests: typeof leadRequests;
-  migrations: typeof migrations;
   previewBundles: typeof previewBundles;
   retention: typeof retention;
   uploadValidation: typeof uploadValidation;

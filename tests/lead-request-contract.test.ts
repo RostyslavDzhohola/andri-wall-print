@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AI_CONCEPT_DRAFT_STATUSES,
   canFinalizeAiDraft,
+  foldLeadContactEmail,
   isValidLeadPhone,
   leadRequestSchema,
   makeLeadRateLimitBucket,
@@ -144,13 +145,14 @@ describe("lead request contract", () => {
   });
 
   it.each([
-    [" Buyer+promo@Example.com ", "ai:buyer@example.com"],
-    ["first.last+summer@gmail.com", "ai:firstlast@gmail.com"],
-    ["first.last+summer@googlemail.com", "ai:firstlast@googlemail.com"],
-    ["first.last+summer@example.com", "ai:first.last@example.com"],
-    ["plain@example.com", "ai:plain@example.com"]
-  ])("folds lead rate-limit email %s to %s", (email, expected) => {
-    expect(makeLeadRateLimitKey(email)).toBe(expected);
+    [" Buyer+promo@Example.com ", "buyer@example.com"],
+    ["first.last+summer@gmail.com", "firstlast@gmail.com"],
+    ["first.last+summer@googlemail.com", "firstlast@googlemail.com"],
+    ["first.last+summer@example.com", "first.last@example.com"],
+    ["plain@example.com", "plain@example.com"]
+  ])("folds lead contact email %s to %s before adding a rate-limit prefix", (email, expected) => {
+    expect(foldLeadContactEmail(email)).toBe(expected);
+    expect(makeLeadRateLimitKey(email)).toBe(`ai:${expected}`);
   });
 
   it("uses the Chicago calendar bucket across DST transitions", () => {

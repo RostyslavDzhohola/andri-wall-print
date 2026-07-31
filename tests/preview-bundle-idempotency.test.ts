@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { selectIdempotentBundleReuse } from "@/convex/previewBundles";
+import {
+  GENERATION_MAX_AUTO_ATTEMPTS,
+  selectIdempotentBundleReuse
+} from "@/convex/previewBundles";
 import { DEFAULT_PREVIEW_BUNDLE_PRINT } from "@/lib/preview-bundle-contract";
 
 const expected = {
@@ -58,12 +61,15 @@ describe("homepage upload idempotency reuse", () => {
       decision: { action: "insert" }
     },
     {
-      name: "failed matching bundle",
+      name: "failed matching bundle at the retry limit",
       candidate: {
         ...existing,
-        status: "failed"
+        status: "failed",
+        job: {
+          attempt: GENERATION_MAX_AUTO_ATTEMPTS
+        }
       },
-      decision: { action: "requeue", attempt: 4 }
+      decision: { action: "unavailable" }
     },
     {
       name: "rejected matching bundle",
@@ -110,6 +116,24 @@ describe("homepage upload idempotency reuse", () => {
     ).toEqual({
       action: "requeue",
       attempt: 1
+    });
+  });
+
+  it("requeues a failed attempt one as attempt two", () => {
+    expect(
+      selectIdempotentBundleReuse(
+        {
+          ...existing,
+          status: "failed",
+          job: {
+            attempt: 1
+          }
+        },
+        expected
+      )
+    ).toEqual({
+      action: "requeue",
+      attempt: 2
     });
   });
 

@@ -7,6 +7,7 @@ import {
   LEAD_CONTACT_METHODS,
   LEAD_AI_RATE_LIMIT_PER_DAY,
   canFinalizeAiDraft,
+  foldLeadContactEmail,
   getChicagoGenerationDayKey,
   isValidLeadEmail,
   makeLeadRateLimitKey,
@@ -159,7 +160,9 @@ export function selectStaleAiDraftRecovery(
   now = Date.now()
 ): StaleAiDraftRecoveryDecision {
   if (draft.status === "queued") {
-    if (now - draft.requestedAt < AI_DRAFT_QUEUED_STALE_MS) {
+    const queuedSince = Math.max(draft.requestedAt, draft.updatedAt ?? 0);
+
+    if (now - queuedSince < AI_DRAFT_QUEUED_STALE_MS) {
       return { action: "ignore" };
     }
 
@@ -335,22 +338,31 @@ export async function reserveConceptGenerationGate(ctx: any, normalized: Normali
   return decision;
 }
 
-function makeLeadInsertRateLimitKey(email: string) {
-  return `lead:${makeLeadRateLimitKey(email).slice("ai:".length)}`;
-}
-
-async function reserveLeadInsertGate(ctx: any, normalizedEmail: string, now: number) {
+export async function reserveLeadInsertGate(
+  ctx: any,
+  contact: { email?: string; phone?: string },
+  now: number
+) {
   const dayKey = getChicagoGenerationDayKey(now);
-  const contactKey = makeLeadInsertRateLimitKey(normalizedEmail);
-  const contactCount = await getContactBucketCount(ctx, contactKey, dayKey);
+  const contactKey = contact.email
+    ? `lead:${foldLeadContactEmail(contact.email)}`
+    : contact.phone
+      ? `lead:phone:${contact.phone}`
+      : null;
+  const contactCount = contactKey ? await getContactBucketCount(ctx, contactKey, dayKey) : 0;
   const globalDayKey = `leads:${dayKey}`;
   const globalCount = await getDailyCapCount(ctx, globalDayKey);
 
-  if (contactCount >= LEAD_INSERTS_PER_CONTACT_PER_DAY || globalCount >= LEADS_DAILY_CAP) {
+  if (
+    (contactKey !== null && contactCount >= LEAD_INSERTS_PER_CONTACT_PER_DAY) ||
+    globalCount >= LEADS_DAILY_CAP
+  ) {
     return false;
   }
 
-  await reserveContactBucket(ctx, contactKey, dayKey, LEAD_INSERTS_PER_CONTACT_PER_DAY, now);
+  if (contactKey) {
+    await reserveContactBucket(ctx, contactKey, dayKey, LEAD_INSERTS_PER_CONTACT_PER_DAY, now);
+  }
   await reserveDailyCap(ctx, globalDayKey, LEADS_DAILY_CAP, now);
   return true;
 }
@@ -531,7 +543,14 @@ export async function startConceptGenerationHandler(ctx: any, args: {
     assertValidPrint(args.print as Parameters<typeof assertValidPrint>[0]);
   }
 
-  const leadReserved = await reserveLeadInsertGate(ctx, normalized.normalizedContactEmail, now);
+  const leadReserved = await reserveLeadInsertGate(
+    ctx,
+    {
+      email: normalized.normalizedContactEmail,
+      phone: normalized.normalizedContactPhone
+    },
+    now
+  );
 
   if (!leadReserved) {
     return {
@@ -703,7 +722,14 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
         sourceFingerprint: args.upload.sourceFingerprint
       })
     : undefined;
-  const leadReserved = await reserveLeadInsertGate(ctx, normalized.normalizedContactEmail, now);
+  const leadReserved = await reserveLeadInsertGate(
+    ctx,
+    {
+      email: normalized.normalizedContactEmail,
+      phone: normalized.normalizedContactPhone
+    },
+    now
+  );
 
   if (!leadReserved) {
     throw new ConvexError({
@@ -1134,52 +1160,5 @@ export const recoverStaleAiConceptDrafts = internalMutation({
       failed,
       ignored
     };
-  }
-});
-
-export const retitleAiConceptBundles = internalMutation({
-  args: {},
-  returns: v.number(),
-  handler: async (ctx) => {
-    let updated = 0;
-    let afterCreationTime = -1;
-
-    while (true) {
-      const bundles = await ctx.db
-        .query("previewBundles")
-        .withIndex("by_creation_time", (q: any) => q.gt("_creationTime", afterCreationTime))
-        .order("asc")
-        .take(100);
-
-      if (bundles.length === 0) {
-        break;
-      }
-
-      for (const bundle of bundles) {
-        if (bundle.source.kind !== "ai_concept") {
-          continue;
-        }
-
-        const lead = await ctx.db.get(bundle.source.leadRequestId);
-
-        if (!lead) {
-          continue;
-        }
-
-        await ctx.db.patch(bundle._id, {
-          title: makeConceptDraftTitle({ businessName: lead.businessName }),
-          updatedAt: Date.now()
-        });
-        updated += 1;
-      }
-
-      afterCreationTime = bundles[bundles.length - 1]._creationTime;
-
-      if (bundles.length < 100) {
-        break;
-      }
-    }
-
-    return updated;
   }
 });

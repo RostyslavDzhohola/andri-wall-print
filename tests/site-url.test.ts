@@ -24,8 +24,11 @@ describe("getSiteUrl", () => {
   it.each([
     ["https://www.thewallprintpro.com", "https://www.thewallprintpro.com"],
     ["https://thewallprintpro.com", "https://thewallprintpro.com"],
-    ["https://www.thewallprintpro.com///", "https://www.thewallprintpro.com"]
-  ])("accepts approved HTTPS site URLs and normalizes trailing slashes", (configured, expected) => {
+    ["https://www.thewallprintpro.com///", "https://www.thewallprintpro.com"],
+    ["https://www.thewallprintpro.com/staging", "https://www.thewallprintpro.com"],
+    ["https://www.thewallprintpro.com?preview=1", "https://www.thewallprintpro.com"],
+    ["https://www.thewallprintpro.com/#preview", "https://www.thewallprintpro.com"]
+  ])("accepts approved HTTPS origins and strips path, query, and hash", (configured, expected) => {
     process.env[SITE_URL_ENV_KEY] = configured;
 
     expect(getSiteUrl()).toBe(expected);
@@ -34,6 +37,7 @@ describe("getSiteUrl", () => {
   it.each([
     "https://www.wallprintpro.com",
     "http://www.thewallprintpro.com",
+    "https://www.thewallprintpro.com:8443/staging?preview=1",
     "not a URL"
   ])("falls back to production for an unapproved configured URL", (configured) => {
     process.env[SITE_URL_ENV_KEY] = configured;

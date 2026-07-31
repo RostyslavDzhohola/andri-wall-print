@@ -550,65 +550,90 @@ describe("concept generation gate", () => {
     expect(fake.tables.aiConceptDrafts[0]).not.toHaveProperty("generatedImageMeta");
   });
 
-  it("selects stale AI draft recovery without retrying generating work", () => {
+  it.each([
+    {
+      name: "ignores a fresh queued draft",
+      draft: {
+        status: "queued",
+        requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1,
+        updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1
+      },
+      decision: { action: "ignore" }
+    },
+    {
+      name: "requeues a queued draft at the stale boundary",
+      draft: {
+        status: "queued",
+        requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+        updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS
+      },
+      decision: { action: "requeue", recoveryAttempts: 1 }
+    },
+    {
+      name: "fails a previously requeued draft at the stale boundary",
+      draft: {
+        status: "queued",
+        requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+        updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+        recoveryAttempts: 1
+      },
+      decision: {
+        action: "fail",
+        reason: "Concept generation stalled. Please try again."
+      }
+    },
+    {
+      name: "gives a requeued draft a fresh window from updatedAt",
+      draft: {
+        status: "queued",
+        requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS * 2,
+        updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1,
+        recoveryAttempts: 1
+      },
+      decision: { action: "ignore" }
+    },
+    {
+      name: "fails a requeued draft 120 seconds after requeue",
+      draft: {
+        status: "queued",
+        requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS * 2,
+        updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
+        recoveryAttempts: 1
+      },
+      decision: {
+        action: "fail",
+        reason: "Concept generation stalled. Please try again."
+      }
+    },
+    {
+      name: "fails stale generating work without retrying it",
+      draft: {
+        status: "generating",
+        requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+        startedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+        updatedAt: NOW - 1
+      },
+      decision: {
+        action: "fail",
+        reason: "Concept generation stalled. Please try again."
+      }
+    },
+    {
+      name: "ignores terminal drafts",
+      draft: {
+        status: "ready",
+        requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
+        updatedAt: NOW - AI_DRAFT_GENERATING_STALE_MS
+      },
+      decision: { action: "ignore" }
+    }
+  ])("$name", ({ draft, decision }) => {
     expect(
       selectStaleAiDraftRecovery(
-        {
-          status: "queued",
-          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1,
-          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS + 1
-        },
+        draft,
         NOW
       )
-    ).toEqual({ action: "ignore" });
-    expect(
-      selectStaleAiDraftRecovery(
-        {
-          status: "queued",
-          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
-          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS
-        },
-        NOW
-      )
-    ).toEqual({ action: "requeue", recoveryAttempts: 1 });
-    expect(
-      selectStaleAiDraftRecovery(
-        {
-          status: "queued",
-          requestedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
-          updatedAt: NOW - AI_DRAFT_QUEUED_STALE_MS,
-          recoveryAttempts: 1
-        },
-        NOW
-      )
-    ).toEqual({
-      action: "fail",
-      reason: "Concept generation stalled. Please try again."
-    });
-    expect(
-      selectStaleAiDraftRecovery(
-        {
-          status: "generating",
-          requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
-          startedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
-          updatedAt: NOW - 1
-        },
-        NOW
-      )
-    ).toEqual({
-      action: "fail",
-      reason: "Concept generation stalled. Please try again."
-    });
-    expect(
-      selectStaleAiDraftRecovery(
-        {
-          status: "ready",
-          requestedAt: NOW - AI_DRAFT_GENERATING_STALE_MS,
-          updatedAt: NOW - AI_DRAFT_GENERATING_STALE_MS
-        },
-        NOW
-      )
-    ).toEqual({ action: "ignore" });
+    ).toEqual(decision);
   });
 
   it("requeues stale queued drafts once and fails stale generating drafts", async () => {
