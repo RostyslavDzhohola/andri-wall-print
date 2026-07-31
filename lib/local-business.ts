@@ -9,7 +9,7 @@ export const LOCAL_BUSINESS_NAP = {
   postalCode: "60016",
   addressCountry: "US",
   telephone: "(708) 543-3826",
-  email: "hello@wallprintpro.com"
+  email: "thewallprintpro@gmail.com"
 } as const;
 
 export function buildLocalBusinessJsonLd() {
