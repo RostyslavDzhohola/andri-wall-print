@@ -1,120 +1,117 @@
-# Preview Picture
+# Wall Print Pro
 
-Next.js web app for generating and opening wall-art AR preview links.
+Public marketing and lead-generation site for Wall Print Pro, a Chicago wall-printing
+business. There is no login and no admin surface — every route is public. A visitor
+picks a design, uploads their own art, or describes an idea for an AI concept, previews
+it on their own wall with phone AR, then requests an estimate or reserves a print-job
+slot with a $100 deposit.
 
-## What it does
+## Routes
 
-- Opens the homepage as a Wall Print Pro AR sales surface for multiple checked-in real-size prints.
-- Adds a Clerk-protected `/admin` workspace for allowlisted admins.
-- Lets an admin create a no-auth public preview link from a checked sample or an image upload.
-- Stores admin preview records in Convex with private preparing/failed/revoked states and public ready links.
-- Uses `@google/model-viewer` for a client-only GLB/USDZ handoff to iPhone Quick Look and Android Scene Viewer.
-- Reuses the same native AR launcher on the homepage, admin-created public previews, and Phase 0 seeded previews.
-- Removes the old browser-camera overlay and fallback route.
+| Route | What it does |
+| --- | --- |
+| `/` | Homepage hero: choose a saved design, upload art, or describe an AI concept; AR preview; comparison table; reserve CTA. |
+| `/gallery` | Browse the full artwork catalog and open the AR preview for any design. |
+| `/preview/[slug]` | Public AR preview for a specific bundle (chosen design, upload, or generated concept). No auth; unready/failed/revoked previews render a generic status page. |
+| `/request` | Estimate request form (contact details, selected design/upload/concept, optional AI concept prompt). |
+| `/reserved` | Post-payment confirmation after the $100 Stripe deposit; explains next steps and asks the buyer to text/call to schedule. |
+| `/work`, `/work/[slug]` | Approved portfolio ("Our Work") gallery; `/work/[slug]` redirects to `/work` (legacy job-page slugs are retired). |
+| `/robots.ts`, `/sitemap.ts` | Generated robots and sitemap output. |
+| `/api/concept-art` | Proxies an AI concept-generation request to Convex (rate-capped). |
+| `/api/homepage-artwork` | Proxies homepage artwork data from Convex. |
+| `/api/preview-confirmations` | Submits a buyer's confirmation note on a preview bundle. |
+| `/api/reserved-visit` | Logs a `reserved_visit` funnel event after a Stripe redirect. |
+| `/api/dev-public-origin` | Local-dev only: resolves the current ngrok public URL for phone testing. |
 
-## Admin Preview Flow
+The AR handoff uses `@google/model-viewer`: USDZ Quick Look on iPhone Safari, GLB Scene
+Viewer on Android Chrome, with a QR/2D fallback on desktop and unsupported devices.
 
-An allowlisted admin signs into `/admin`, creates a preview link, and shares `/preview/[slug]`.
+## Local development
 
-- Checked sample links become `ready` immediately and point at the existing checked-in assets.
-- PNG uploads are stored in Convex quarantine storage, then a Convex action creates poster, GLB, and USDZ assets with the TypeScript flat-plane generator.
-- New public preview links use random `p-...` slugs instead of artwork titles or uploaded file names.
-- Public preview lookup checks `previewBundles` first, then falls back to the Phase 0 `arPreviews` table.
-- Public pages do not expose artwork metadata until the preview record is `ready`.
-- `uploaded`, `validating`, and `generating` preview links render a generic preparing page.
-- `failed`, `rejected`, `revoked`, and missing preview links render a generic unavailable page.
-- Revoke deletes generated Convex storage assets and marks the public link unavailable. Already-opened native AR viewers may briefly use cached model files.
-
-### Required Clerk and Convex setup
-
-The protected admin workspace needs a dedicated Clerk app before it can run end to end:
-
-```sh
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
-CLERK_SECRET_KEY="..."
-CLERK_JWT_ISSUER_DOMAIN="https://your-clerk-issuer"
-WALL_PRINT_PRO_SELLER_EMAILS="admin@example.com"
-```
-
-Set `CLERK_JWT_ISSUER_DOMAIN` in the Convex deployment too:
-
-```sh
-pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN "https://your-clerk-issuer"
-```
-
-After the real issuer is set, run:
-
-```sh
-pnpm exec convex codegen
-```
-
-The current repo intentionally does not contain Clerk secrets. If Clerk is not configured, `/admin` renders a setup blocker and public routes keep working.
-
-## Phone demo
-
-The current demo uses checked-in static samples with real-size GLB/USDZ planes:
-
-- Included samples:
-  - Chicago Final 1, 152 x 127 cm: `/api/ar/chicago-final-1.glb`, `/api/ar/chicago-final-1.usdz`, `/artworks/chicago-final-1.jpg`.
-  - Chicago Final 2, 91 x 152 cm: `/api/ar/chicago-final-2.glb`, `/api/ar/chicago-final-2.usdz`, `/artworks/chicago-final-2.jpg`.
-  - Chicago Final 3, 122 x 152 cm: `/api/ar/chicago-final-3.glb`, `/api/ar/chicago-final-3.usdz`, `/artworks/chicago-final-3.jpg`.
-
-Open the deployed URL on iPhone Safari or Android Chrome. Cycle through the pictures, then tap `Place on wall`. On supported phones, this opens the native AR viewer so you can point at a wall and place the selected print.
-
-## Phase 0 Convex preview seed
-
-The public preview route is `/preview/[slug]`. In production it reads `arPreviews:getPublicPreview` from `CONVEX_URL` or `NEXT_PUBLIC_CONVEX_URL` through the Convex HTTP API. That function now checks admin-created `previewBundles` first and falls back to seeded `arPreviews`.
-
-Manual Chicago proof seed path:
-
-```sh
-pnpm assets:phase0:chicago
-CONVEX_URL="https://your-deployment.convex.cloud" PHASE0_SEED_TOKEN="..." pnpm convex:seed:phase0
-```
-
-The PDF asset builder expects Python packages `Pillow` and `pypdfium2` in the active Python environment.
-
-Set the same `PHASE0_SEED_TOKEN` in the Convex deployment before running the seed script. The PDF sources are only a manual Phase 0 input path; admin uploads stay image-only until first-class PDF upload support is explicitly added.
-
-## Browser limits
-
-The homepage is deliberately a static presentation. Desktop browsers are not the real acceptance path for wall placement.
-
-## Install
+Use pnpm only — never npm (see `AGENTS.md`).
 
 ```sh
 pnpm install
+pnpm dev          # vinext dev server (Vite-based)
+npx convex dev     # Convex sync/watch — Convex CLI is the one place npx is expected
 ```
 
-## Local commands
-
-```sh
-pnpm build
-pnpm typecheck
-pnpm test
-pnpm test:e2e
-pnpm exec convex codegen
-pnpm assets:phase0:chicago
-pnpm convex:seed:phase0
-```
-
-Do not run `pnpm dev` unless deliberately requested.
-
-## Phone testing
-
-Use the live Sites custom domain, `https://www.thewallprintpro.com`, on your phone. Desktop verification only confirms the static page and model assets load.
-
-### Fast phone testing with ngrok
-
-Use the Sites custom domain as the stable phone test URL. For faster local iteration on a real phone, use the full local stack and tunnel the local app through an existing authenticated `ngrok` install:
+For phone AR testing you need the full local stack running together: the app on
+localhost, `npx convex dev`, and an ngrok tunnel, since AR viewers on a phone can't
+reach `localhost` on your Mac:
 
 ```sh
 pnpm dev
-ngrok http 3000
+ngrok http 3000   # or whatever port vinext prints
 ```
 
-If Next prints a different local port, tunnel that port instead. For example, if Next prints `http://localhost:3001`, run `ngrok http 3001`.
+Open the `https://...ngrok...` URL on the phone, not `localhost`. Page/CSS edits
+refresh normally through the tunnel; native AR viewers can cache `.glb`/`.usdz` more
+aggressively, so model changes may need a renamed or versioned asset URL before the
+phone picks up the change.
 
-Open the generated `https://...ngrok...` URL on the phone. Do not open `localhost` on the phone, because `localhost` points at the phone itself, not this Mac.
+Do not start `pnpm dev` unless the task actually needs an interactive local server, and
+don't use `vinext start` (production serving) as a substitute for dev mode during UI,
+upload, or browser QA work — see `AGENTS.md` for the full local-server rules.
 
-Page and CSS edits should refresh normally through the ngrok URL. Native AR viewers may cache `.usdz` and `.glb` assets more aggressively, so model changes may need a renamed asset or a versioned URL before the phone shows the new file.
+## Testing
+
+```sh
+pnpm typecheck   # tsc --noEmit
+pnpm test        # vitest unit tests (tests/*.test.ts)
+pnpm test:e2e    # Playwright e2e (tests/*.spec.ts)
+```
+
+## Deployment
+
+Production is `https://www.thewallprintpro.com`, served entirely by ChatGPT Sites (a
+Cloudflare Worker build) — Vercel hosting was fully retired on 2026-07-29
+(`docs/vercel-retirement-2026-07-29.md`). `pnpm build` (vinext/Cloudflare) is the only
+production build target; see `docs/sites-migration.md` for the migration record and
+media-approval process.
+
+Environment variables live in the Sites project dashboard (and Convex, for
+backend-only values) — not in this repo. At minimum: `NEXT_PUBLIC_SITE_URL`,
+`CONVEX_URL` / `NEXT_PUBLIC_CONVEX_URL`, `WALL_PRINT_PRO_RESERVE_URL`,
+`WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`,
+`WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, and `OPENAI_API_KEY`. Full list, owners, and the
+deploy/post-deploy checklist are in `docs/handoff/launch-handoff.md`.
+
+Push Convex functions/schema after backend changes with the Convex CLI's
+dev/deploy flow (`npx convex dev` locally; deploy to the target Convex deployment
+once confirmed).
+
+## Backend
+
+Convex holds all backend state: `leadRequests`, `previewBundles`, `aiConceptDrafts`,
+`arPreviews` (legacy seed samples), `previewConfirmations`, `funnelEvents`, and
+rate/cap tables (`leadRateLimits`, `globalGenerationCap`). A cron
+(`convex/crons.ts`) recovers stale in-flight preview generations every minute. AI
+concept image generation goes through OpenAI (`lib/openai-image-provider.ts`) and is
+rate-capped per lead and globally per day (`convex/leadRequests.ts`,
+`convex/dailyCaps.ts`).
+
+## Repo map
+
+- `app/` — Next.js 16 App Router routes and API routes (see table above).
+- `components/` — UI, split by domain: `ar/`, `preview/`, `promotion/`, `request/`,
+  `reserved/`, `seo/`, `site/`, `ui/`.
+- `convex/` — backend functions, schema, and crons.
+- `lib/` — shared logic: contracts/validators, pricing, site URL, runtime env, AR asset
+  generation, product copy, local-business NAP.
+- `worker/` — the Cloudflare Worker entry point that serves the Sites build.
+- `scripts/` — asset/media build scripts (Phase 0 AR assets, approved media catalog,
+  Stripe redirect checker).
+- `tests/` — Vitest unit tests (`*.test.ts`) and Playwright e2e specs (`*.spec.ts`).
+- `docs/` — migration records, launch handoff, and plans.
+
+Node version is pinned in `.nvmrc` (22.14.0); the framework runs on `vinext` (a
+Vite-based Next.js-compatible dev/build tool), not the Next.js CLI directly.
+
+## Further reading
+
+- `DESIGN.md` — the current design system (colors, type, motion, a11y baseline).
+- `TODOS.md` — open work and post-launch polish items. Clerk authentication has been
+  fully removed along with the pre-launch admin architecture.
+- `docs/handoff/launch-handoff.md` — launch gates, secrets ownership, deploy checklist,
+  and how to add a new portfolio job.

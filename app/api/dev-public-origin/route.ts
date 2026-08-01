@@ -37,14 +37,14 @@ function publicOriginFromTunnel(tunnel: NgrokTunnel) {
 }
 
 export async function GET() {
+  if (process.env.NODE_ENV !== "development") {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const configuredOrigin = configuredClientPreviewOrigin();
 
   if (configuredOrigin) {
     return NextResponse.json({ origin: configuredOrigin, source: "configured" });
-  }
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ origin: null, source: "none" });
   }
 
   try {

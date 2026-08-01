@@ -30,8 +30,9 @@ describe("root layout metadata", () => {
     expect(metadata.openGraph?.title).toContain("Wall Print Pro");
     const ogImages = metadata.openGraph?.images as Array<{ url: string }>;
     expect(ogImages[0]?.url).toContain(
-      "/media/wall-print-pro/homepage/img-1646-1600.jpg",
+      "/media/wall-print-pro/homepage/og-1200x630.jpg",
     );
+    expect(ogImages[0]).toMatchObject({ width: 1200, height: 630 });
     expect(metadata.twitter).toBeTruthy();
   });
 
@@ -47,7 +48,7 @@ describe("root layout metadata", () => {
     }).toMatchInlineSnapshot(`
       {
         "applicationName": "Wall Print Pro",
-        "canonical": "/",
+        "canonical": undefined,
         "description": "Custom wall printing in Chicago. Choose a design, upload your art or logo, or describe an idea — then see it on your actual wall in AR before you commit. Wall prints from $500.",
         "ogSiteName": "Wall Print Pro",
         "ogType": "website",

@@ -5,7 +5,7 @@ import { absoluteUrl } from "@/lib/site-url";
 
 export const revalidate = 3600;
 
-const PAGE_TITLE = "Wall Printing Chicago — Recent Work | Wall Print Pro";
+const PAGE_TITLE = "Wall Printing Chicago — Recent Work";
 const PAGE_DESCRIPTION =
   "See approved Wall Print Pro finished prints and clearly labeled wall-printing workshop demonstrations.";
 
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     description: PAGE_DESCRIPTION,
     url: absoluteUrl("/work"),
     type: "website",
-    images: [{ url: absoluteUrl("/brand/wallprint-pro-original.png") }]
+    images: [{ url: absoluteUrl("/media/wall-print-pro/homepage/og-1200x630.jpg") }]
   }
 };
 

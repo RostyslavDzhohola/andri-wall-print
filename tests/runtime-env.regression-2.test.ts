@@ -25,12 +25,12 @@ describe("env-folding regression (newly-static homepage)", () => {
     const original = process.env[key];
 
     try {
-      process.env[key] = "https://runtime-a.example";
-      expect(getSiteUrl()).toBe("https://runtime-a.example");
+      process.env[key] = "https://www.thewallprintpro.com/runtime-a";
+      expect(getSiteUrl()).toBe("https://www.thewallprintpro.com");
 
       // Change it AFTER first call — a folded literal would ignore this.
-      process.env[key] = "https://runtime-b.example";
-      expect(getSiteUrl()).toBe("https://runtime-b.example");
+      process.env[key] = "https://thewallprintpro.com/runtime-b";
+      expect(getSiteUrl()).toBe("https://thewallprintpro.com");
     } finally {
       if (original === undefined) {
         delete process.env[key];
@@ -75,7 +75,7 @@ describe("env-folding regression (newly-static homepage)", () => {
     // Matches `process.env.NEXT_PUBLIC_FOO` and `process.env.WALL_PRINT_PRO_FOO`
     // written as a *dotted literal* — the foldable form. Bracket reads
     // (process.env[KEY]) and split-string keys are allowed.
-    const foldablePattern = /process\.env\.(NEXT_PUBLIC|WALL_PRINT_PRO|CONVEX|CLERK|OPENAI)_[A-Z0-9_]+/;
+    const foldablePattern = /process\.env\.(NEXT_PUBLIC|WALL_PRINT_PRO|CONVEX|OPENAI)_[A-Z0-9_]+/;
 
     for (const relativePath of files) {
       const source = readFileSync(join(process.cwd(), relativePath), "utf8");

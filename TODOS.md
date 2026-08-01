@@ -6,21 +6,9 @@ What: Keep Convex functions deployed after auth or schema changes.
 
 Why: The local implementation uses generic Convex references so the repo can typecheck without generated API updates, but the deployment still needs new schema/functions pushed when auth or backend code changes.
 
-Context: `pnpm exec convex codegen` has succeeded once and pushed `previewBundles`, `bundleGeneration`, and `auth.config.ts` to the dev deployment. The launch plan (docs/plans/2026-07-03-public-funnel-launch.md) adds new schema (global generation cap, concept AR fields) that must be pushed.
+Context: `pnpm exec convex codegen` has succeeded once and pushed `previewBundles` and `bundleGeneration` to the dev deployment. The launch plan (docs/plans/2026-07-03-public-funnel-launch.md) adds new schema (global generation cap, concept AR fields) that must be pushed.
 
 Depends on / blocked by: Future backend changes.
-
-## P1: Clerk Full Teardown (week 2 after launch)
-
-What: Remove the dormant Clerk surface: `convex/auth.config.ts`, `proxy.ts` matcher, `ConvexProviderWithClerk` branches in `components/app-providers.tsx`, runtime-env Clerk readers, Clerk env vars in Vercel + Convex, and package dependencies; add proxy regression tests.
-
-Why: Launch (per D9) deleted only the visible auth surfaces and left the plumbing dormant to avoid auth-wiring surgery in launch week. The dormant surface is dead weight and a confusion hazard once launch is stable.
-
-Context: Nothing public is gated; surviving Convex functions are already null-identity-safe after the launch ctx.auth audit.
-
-Week-2 teardown note: `convex/sellerPricing.ts` still exports now-dead `getForSeller`/`updateForSeller` names; remove or rename them during Clerk teardown so the disabled seller/admin naming stops misleading future work.
-
-Depends on / blocked by: Launch stable for a few days.
 
 ## P1: Add Convex Function Harness Tests
 
@@ -58,7 +46,7 @@ What: Small quality items triaged WEEK-2 by the final launch review: failed-stat
 
 Why: None block launch; together they harden coverage, a11y, and abuse surfaces.
 
-Depends on / blocked by: Launch shipped; fold alongside the Clerk teardown week.
+Depends on / blocked by: Launch shipped; fold alongside other post-launch backend maintenance.
 
 ## P3: Automated AR-Link Email Sender (evidence-gated)
 

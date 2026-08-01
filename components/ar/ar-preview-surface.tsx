@@ -101,8 +101,12 @@ export function ArPreviewSurface({
                     : "mt-6 h-[min(47vh,420px)] md:mt-8 md:h-[min(62vh,640px)]"
                 )}
                 data-testid="static-artwork-preview"
+                decoding="async"
                 draggable={false}
+                fetchPriority="high"
                 src={selectedSample.assets.poster}
+                height={1600}
+                width={1200}
               />
               <Card className="relative z-20 mx-3 mb-3 mt-4 bg-card/95 py-3 shadow-lg backdrop-blur" data-testid="artwork-controls">
                 <CardContent className="px-3">

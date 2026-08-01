@@ -67,12 +67,17 @@ export function ArtworkGallerySurface({
         type="module"
       />
       <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-4 pt-4 md:px-6">
-        <h1 className="sr-only">Gallery</h1>
+        <div className="grid gap-1">
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">Wall print gallery</h1>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+            Browse ready-to-print designs, preview any of them on your wall, and request the one you want.
+          </p>
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(380px,1.05fr)] lg:items-start">
           <section
             aria-label="Selected artwork wall view"
-            className="grid gap-4 lg:sticky lg:top-6 lg:order-2"
+            className="grid gap-4 lg:sticky lg:top-24 lg:order-2"
             data-testid="gallery-selected-preview"
             ref={previewRef}
           >
@@ -134,7 +139,7 @@ export function ArtworkGallerySurface({
 
                 return (
                   <button
-                    aria-label={`Select gallery image ${index + 1}`}
+                    aria-label={sample.title ? `Select ${sample.title}` : `Select gallery image ${index + 1}`}
                     aria-pressed={isSelected}
                     className={cn(
                       "group block overflow-hidden rounded-lg border bg-card text-left shadow-sm outline-offset-4 transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",

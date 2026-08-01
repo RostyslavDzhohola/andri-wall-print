@@ -12,9 +12,10 @@ import type * as aiConcepts from "../aiConcepts.js";
 import type * as arPreviews from "../arPreviews.js";
 import type * as bundleGeneration from "../bundleGeneration.js";
 import type * as crons from "../crons.js";
+import type * as dailyCaps from "../dailyCaps.js";
 import type * as leadRequests from "../leadRequests.js";
 import type * as previewBundles from "../previewBundles.js";
-import type * as sellerPricing from "../sellerPricing.js";
+import type * as retention from "../retention.js";
 import type * as uploadValidation from "../uploadValidation.js";
 import type * as validators from "../validators.js";
 
@@ -29,9 +30,10 @@ declare const fullApi: ApiFromModules<{
   arPreviews: typeof arPreviews;
   bundleGeneration: typeof bundleGeneration;
   crons: typeof crons;
+  dailyCaps: typeof dailyCaps;
   leadRequests: typeof leadRequests;
   previewBundles: typeof previewBundles;
-  sellerPricing: typeof sellerPricing;
+  retention: typeof retention;
   uploadValidation: typeof uploadValidation;
   validators: typeof validators;
 }>;

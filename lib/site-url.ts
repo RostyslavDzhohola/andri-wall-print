@@ -6,14 +6,26 @@ const PRODUCTION_SITE_URL = "https://www.thewallprintpro.com";
 // to avoid the Turbopack prod-build env-folding pitfall (see lib/runtime-env.ts).
 const SITE_URL_ENV_KEY = "NEXT_PUBLIC" + "_SITE_URL";
 
-function normalizeBaseUrl(url: string) {
-  return url.replace(/\/+$/, "");
-}
-
 export function getSiteUrl() {
   const configured = process.env[SITE_URL_ENV_KEY]?.trim();
 
-  return normalizeBaseUrl(configured && configured.length > 0 ? configured : PRODUCTION_SITE_URL);
+  if (!configured) {
+    return PRODUCTION_SITE_URL;
+  }
+
+  try {
+    const url = new URL(configured);
+    const isApprovedHostname =
+      url.hostname === "thewallprintpro.com" || url.hostname === "www.thewallprintpro.com";
+
+    if (url.protocol === "https:" && isApprovedHostname && url.port === "") {
+      return url.origin;
+    }
+  } catch {
+    // Invalid configured URLs must not poison canonical, sitemap, or social URLs.
+  }
+
+  return PRODUCTION_SITE_URL;
 }
 
 export function absoluteUrl(path: string) {

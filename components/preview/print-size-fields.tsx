@@ -105,6 +105,7 @@ export function PrintSizeFields({
           <p className="text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
 
+        {/* biome-ignore lint/a11y/useSemanticElements: fieldset does not reliably support display:grid in Chromium; role=group is equivalent here */}
         <div className="grid w-full grid-cols-2 gap-1 rounded-lg border bg-background p-1 sm:w-32" role="group" aria-label="Print size unit">
           {(["in", "cm"] as const).map((unit) => (
             <Button

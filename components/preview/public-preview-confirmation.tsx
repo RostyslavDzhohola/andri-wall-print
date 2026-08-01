@@ -12,7 +12,7 @@ import type { ArSample } from "@/lib/ar-sample";
 import {
   buildBuyerPreviewShareText,
   normalizePreviewConfirmationNote,
-  type PublicPreviewConfirmation
+  type PublicPreviewConfirmation as PublicPreviewConfirmationRecord
 } from "@/lib/preview-confirmation-contract";
 
 type PublicPreviewConfirmationProps = {
@@ -24,7 +24,7 @@ type PublicPreviewConfirmationProps = {
 type ConfirmationResponse =
   | {
       status: "confirmed";
-      confirmation: PublicPreviewConfirmation;
+      confirmation: PublicPreviewConfirmationRecord;
     }
   | {
       status: "unavailable";
@@ -44,7 +44,7 @@ export function PublicPreviewConfirmation({ sample, publicSlug, canSubmit }: Pub
   const [busy, setBusy] = useState<"submit" | "share" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<PublicPreviewConfirmation | null>(null);
+  const [confirmation, setConfirmation] = useState<PublicPreviewConfirmationRecord | null>(null);
 
   const shareSummary = () =>
     buildBuyerPreviewShareText({

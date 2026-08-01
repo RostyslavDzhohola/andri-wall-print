@@ -17,9 +17,16 @@ describe("LocalBusiness JSON-LD", () => {
 
     // Address (the "A" of NAP).
     expect(roundTripped.address["@type"]).toBe("PostalAddress");
-    expect(roundTripped.address.addressLocality).toBe("Chicago");
+    expect(roundTripped.address.addressLocality).toBe("Des Plaines");
     expect(roundTripped.address.streetAddress).toBe(LOCAL_BUSINESS_NAP.streetAddress);
     expect(roundTripped.address.postalCode).toBe(LOCAL_BUSINESS_NAP.postalCode);
+
+    // Service area.
+    expect(roundTripped.areaServed).toEqual({
+      "@type": "AdministrativeArea",
+      name: "Cook County"
+    });
+    expect(roundTripped.geo).toBeUndefined();
 
     // Phone (the "P" of NAP).
     expect(roundTripped.telephone).toBe(LOCAL_BUSINESS_NAP.telephone);

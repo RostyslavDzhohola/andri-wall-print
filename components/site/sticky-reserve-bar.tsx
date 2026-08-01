@@ -24,7 +24,7 @@ export function StickyReserveBar({ estimateHref }: StickyReserveBarProps) {
   }
 
   return (
-    <div className="sticky bottom-0 z-40 border-t bg-background/95 px-4 py-3 shadow-[0_-8px_30px_rgba(35,31,25,.10)] backdrop-blur md:hidden">
+    <div className="sticky bottom-0 z-40 border-t bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(35,31,25,.10)] backdrop-blur md:hidden">
       <Button asChild className="min-h-11 w-full rounded-full" size="lg">
         <Link data-testid="home-sticky-reserve" href={estimateHref}>
           {HOME_NAV_ESTIMATE_CTA}

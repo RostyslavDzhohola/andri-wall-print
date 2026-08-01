@@ -20,11 +20,20 @@ import {
   normalizePreviewConfirmationNote,
   type PreviewConfirmationAreaBasis
 } from "../lib/preview-confirmation-contract";
+import { getChicagoGenerationDayKey } from "../lib/lead-request-contract";
+import {
+  HOMEPAGE_UPLOAD_BUNDLE_DAILY_CAP,
+  UPLOAD_FINGERPRINT_DAILY_CAP,
+  UPLOAD_URL_DAILY_CAP,
+  getContactBucketCount,
+  getDailyCapCount,
+  reserveContactBucket,
+  reserveDailyCap
+} from "./dailyCaps";
 import {
   assertValidPrint,
   assetMetaValidator,
   assetStorageIdsValidator,
-  assetUrlsValidator,
   previewConfirmationAreaBasisValidator,
   printValidator
 } from "./validators";
@@ -38,6 +47,7 @@ export const GENERATION_MAX_AUTO_ATTEMPTS = 3;
 
 const GENERATION_AUTO_FAILURE_REASON =
   "Wall preview generation did not finish after 3 attempts. Please retry or upload the artwork again.";
+const UPLOAD_CAP_MESSAGE = "Wall previews are at capacity today. Please call us or try again tomorrow.";
 
 const publicConfirmationValidator = v.object({
   id: v.string(),
@@ -191,15 +201,6 @@ export function serializeReusablePublicConfirmationForBundle(
   }
 
   return serializePublicConfirmation(confirmation);
-}
-
-async function listBundleConfirmations(ctx: any, bundleId: string, limit?: number) {
-  const queryResult = ctx.db
-    .query("previewConfirmations")
-    .withIndex("by_preview_bundle_createdAt", (q: any) => q.eq("previewBundleId", bundleId))
-    .order("desc");
-
-  return limit === undefined ? await queryResult.collect() : await queryResult.take(limit);
 }
 
 function generationAttempt(bundle: Pick<PreviewBundleGenerationRecord, "job">) {
@@ -368,7 +369,7 @@ export const submitPublicConfirmation = mutation({
       .withIndex("by_public_slug", (q) => q.eq("publicSlug", publicSlug))
       .first();
 
-    if (!bundle || bundle.status !== "ready") {
+    if (bundle?.status !== "ready") {
       throw new ConvexError({
         code: "PREVIEW_UNAVAILABLE",
         message: "This preview is not available for confirmation."
@@ -409,13 +410,225 @@ export const submitPublicConfirmation = mutation({
   }
 });
 
+export async function generateHomepageUploadUrlHandler(ctx: any) {
+  const now = Date.now();
+  const dayKey = `uploadUrls:${getChicagoGenerationDayKey(now)}`;
+  const reserved = await reserveDailyCap(ctx, dayKey, UPLOAD_URL_DAILY_CAP, now);
+
+  if (!reserved) {
+    throw new ConvexError({
+      code: "UPLOAD_CAP_REACHED",
+      message: UPLOAD_CAP_MESSAGE
+    });
+  }
+
+  return await ctx.storage.generateUploadUrl();
+}
+
 export const generateHomepageUploadUrl = mutation({
   args: {},
   returns: v.string(),
   handler: async (ctx) => {
-    return await ctx.storage.generateUploadUrl();
+    return await generateHomepageUploadUrlHandler(ctx);
   }
 });
+
+type CreateHomepageUploadBundleArgs = {
+  sourceStorageId: string;
+  originalFileName: string;
+  contentType: string;
+  byteLength: number;
+  sourceFingerprint: string;
+  title: string;
+  print: PreviewBundlePrint;
+};
+
+type IdempotentBundleCandidate = {
+  source: {
+    kind: string;
+    sourceFingerprint?: string;
+    byteLength?: number;
+    contentType?: string;
+  };
+  print: Pick<PreviewBundlePrint, "aspectRatio" | "widthMeters" | "heightMeters">;
+  crop: {
+    mode: string;
+  };
+  status: string;
+  job?: {
+    attempt?: number;
+  };
+};
+
+export type IdempotentBundleExpected = {
+  kind: "upload";
+  sourceFingerprint: string;
+  byteLength: number;
+  contentType: string;
+  print: PreviewBundlePrint;
+  cropMode?: "contain" | "cover";
+};
+
+export type IdempotentBundleReuseDecision =
+  | { action: "insert" }
+  | { action: "reuse" }
+  | { action: "requeue"; attempt: number }
+  | { action: "unavailable" };
+
+export function selectIdempotentBundleReuse(
+  existing: IdempotentBundleCandidate | null | undefined,
+  expected: IdempotentBundleExpected
+): IdempotentBundleReuseDecision {
+  if (
+    !existing ||
+    existing.source.kind !== expected.kind ||
+    existing.source.sourceFingerprint !== expected.sourceFingerprint ||
+    existing.source.byteLength !== expected.byteLength ||
+    existing.source.contentType !== expected.contentType ||
+    existing.print.aspectRatio !== expected.print.aspectRatio ||
+    existing.print.widthMeters !== expected.print.widthMeters ||
+    existing.print.heightMeters !== expected.print.heightMeters ||
+    existing.crop.mode !== (expected.cropMode ?? DEFAULT_PREVIEW_BUNDLE_CROP.mode)
+  ) {
+    return { action: "insert" };
+  }
+
+  if (["uploaded", "validating", "generating", "ready"].includes(existing.status)) {
+    return { action: "reuse" };
+  }
+
+  if (existing.status === "failed") {
+    if ((existing.job?.attempt ?? 0) >= GENERATION_MAX_AUTO_ATTEMPTS) {
+      return { action: "unavailable" };
+    }
+
+    return {
+      action: "requeue",
+      attempt: (existing.job?.attempt ?? 0) + 1
+    };
+  }
+
+  if (existing.status === "rejected" || existing.status === "revoked") {
+    return { action: "unavailable" };
+  }
+
+  return { action: "insert" };
+}
+
+export async function createHomepageUploadBundleHandler(ctx: any, args: CreateHomepageUploadBundleArgs) {
+  assertValidPrint(args.print);
+  const verifiedUpload = await validateStoredPreviewUpload(ctx, {
+    sourceStorageId: args.sourceStorageId,
+    contentType: args.contentType,
+    byteLength: args.byteLength,
+    sourceFingerprint: args.sourceFingerprint
+  });
+  const now = Date.now();
+  const crop = DEFAULT_PREVIEW_BUNDLE_CROP;
+  const title = normalizeBundleTitle(args.title);
+  const idempotencyKey = makePreviewBundleIdempotencyKey({
+    sellerSubject: "public-homepage",
+    source: {
+      kind: "upload",
+      sourceId: logicalHomepageUploadSourceId(verifiedUpload),
+      contentType: verifiedUpload.contentType,
+      byteLength: verifiedUpload.byteLength
+    },
+    crop,
+    print: args.print,
+    generatorVersion: PREVIEW_GENERATOR_VERSION
+  });
+  const existing = await ctx.db
+    .query("previewBundles")
+    .withIndex("by_idempotency_key", (q: any) => q.eq("idempotencyKey", idempotencyKey))
+    .first();
+  const reuseDecision = selectIdempotentBundleReuse(existing, {
+    kind: "upload",
+    sourceFingerprint: verifiedUpload.sourceFingerprint,
+    byteLength: verifiedUpload.byteLength,
+    contentType: verifiedUpload.contentType,
+    print: args.print,
+    cropMode: crop.mode
+  });
+
+  if (reuseDecision.action === "reuse" && existing) {
+    return {
+      bundleId: existing._id,
+      publicSlug: existing.publicSlug,
+      publicUrl: toPublicUrl(existing.publicSlug),
+      status: existing.status
+    };
+  }
+
+  if (reuseDecision.action === "requeue" && existing) {
+    await scheduleBundleGenerationJob(ctx, existing._id, reuseDecision.attempt, now);
+
+    return {
+      bundleId: existing._id,
+      publicSlug: existing.publicSlug,
+      publicUrl: toPublicUrl(existing.publicSlug),
+      status: "uploaded"
+    };
+  }
+
+  if (reuseDecision.action === "unavailable") {
+    throw new ConvexError({
+      code: "PREVIEW_UNAVAILABLE",
+      message: "This artwork can not be previewed. Please try a different image."
+    });
+  }
+
+  const dayKey = getChicagoGenerationDayKey(now);
+  const uploadsDayKey = `uploads:${dayKey}`;
+  const fingerprintKey = `fp:${verifiedUpload.sourceFingerprint}`;
+  const globalCount = await getDailyCapCount(ctx, uploadsDayKey);
+  const fingerprintCount = await getContactBucketCount(ctx, fingerprintKey, dayKey);
+
+  if (
+    globalCount >= HOMEPAGE_UPLOAD_BUNDLE_DAILY_CAP ||
+    fingerprintCount >= UPLOAD_FINGERPRINT_DAILY_CAP
+  ) {
+    throw new ConvexError({
+      code: "UPLOAD_CAP_REACHED",
+      message: UPLOAD_CAP_MESSAGE
+    });
+  }
+
+  await reserveDailyCap(ctx, uploadsDayKey, HOMEPAGE_UPLOAD_BUNDLE_DAILY_CAP, now);
+  await reserveContactBucket(ctx, fingerprintKey, dayKey, UPLOAD_FINGERPRINT_DAILY_CAP, now);
+
+  const publicSlug = createPreviewBundlePublicSlug();
+  const bundleId = await ctx.db.insert("previewBundles", {
+    publicSlug,
+    sellerSubject: "public-homepage",
+    title,
+    description: "Artwork uploaded for an instant Wall Print Pro wall preview.",
+    source: {
+      kind: "upload",
+      storageId: args.sourceStorageId,
+      originalFileName: args.originalFileName,
+      contentType: verifiedUpload.contentType,
+      byteLength: verifiedUpload.byteLength,
+      sourceFingerprint: verifiedUpload.sourceFingerprint
+    },
+    crop,
+    print: args.print,
+    generatorVersion: PREVIEW_GENERATOR_VERSION,
+    idempotencyKey,
+    status: "uploaded",
+    createdAt: now,
+    updatedAt: now
+  });
+
+  await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
+
+  return {
+    bundleId,
+    publicSlug,
+    publicUrl: toPublicUrl(publicSlug),
+    status: "uploaded"
+  };
+}
 
 export const createHomepageUploadBundle = mutation({
   args: {
@@ -429,73 +642,7 @@ export const createHomepageUploadBundle = mutation({
   },
   returns: createdPreviewLinkValidator,
   handler: async (ctx, args) => {
-    assertValidPrint(args.print);
-    const verifiedUpload = await validateStoredPreviewUpload(ctx, {
-      sourceStorageId: args.sourceStorageId,
-      contentType: args.contentType,
-      byteLength: args.byteLength,
-      sourceFingerprint: args.sourceFingerprint
-    });
-    const now = Date.now();
-    const crop = DEFAULT_PREVIEW_BUNDLE_CROP;
-    const title = normalizeBundleTitle(args.title);
-    const idempotencyKey = makePreviewBundleIdempotencyKey({
-      sellerSubject: "public-homepage",
-      source: {
-        kind: "upload",
-        sourceId: logicalHomepageUploadSourceId(verifiedUpload),
-        contentType: verifiedUpload.contentType,
-        byteLength: verifiedUpload.byteLength
-      },
-      crop,
-      print: args.print,
-      generatorVersion: PREVIEW_GENERATOR_VERSION
-    });
-    const existing = await ctx.db
-      .query("previewBundles")
-      .withIndex("by_idempotency_key", (q) => q.eq("idempotencyKey", idempotencyKey))
-      .first();
-
-    if (existing && existing.source.kind === "upload") {
-      return {
-        bundleId: existing._id,
-        publicSlug: existing.publicSlug,
-        publicUrl: toPublicUrl(existing.publicSlug),
-        status: existing.status
-      };
-    }
-
-    const publicSlug = createPreviewBundlePublicSlug();
-    const bundleId = await ctx.db.insert("previewBundles", {
-      publicSlug,
-      sellerSubject: "public-homepage",
-      title,
-      description: "Artwork uploaded for an instant Wall Print Pro wall preview.",
-      source: {
-        kind: "upload",
-        storageId: args.sourceStorageId,
-        originalFileName: args.originalFileName,
-        contentType: verifiedUpload.contentType,
-        byteLength: verifiedUpload.byteLength,
-        sourceFingerprint: verifiedUpload.sourceFingerprint
-      },
-      crop,
-      print: args.print,
-      generatorVersion: PREVIEW_GENERATOR_VERSION,
-      idempotencyKey,
-      status: "uploaded",
-      createdAt: now,
-      updatedAt: now
-    });
-
-    await scheduleBundleGenerationJob(ctx, bundleId, 1, now);
-
-    return {
-      bundleId,
-      publicSlug,
-      publicUrl: toPublicUrl(publicSlug),
-      status: "uploaded"
-    };
+    return await createHomepageUploadBundleHandler(ctx, args);
   }
 });
 
@@ -633,7 +780,7 @@ export const finalizeBundleReady = internalMutation({
   handler: async (ctx, args) => {
     const bundle = await ctx.db.get(args.bundleId);
 
-    if (!bundle || bundle.status !== "generating" || (bundle.job?.attempt ?? 1) !== args.attempt) {
+    if (bundle?.status !== "generating" || (bundle.job?.attempt ?? 1) !== args.attempt) {
       return false;
     }
 
@@ -762,49 +909,5 @@ export const recoverStaleGenerationJobs = internalMutation({
       failed,
       ignored
     };
-  }
-});
-
-export const getReadyPublicBundle = internalQuery({
-  args: {
-    publicSlug: v.string()
-  },
-  returns: v.union(
-    v.null(),
-    v.object({
-      id: v.string(),
-      slug: v.string(),
-      title: v.string(),
-      description: v.string(),
-      print: printValidator,
-	      assetStorageIds: v.optional(assetStorageIdsValidator),
-	      assetUrls: v.optional(assetUrlsValidator),
-	      assetMeta: v.optional(assetMetaValidator),
-	      sourceKind: v.union(v.literal("upload"), v.literal("sample"), v.literal("ai_concept")),
-	      status: v.string()
-	    })
-  ),
-  handler: async (ctx, args) => {
-    const bundle = await ctx.db
-      .query("previewBundles")
-      .withIndex("by_public_slug", (q) => q.eq("publicSlug", args.publicSlug))
-      .first();
-
-    if (!bundle) {
-      return null;
-    }
-
-    return {
-      id: bundle.publicSlug,
-      slug: bundle.publicSlug,
-      title: bundle.status === "ready" ? bundle.title : "Wall Print Pro preview",
-      description: bundle.status === "ready" ? bundle.description : "Your wall preview is being prepared.",
-      print: normalizePreviewBundlePrintDisplay(bundle.print),
-	      assetStorageIds: bundle.assetStorageIds,
-	      assetUrls: bundle.assetUrls,
-	      assetMeta: bundle.assetMeta,
-	      sourceKind: bundle.source.kind,
-	      status: bundle.status
-	    };
   }
 });

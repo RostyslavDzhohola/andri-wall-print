@@ -28,7 +28,7 @@ export function QrCode({ value, title = "Scan to open on your phone", className 
     <div
       className={cn("h-28 w-28 shrink-0 rounded-md border border-border bg-white p-2", className)}
       data-testid="share-qr-code"
-      // Generated structured SVG, not user input.
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: generated structured SVG from qrcode-generator, not user input
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

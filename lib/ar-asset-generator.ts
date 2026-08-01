@@ -43,13 +43,17 @@ function padBuffer(buffer: Buffer, boundary = 4, padByte = 0x20) {
 
 function writeFloat32(values: number[]) {
   const buffer = Buffer.alloc(values.length * 4);
-  values.forEach((value, index) => buffer.writeFloatLE(value, index * 4));
+  values.forEach((value, index) => {
+    buffer.writeFloatLE(value, index * 4);
+  });
   return buffer;
 }
 
 function writeUint16(values: number[]) {
   const buffer = Buffer.alloc(values.length * 2);
-  values.forEach((value, index) => buffer.writeUInt16LE(value, index * 2));
+  values.forEach((value, index) => {
+    buffer.writeUInt16LE(value, index * 2);
+  });
   return buffer;
 }
 

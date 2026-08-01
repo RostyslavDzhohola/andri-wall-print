@@ -13,3 +13,5 @@ tmp/
 .vinext/
 .wrangler/
 dist/
+assets/wall-print-pro-media/
+assets/*.zip

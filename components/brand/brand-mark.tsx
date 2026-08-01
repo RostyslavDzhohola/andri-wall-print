@@ -33,7 +33,9 @@ export function BrandMark({
         alt=""
         className={cn("shrink-0 rounded-full object-cover", iconSizes[iconSize])}
         draggable={false}
-        src="/brand/wallprint-pro-mark.png"
+        height={160}
+        src="/brand/wallprint-pro-mark-160.png"
+        width={160}
       />
       {showText ? <span className={cn("leading-tight", textClassName)}>{label}</span> : null}
     </>

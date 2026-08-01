@@ -30,8 +30,9 @@ describe("/reserved page rendering", () => {
     expect(html).toContain("Estimate visit scheduled");
     expect(html).toContain("Design confirmed &amp; printability checked");
     expect(html).toContain("Print day");
-    expect(html).toContain("tel:");
-    expect(html).toContain("sms:");
+    expect(html).toContain('href="tel:7085433826"');
+    expect(html).toContain('href="sms:7085433826"');
+    expect(html).toContain("Call (708) 543-3826");
   });
 
   it("keeps the D10 deposit copy on the page: reserves + credited, never purchases artwork", async () => {

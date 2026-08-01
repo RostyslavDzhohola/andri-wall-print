@@ -25,13 +25,6 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number()
   }).index("by_slug", ["slug"]),
-  sellerPricingSettings: defineTable({
-    sellerSubject: v.string(),
-    currency: v.literal("USD"),
-    pricePerSquareFootCents: v.number(),
-    createdAt: v.number(),
-    updatedAt: v.number()
-  }).index("by_seller_subject", ["sellerSubject"]),
   previewBundles: defineTable({
     publicSlug: v.string(),
     sellerSubject: v.string(),
@@ -149,6 +142,7 @@ export default defineSchema({
     refusalReason: v.optional(v.string()),
     providerMetadata: v.optional(v.string()),
     providerFailureCode: v.optional(v.string()),
+    recoveryAttempts: v.optional(v.number()),
     requestedAt: v.number(),
     startedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),

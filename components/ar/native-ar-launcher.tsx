@@ -8,30 +8,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getFixedScaleQuickLookHref, hasReadyArAssetUrls } from "@/lib/ar-launcher";
+import {
+  getAndroidArUnavailableNotice,
+  getArAccessNotice,
+  getArActionLabel,
+  getFixedScaleQuickLookHref,
+  hasReadyArAssetUrls,
+  isChromeBrowserUserAgent,
+  type ArAccessNotice,
+  type ArDiagnostics
+} from "@/lib/ar-launcher";
 import type { ArSample } from "@/lib/ar-sample";
 import { resolveClientPreviewUrl } from "@/lib/client-preview-url";
 import { cn } from "@/lib/utils";
 
-export type ArDiagnostics = {
-  quickLookRel: boolean;
-  isIPhone: boolean;
-  isIOS: boolean;
-  isAndroid: boolean;
-  isLikelyPhoneOrTablet: boolean;
-  isSafari: boolean;
-  isChrome: boolean;
-  isBrowserUnknown: boolean;
-  isWKWebViewLike: boolean;
-  canActivateModelViewerAR: boolean | null;
-};
-
-type ArAccessNotice = {
-  message: string;
-  title: string;
-  description: string;
-  blockLaunch: boolean;
-};
+export type { ArDiagnostics } from "@/lib/ar-launcher";
 
 type ModelViewerElement = HTMLElement & {
   activateAR?: () => Promise<void>;
@@ -60,7 +51,7 @@ function getBrowserDeviceDiagnostics(modelViewer: ModelViewerElement | null): Ar
     /CriOS\/|FxiOS\/|EdgiOS\/|OPiOS\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\/|Telegram|MicroMessenger|WhatsApp|GSA\/|LinkedInApp|Pinterest|TikTok/i.test(
       userAgent
     );
-  const isChrome = /Chrome\/|CriOS\//.test(userAgent) && !/Edg\/|EdgiOS\/|OPR\//.test(userAgent);
+  const isChrome = isChromeBrowserUserAgent(userAgent);
   const isSafari = /Version\/[\d.]+.*Safari\//.test(userAgent) && !isKnownIOSNonSafari && !/Chrome\/|Chromium\/|Edg\//.test(userAgent);
   const isTouchCapable = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
   const hasCoarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
@@ -84,86 +75,11 @@ function getBrowserDeviceDiagnostics(modelViewer: ModelViewerElement | null): Ar
   };
 }
 
-function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNotice | null {
-  if (!diagnostics) {
-    return {
-      message: "Checking device and browser.",
-      title: "Checking your browser",
-      description: "Wall placement only works on iPhone in Safari. Try again after this browser check finishes.",
-      blockLaunch: true
-    };
-  }
-
-  if (!diagnostics.isLikelyPhoneOrTablet) {
-    return {
-      message: "Open on iPhone.",
-      title: "Open this on your iPhone",
-      description:
-        "Desktop browsers can preview the artwork, but wall placement starts on iPhone Safari. Share this page to your phone, then tap Place on wall there.",
-      blockLaunch: true
-    };
-  }
-
-  if (diagnostics.isIPhone && diagnostics.isSafari) {
-    return null;
-  }
-
-  if (diagnostics.isIPhone && !diagnostics.isBrowserUnknown) {
-    return {
-      message: "Use Safari on iPhone.",
-      title: "Use Safari on this iPhone",
-      description:
-        "This browser is not Safari, so wall placement will not start here. Open this same link in Safari on your iPhone, then tap Place on wall again.",
-      blockLaunch: true
-    };
-  }
-
-  if (diagnostics.isAndroid) {
-    return {
-      message: "Open on iPhone.",
-      title: "Open this on your iPhone",
-      description: "This device can preview the artwork, but the wall-placement viewer starts on iPhone Safari.",
-      blockLaunch: true
-    };
-  }
-
-  if (diagnostics.isBrowserUnknown) {
-    return {
-      message: "Browser not confirmed.",
-      title: "Browser not confirmed",
-      description: "We could not confirm that this is iPhone Safari. This wall placement only works on iPhone in Safari.",
-      blockLaunch: true
-    };
-  }
-
-  return {
-    message: "Open on iPhone.",
-    title: "Open this on your iPhone",
-    description: "This wall placement only works on iPhone in Safari.",
-    blockLaunch: true
-  };
-}
-
-function getArActionLabel(diagnostics: ArDiagnostics | null, accessNotice: ArAccessNotice | null) {
-  if (!diagnostics) {
-    return "Checking";
-  }
-
-  if (!accessNotice) {
-    return "Place on wall";
-  }
-
-  if (diagnostics.isIPhone) {
-    return "Open in Safari";
-  }
-
-  return "Open on iPhone";
-}
-
 export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: NativeArLauncherProps) {
   const hasReadyArAssets = hasReadyArAssetUrls(sample);
   const quickLookUrl = hasReadyArAssets ? getFixedScaleQuickLookHref(sample.assets.usdz) : "#";
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
+  const androidLaunchAttemptedRef = useRef(false);
   const launchFallbackTimerRef = useRef<number | null>(null);
   const launchFallbackCleanupRef = useRef<(() => void) | null>(null);
   const [arError, setArError] = useState<string | null>(null);
@@ -171,7 +87,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const accessNotice = getArAccessNotice(diagnostics);
   const actionLabel = getArActionLabel(diagnostics, accessNotice);
-  const showSendToIPhone = diagnostics ? !diagnostics.isIPhone : false;
+  const showSendToIPhone = diagnostics ? !diagnostics.isIPhone && !diagnostics.isAndroid : false;
 
   const clearPendingLaunchFallback = () => {
     if (launchFallbackTimerRef.current !== null) {
@@ -181,6 +97,12 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     launchFallbackCleanupRef.current?.();
     launchFallbackCleanupRef.current = null;
+  };
+
+  const showAndroidArUnavailableNotice = () => {
+    clearPendingLaunchFallback();
+    setArError(null);
+    setDialogNotice(getAndroidArUnavailableNotice());
   };
 
   const scheduleLaunchFailureFallback = () => {
@@ -261,6 +183,40 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     };
   }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
 
+  useEffect(() => {
+    if (!hasReadyArAssets) {
+      return;
+    }
+
+    const modelViewer = modelViewerRef.current;
+
+    if (!modelViewer) {
+      return;
+    }
+
+    const handleArStatus = (event: Event) => {
+      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+
+      if (status !== "failed") {
+        return;
+      }
+
+      const currentDiagnostics = getBrowserDeviceDiagnostics(modelViewer);
+      onDiagnosticsChange(currentDiagnostics);
+
+      if (currentDiagnostics.isAndroid && androidLaunchAttemptedRef.current) {
+        androidLaunchAttemptedRef.current = false;
+        showAndroidArUnavailableNotice();
+      }
+    };
+
+    modelViewer.addEventListener("ar-status", handleArStatus);
+
+    return () => {
+      modelViewer.removeEventListener("ar-status", handleArStatus);
+    };
+  }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
+
   useEffect(() => clearPendingLaunchFallback, []);
 
   const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -290,19 +246,32 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       return;
     }
 
-    if (currentDiagnostics.quickLookRel || !modelViewer?.activateAR) {
-      if (currentDiagnostics.isIOS) {
-        scheduleLaunchFailureFallback();
-      }
+    if (currentDiagnostics.isIOS && (currentDiagnostics.quickLookRel || !modelViewer?.activateAR)) {
+      scheduleLaunchFailureFallback();
+      return;
+    }
 
+    if (!modelViewer?.activateAR) {
+      if (currentDiagnostics.isAndroid) {
+        event.preventDefault();
+        showAndroidArUnavailableNotice();
+      }
       return;
     }
 
     event.preventDefault();
     setArError(null);
     setDialogNotice(null);
+    androidLaunchAttemptedRef.current = currentDiagnostics.isAndroid;
     void modelViewer.activateAR().catch((error: unknown) => {
       console.error("Failed to activate native AR.", error);
+
+      if (currentDiagnostics.isAndroid) {
+        androidLaunchAttemptedRef.current = false;
+        showAndroidArUnavailableNotice();
+        return;
+      }
+
       setArError("Wall preview could not start from this browser. Open this client preview page in Safari on iPhone.");
     });
   };

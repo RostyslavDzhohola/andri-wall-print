@@ -1,14 +1,37 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AI_CONCEPT_DRAFT_STATUSES,
+  canFinalizeAiDraft,
+  foldLeadContactEmail,
   isValidLeadPhone,
   leadRequestSchema,
   makeLeadRateLimitBucket,
+  makeLeadRateLimitKey,
   normalizeLeadPhone,
   normalizeLeadRequestInput
 } from "@/lib/lead-request-contract";
 
 describe("lead request contract", () => {
+  it("enforces the AI draft finalization truth table", () => {
+    const allowedTransitions = new Set([
+      "queued:failed",
+      "queued:rejected",
+      "generating:failed",
+      "generating:rejected",
+      "generating:ready",
+      "generating:composite_only"
+    ]);
+
+    for (const from of AI_CONCEPT_DRAFT_STATUSES) {
+      for (const to of AI_CONCEPT_DRAFT_STATUSES) {
+        expect(canFinalizeAiDraft(from, to), `${from} -> ${to}`).toBe(
+          allowedTransitions.has(`${from}:${to}`)
+        );
+      }
+    }
+  });
+
   it("normalizes required contact fields and reserve intent", () => {
     expect(
       normalizeLeadRequestInput({
@@ -119,5 +142,28 @@ describe("lead request contract", () => {
   it("builds deterministic phone and daily rate-limit keys", () => {
     expect(normalizeLeadPhone("+1 (555) 000-1212")).toBe("15550001212");
     expect(makeLeadRateLimitBucket(Date.UTC(2026, 5, 17, 12))).toBe("2026-06-17");
+  });
+
+  it.each([
+    [" Buyer+promo@Example.com ", "buyer@example.com"],
+    ["first.last+summer@gmail.com", "firstlast@gmail.com"],
+    ["first.last+summer@googlemail.com", "firstlast@googlemail.com"],
+    ["first.last+summer@example.com", "first.last@example.com"],
+    ["plain@example.com", "plain@example.com"]
+  ])("folds lead contact email %s to %s before adding a rate-limit prefix", (email, expected) => {
+    expect(foldLeadContactEmail(email)).toBe(expected);
+    expect(makeLeadRateLimitKey(email)).toBe(`ai:${expected}`);
+  });
+
+  it("uses the Chicago calendar bucket across DST transitions", () => {
+    const beforeSpringForward = Date.parse("2026-03-08T07:59:59.000Z");
+    const afterSpringForward = Date.parse("2026-03-08T08:00:00.000Z");
+    const beforeFallBack = Date.parse("2026-11-01T06:59:59.000Z");
+    const afterFallBack = Date.parse("2026-11-01T07:00:00.000Z");
+
+    expect(makeLeadRateLimitBucket(beforeSpringForward)).toBe("2026-03-08");
+    expect(makeLeadRateLimitBucket(afterSpringForward)).toBe("2026-03-08");
+    expect(makeLeadRateLimitBucket(beforeFallBack)).toBe("2026-11-01");
+    expect(makeLeadRateLimitBucket(afterFallBack)).toBe("2026-11-01");
   });
 });

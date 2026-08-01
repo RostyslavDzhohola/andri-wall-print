@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
@@ -10,9 +11,16 @@ import {
   readWallPrintProPublicContactUrl,
   readWallPrintProPublicPhone
 } from "@/lib/runtime-env";
+import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
 import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Request a wall print estimate",
+  description: "Request a free estimate for custom wall printing in Chicago from Wall Print Pro.",
+  alternates: { canonical: "/request" }
+};
 
 type RequestPageProps = {
   searchParams?: Promise<RequestSearchParamsInput>;
@@ -26,7 +34,9 @@ function RequestSetupMissing() {
           <CardHeader>
             <BrandMark href={null} iconSize="lg" />
             <CardDescription className="font-semibold uppercase">Request form unavailable</CardDescription>
-            <CardTitle className="text-3xl md:text-5xl">Wall Print Pro requests are unavailable.</CardTitle>
+            <CardTitle asChild className="text-3xl md:text-5xl">
+              <h1>Wall Print Pro requests are unavailable.</h1>
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
             <p className="text-base leading-7 text-muted-foreground">Ask the admin to refresh the request setup before collecting leads.</p>
@@ -69,7 +79,7 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
               defaultDesignContext={requestDefaults.defaultDesignContext}
               defaultIntent={requestDefaults.defaultIntent}
               publicContactUrl={readWallPrintProPublicContactUrl()}
-              publicPhone={readWallPrintProPublicPhone()}
+              publicPhone={readWallPrintProPublicPhone()?.trim() || LOCAL_BUSINESS_NAP.telephone}
               uploadFirst={uploadFirst}
             />
           </CardContent>

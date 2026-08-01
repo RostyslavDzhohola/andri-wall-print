@@ -18,6 +18,7 @@ function MediaVisual({
 }) {
   if (item.kind === "video") {
     return (
+      // biome-ignore lint/a11y/useMediaCaption: workshop b-roll with no dialogue; aria-label describes the content
       <video
         aria-label={item.alt}
         className="h-full w-full object-cover"

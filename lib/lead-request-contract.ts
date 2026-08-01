@@ -12,12 +12,25 @@ export const AI_CONCEPT_DRAFT_STATUSES = [
   "rate_limited",
   "disabled"
 ] as const;
+export const AI_DRAFT_ACTIVE_STATUSES = ["queued", "generating"] as const;
 export const LEAD_CONTACT_METHODS = ["email", "phone", "either"] as const;
 
 export type LeadRequestIntent = (typeof LEAD_REQUEST_INTENTS)[number];
 export type LeadRequestStatus = (typeof LEAD_REQUEST_STATUSES)[number];
 export type AiConceptDraftStatus = (typeof AI_CONCEPT_DRAFT_STATUSES)[number];
 export type LeadContactMethod = (typeof LEAD_CONTACT_METHODS)[number];
+
+export function canFinalizeAiDraft(from: AiConceptDraftStatus, to: AiConceptDraftStatus) {
+  if (to === "failed" || to === "rejected") {
+    return AI_DRAFT_ACTIVE_STATUSES.includes(from as (typeof AI_DRAFT_ACTIVE_STATUSES)[number]);
+  }
+
+  if (to === "ready" || to === "composite_only") {
+    return from === "generating";
+  }
+
+  return false;
+}
 
 export const LEAD_CONCEPT_PROMPT_MAX_LENGTH = 900;
 export const LEAD_TEXT_FIELD_MAX_LENGTH = 240;
@@ -66,6 +79,28 @@ function optionalText(value: string | undefined, maxLength: number) {
 
 export function normalizeLeadEmail(value: string) {
   return value.trim().toLowerCase();
+}
+
+export function foldLeadContactEmail(email: string) {
+  const normalized = normalizeLeadEmail(email);
+  const atIndex = normalized.lastIndexOf("@");
+
+  if (atIndex < 0) {
+    return normalized.split("+", 1)[0];
+  }
+
+  const domain = normalized.slice(atIndex + 1);
+  let localPart = normalized.slice(0, atIndex).split("+", 1)[0];
+
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    localPart = localPart.replace(/\./g, "");
+  }
+
+  return `${localPart}@${domain}`;
+}
+
+export function makeLeadRateLimitKey(email: string) {
+  return `ai:${foldLeadContactEmail(email)}`;
 }
 
 export function normalizeLeadPhone(value: string | undefined) {
@@ -222,6 +257,38 @@ export function normalizeLeadRequestInput(input: LeadContactInput): NormalizedLe
   return parsed.data;
 }
 
+export function getChicagoGenerationDayKey(now: number) {
+  const utcYear = new Date(now).getUTCFullYear();
+  const dstStart = getChicagoDstStartUtcMs(utcYear);
+  const dstEnd = getChicagoDstEndUtcMs(utcYear);
+  const utcOffsetHours = now >= dstStart && now < dstEnd ? -5 : -6;
+  const chicagoDate = new Date(now + utcOffsetHours * 60 * 60 * 1_000);
+  const year = chicagoDate.getUTCFullYear();
+  const month = String(chicagoDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(chicagoDate.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getChicagoDstStartUtcMs(year: number) {
+  const secondSunday = getNthSundayOfMonth(year, 2, 2);
+
+  return Date.UTC(year, 2, secondSunday, 8, 0, 0, 0);
+}
+
+function getChicagoDstEndUtcMs(year: number) {
+  const firstSunday = getNthSundayOfMonth(year, 10, 1);
+
+  return Date.UTC(year, 10, firstSunday, 7, 0, 0, 0);
+}
+
+function getNthSundayOfMonth(year: number, monthIndex: number, nth: number) {
+  const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1)).getUTCDay();
+  const firstSunday = 1 + ((7 - firstDayOfMonth) % 7);
+
+  return firstSunday + (nth - 1) * 7;
+}
+
 export function makeLeadRateLimitBucket(now = Date.now()) {
-  return new Date(now).toISOString().slice(0, 10);
+  return getChicagoGenerationDayKey(now);
 }

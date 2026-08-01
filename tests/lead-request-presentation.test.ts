@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { formatAiConceptDraftStatus, formatLeadRequestResultMessage } from "@/lib/lead-request-presentation";
+import {
+  formatAiConceptDraftStatus,
+  formatLeadRequestResultMessage,
+  makeConceptDraftTitle
+} from "@/lib/lead-request-presentation";
 
 describe("lead request presentation", () => {
+  it("builds PII-neutral concept draft titles", () => {
+    expect(makeConceptDraftTitle({ businessName: "Lakefront Studio" })).toBe("Lakefront Studio concept draft");
+    expect(makeConceptDraftTitle({})).toBe("Wall print concept draft");
+    expect(makeConceptDraftTitle({ businessName: null })).toBe("Wall print concept draft");
+    expect(makeConceptDraftTitle({ businessName: "   " })).toBe("Wall print concept draft");
+  });
+
   it("labels every public AI concept draft state", () => {
     expect(formatAiConceptDraftStatus("disabled")).toBe("Concept drafting offline");
     expect(formatAiConceptDraftStatus("queued")).toBe("Concept draft queued");

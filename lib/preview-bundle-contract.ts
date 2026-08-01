@@ -1,4 +1,4 @@
-export const PREVIEW_GENERATOR_VERSION = "ts-flat-plane-v1";
+export const PREVIEW_GENERATOR_VERSION = "ts-flat-plane-v2";
 
 export const PREVIEW_BUNDLE_STATUSES = [
   "uploaded",
@@ -174,9 +174,6 @@ function formatDecimal(value: number, decimals: number) {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(decimals).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-function formatCentimeters(valueCm: number) {
-  return formatDecimal(valueCm, valueCm % 1 === 0 ? 0 : 1);
-}
 
 function formatAspectRatioPart(valueCm: number) {
   return formatDecimal(valueCm, valueCm % 1 === 0 ? 0 : 1);
@@ -404,6 +401,19 @@ export function hashStableString(input: string) {
   return (hash >>> 0).toString(36);
 }
 
+export function hashStableString64(input: string) {
+  let hash = BigInt("0xcbf29ce484222325");
+  const prime = BigInt("0x100000001b3");
+  const mask = BigInt("0xffffffffffffffff");
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= BigInt(input.charCodeAt(index));
+    hash = (hash * prime) & mask;
+  }
+
+  return hash.toString(36);
+}
+
 export function makePreviewBundleIdempotencyKey(input: PreviewBundleIdempotencyInput) {
   const keyInput = {
     ...input,
@@ -414,7 +424,7 @@ export function makePreviewBundleIdempotencyKey(input: PreviewBundleIdempotencyI
     }
   };
 
-  return `${input.generatorVersion}:${hashStableString(stableStringify(keyInput))}`;
+  return `${input.generatorVersion}:${hashStableString64(stableStringify(keyInput))}`;
 }
 
 export function createPreviewBundlePublicSlug(randomBytes?: Uint8Array) {
