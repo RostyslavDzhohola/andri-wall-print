@@ -12,7 +12,7 @@ export function LocalBusinessJsonLd() {
   return (
     <script
       type="application/ld+json"
-      // JSON.stringify output is safe structured data, not user input.
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON.stringify of static structured data, not user input
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   );

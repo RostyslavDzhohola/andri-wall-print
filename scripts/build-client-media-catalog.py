@@ -333,6 +333,10 @@ def write_readme(rows: list[dict[str, object]]) -> None:
     project_counts = Counter(str(row["project_category"]) for row in rows)
     total_bytes = sum(int(row["size_bytes"]) for row in rows)
     total_video_seconds = sum(float(row["duration_seconds"] or 0) for row in rows)
+    image_count = sum(1 for row in rows if row["media_type"] == "image")
+    video_count = sum(1 for row in rows if row["media_type"] == "video")
+    unique_count = len(rows) - len(DUPLICATE_OF)
+    total_gib = total_bytes / (1024 ** 3)
     top = rows[:20]
     top_lines = "\n".join(
         f"| {row['overall_rank']} | {row['filename']} | {row['media_type']} | {row['project_category']} | {row['recommended_use']} |"
@@ -343,14 +347,14 @@ def write_readme(rows: list[dict[str, object]]) -> None:
     )
     readme = f"""# Wall Print Pro client media review
 
-This package contains all 100 downloaded originals, non-destructive review derivatives, a complete ranked catalog, and upload-ready staging folders. The four staging folders use hard links, so they behave like normal files without consuming another 1.03 GiB.
+This package contains all {len(rows)} downloaded originals, non-destructive review derivatives, a complete ranked catalog, and upload-ready staging folders. The four staging folders use hard links, so they behave like normal files without consuming another {total_gib:.2f} GiB.
 
 ## Inventory
 
-- 100 source files: 78 images and 22 videos
-- {total_bytes / (1024 ** 3):.2f} GiB total source size
+- {len(rows)} source files: {image_count} images and {video_count} videos
+- {total_gib:.2f} GiB total source size
 - {total_video_seconds / 60:.1f} minutes of video
-- 96 unique assets after four duplicate exports are excluded
+- {unique_count} unique assets after {len(DUPLICATE_OF)} duplicate exports are excluded
 - Tier A/select: {tier_counts['A']} files
 - Tier B/backup: {tier_counts['B']} files
 - Tier C/archive: {tier_counts['C']} files

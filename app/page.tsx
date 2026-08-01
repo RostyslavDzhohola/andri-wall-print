@@ -147,7 +147,8 @@ function ProcessSteps() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">Process</p>
         <h2 className="mt-2 text-3xl font-semibold leading-tight md:text-4xl">{HOME_PROCESS_HEADING}</h2>
 
-        <ul className="mt-8 grid list-none gap-4 p-0">
+        {/* biome-ignore lint/a11y/noRedundantRoles: list-style:none strips list semantics in Safari/VoiceOver; the explicit role restores them */}
+        <ul className="mt-8 grid list-none gap-4 p-0" role="list">
           {HOME_PROCESS_STEPS.map((step, index) => (
             <li className="flex gap-4 rounded-lg border bg-card p-5 shadow-sm" key={step.title}>
               <span
