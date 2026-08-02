@@ -44,17 +44,40 @@ async function expectNoBannedRenderedTerms(page: Page) {
   }
 }
 
+async function enableQuickLookRelSupport(page: Page) {
+  await page.addInitScript(() => {
+    const originalSupports = DOMTokenList.prototype.supports;
+
+    Object.defineProperty(DOMTokenList.prototype, "supports", {
+      configurable: true,
+      value(this: DOMTokenList, token: string) {
+        if (token === "ar") {
+          return true;
+        }
+
+        return originalSupports?.call(this, token) ?? false;
+      }
+    });
+  });
+}
+
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.project.name === "mobile-safari-shape") {
+    await enableQuickLookRelSupport(page);
+  }
+});
+
 async function expectWallPlacementEntryPoint(page: Page, expectedQuickLookHref?: string) {
   const quickLook = page.getByTestId("quick-look-link");
   const shareToPhone = page.getByTestId("share-to-phone");
 
   await expect
     .poll(async () => {
-      if ((await quickLook.count()) > 0) {
+      if ((await quickLook.isVisible().catch(() => false)) && (await quickLook.getAttribute("aria-label")) !== "Checking") {
         return "quick-look";
       }
 
-      if ((await shareToPhone.count()) > 0) {
+      if (await shareToPhone.isVisible().catch(() => false)) {
         return "share";
       }
 
@@ -62,8 +85,8 @@ async function expectWallPlacementEntryPoint(page: Page, expectedQuickLookHref?:
     })
     .not.toBe("none");
 
-  if ((await quickLook.count()) > 0) {
-    await expect(quickLook).toContainText("Place on wall");
+  if ((await quickLook.isVisible().catch(() => false)) && (await quickLook.getAttribute("aria-label")) !== "Checking") {
+    await expect(quickLook).toHaveAccessibleName("Place on wall");
     await expect(quickLook).toHaveAttribute("rel", "ar");
 
     if (expectedQuickLookHref) {
@@ -470,7 +493,7 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Saved previews" })).toHaveCount(0);
-  await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(3);
+  await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(8);
   await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/Pathways to Success|Lakefront Day|River Train Crossing/);
   await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/Chicago skyline|Chicago lakefront|Chicago train/);
   await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/\d+(?:\.\d+)?\s*ft/);
@@ -726,11 +749,24 @@ test.describe("AR launcher access guidance", () => {
     });
 
     test("keeps iPhone Safari on the direct Quick Look link", async ({ page }) => {
+      await enableQuickLookRelSupport(page);
       await page.goto("/");
 
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("href", "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("rel", "ar");
-      await expect(page.getByTestId("quick-look-link")).toContainText("Place on wall");
+      await expect(page.getByTestId("quick-look-link")).toHaveAccessibleName("Place on wall");
+      await expect(page.getByTestId("quick-look-label")).toHaveText("Place on wall");
+      await expect(page.getByTestId("quick-look-link")).toHaveJSProperty("childElementCount", 1);
+      await expect(page.locator('[data-testid="quick-look-link"] > img:only-child')).toHaveCount(1);
+      await expect
+        .poll(() =>
+          page.getByTestId("quick-look-link").evaluate((anchor) =>
+            [...anchor.childNodes].every(
+              (node) => node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === "IMG"
+            )
+          )
+        )
+        .toBe(true);
       await expect(page.getByTestId("share-to-phone")).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Before you place it" })).toHaveCount(0);
       await expect(page.getByTestId("continue-to-ar-link")).toHaveCount(0);
@@ -765,6 +801,14 @@ test.describe("AR launcher access guidance", () => {
       });
 
       await page.goto("/");
+      await page.getByTestId("ar-launcher-model").evaluate((modelViewer) => {
+        Object.defineProperty(modelViewer, "activateAR", {
+          configurable: true,
+          value: async () => {
+            (window as Window & { __modelViewerActivateArCalled?: boolean }).__modelViewerActivateArCalled = true;
+          }
+        });
+      });
 
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Place this print on a wall");
 
@@ -773,6 +817,9 @@ test.describe("AR launcher access guidance", () => {
       await expect(page).toHaveURL("/");
       await expect(page.getByRole("heading", { name: "Open in Safari to place on wall" })).toBeVisible();
       await expect(page.getByText("Wall placement did not start from this browser.")).toBeVisible();
+      await expect
+        .poll(() => page.evaluate(() => (window as Window & { __modelViewerActivateArCalled?: boolean }).__modelViewerActivateArCalled))
+        .not.toBe(true);
     });
   });
 
@@ -791,7 +838,8 @@ test.describe("AR launcher access guidance", () => {
       await expect(page.getByTestId("ar-access-tooltip-trigger")).toHaveCount(0);
       await expect(page.getByTestId("quick-look-link")).not.toHaveAttribute("aria-disabled", "true");
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Use Safari on iPhone.");
-      await expect(page.getByTestId("quick-look-link")).toContainText("Open in Safari");
+      await expect(page.getByTestId("quick-look-link")).toHaveAccessibleName("Open in Safari");
+      await expect(page.getByTestId("quick-look-label")).toHaveText("Open in Safari");
       await expect(page.locator('[data-testid="quick-look-link"] > img')).toHaveClass(/sr-only/);
       await page.getByTestId("quick-look-link").hover();
       await expect(page.getByTestId("ar-access-warning")).toContainText("Use Safari on iPhone.");
@@ -799,7 +847,8 @@ test.describe("AR launcher access guidance", () => {
       await page.getByTestId("quick-look-link").click();
       await expect(page).toHaveURL("/");
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
-      await expect(page.getByText("This browser is not Safari, so wall placement will not start here.")).toBeVisible();
+      await expect(page.getByText("This browser cannot reliably start wall placement.")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
       await page.getByRole("button", { name: "Dismiss" }).click();
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toHaveCount(0);
     });
@@ -818,13 +867,53 @@ test.describe("AR launcher access guidance", () => {
       await page.goto("/");
 
       await expect(page.getByTestId("quick-look-link")).toHaveAttribute("title", "Use Safari on iPhone.");
-      await expect(page.getByTestId("quick-look-link")).toContainText("Open in Safari");
+      await expect(page.getByTestId("quick-look-link")).toHaveAccessibleName("Open in Safari");
+      await expect(page.getByTestId("quick-look-label")).toHaveText("Open in Safari");
 
       await page.getByTestId("quick-look-link").click();
 
       await expect(page).toHaveURL("/");
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
-      await expect(page.getByText("This browser is not Safari, so wall placement will not start here.")).toBeVisible();
+      await expect(page.getByText("This browser cannot reliably start wall placement.")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+    });
+  });
+
+  test.describe("iPhone Arc browser", () => {
+    test.use({
+      hasTouch: true,
+      isMobile: true,
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1 ArcSearch/1.45.0",
+      viewport: { width: 390, height: 844 }
+    });
+
+    test("guides Arc users to Safari instead of silently resolving AR activation", async ({ page }) => {
+      await page.addInitScript(() => {
+        Object.defineProperty(window.navigator, "clipboard", {
+          configurable: true,
+          value: {
+            writeText: async (value: string) => {
+              (window as Window & { __copiedSafariUrl?: string }).__copiedSafariUrl = value;
+            }
+          }
+        });
+      });
+
+      await page.goto("/gallery");
+
+      await expect(page.getByTestId("quick-look-link")).toHaveAccessibleName("Open in Safari");
+      await page.getByTestId("quick-look-link").click();
+
+      await expect(page).toHaveURL(/\/gallery$/);
+      await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
+      await expect(page.getByText("Copy this page link, open Safari, paste it, then tap Place on wall again.")).toBeVisible();
+
+      await page.getByRole("button", { name: "Copy link" }).click();
+      await expect
+        .poll(() => page.evaluate(() => (window as Window & { __copiedSafariUrl?: string }).__copiedSafariUrl))
+        .toMatch(/\/gallery$/);
+      await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
     });
   });
 

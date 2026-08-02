@@ -7,6 +7,7 @@ import {
   getFixedScaleQuickLookHref,
   hasReadyArAssetUrls,
   isChromeBrowserUserAgent,
+  isKnownIOSNonSafariBrowserUserAgent,
   type ArDiagnostics
 } from "@/lib/ar-launcher";
 import { DEFAULT_AR_SAMPLE } from "@/lib/ar-sample";
@@ -141,6 +142,19 @@ describe("AR launcher helpers", () => {
     ).toBe(false);
   });
 
+  it("recognizes Arc Search as a non-Safari iPhone browser", () => {
+    expect(
+      isKnownIOSNonSafariBrowserUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1 ArcSearch/1.45.0"
+      )
+    ).toBe(true);
+    expect(
+      isKnownIOSNonSafariBrowserUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+      )
+    ).toBe(false);
+  });
+
   it("shows an honest in-page fallback when Android cannot activate AR", () => {
     expect(
       getArAccessNotice(
@@ -160,10 +174,11 @@ describe("AR launcher helpers", () => {
     });
   });
 
-  it("keeps iPhone Safari allowed and iPhone non-Safari guidance blocked", () => {
+  it("keeps capable iPhone Safari allowed and iPhone non-Safari guidance blocked", () => {
     expect(
       getArAccessNotice(
         diagnostics({
+          quickLookRel: true,
           isIPhone: true,
           isIOS: true,
           isLikelyPhoneOrTablet: true,
@@ -179,6 +194,41 @@ describe("AR launcher helpers", () => {
           isIOS: true,
           isLikelyPhoneOrTablet: true,
           isChrome: true
+        })
+      )
+    ).toMatchObject({
+      title: "Use Safari on this iPhone",
+      blockLaunch: true
+    });
+  });
+
+  it("fails closed for Safari-shaped iPhone browsers without native Quick Look support", () => {
+    expect(
+      getArAccessNotice(
+        diagnostics({
+          quickLookRel: false,
+          isIPhone: true,
+          isIOS: true,
+          isLikelyPhoneOrTablet: true,
+          isSafari: true
+        })
+      )
+    ).toMatchObject({
+      title: "Use Safari on this iPhone",
+      blockLaunch: true
+    });
+  });
+
+  it("fails closed for Safari-shaped iPhone WKWebViews even when rel=ar is reported", () => {
+    expect(
+      getArAccessNotice(
+        diagnostics({
+          quickLookRel: true,
+          isIPhone: true,
+          isIOS: true,
+          isLikelyPhoneOrTablet: true,
+          isSafari: true,
+          isWKWebViewLike: true
         })
       )
     ).toMatchObject({

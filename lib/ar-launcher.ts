@@ -50,18 +50,21 @@ export function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNo
     };
   }
 
-  if (diagnostics.isIPhone && diagnostics.isSafari) {
-    return null;
-  }
-
-  if (diagnostics.isIPhone && !diagnostics.isBrowserUnknown) {
+  if (
+    diagnostics.isIPhone &&
+    (!diagnostics.isSafari || diagnostics.isWKWebViewLike || !diagnostics.quickLookRel)
+  ) {
     return {
       message: "Use Safari on iPhone.",
       title: "Use Safari on this iPhone",
       description:
-        "This browser is not Safari, so wall placement will not start here. Open this same link in Safari on your iPhone, then tap Place on wall again.",
+        "This browser cannot reliably start wall placement. Copy this page link, open Safari, paste it, then tap Place on wall again.",
       blockLaunch: true
     };
+  }
+
+  if (diagnostics.isIPhone) {
+    return null;
   }
 
   if (diagnostics.isAndroid && !diagnostics.isChrome) {
@@ -132,6 +135,12 @@ export function isChromeBrowserUserAgent(userAgent: string) {
   const isAndroidWebView = /;\s*wv\)/i.test(userAgent);
 
   return hasChromeToken && !isAlternativeChromiumBrowser && !isAndroidWebView;
+}
+
+export function isKnownIOSNonSafariBrowserUserAgent(userAgent: string) {
+  return /CriOS\/|FxiOS\/|EdgiOS\/|OPiOS\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\/|Telegram|MicroMessenger|WhatsApp|GSA\/|LinkedInApp|Pinterest|TikTok|ArcSearch\/|ArcMobile\/|Arc\/|TheBrowserCompany/i.test(
+    userAgent
+  );
 }
 
 export type ArAssetKind = "poster" | "glb" | "usdz";
