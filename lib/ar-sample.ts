@@ -52,6 +52,61 @@ export const AR_SAMPLES: ArSample[] = [
       usdz: "/api/ar/chicago-final-3.usdz",
       poster: "/artworks/chicago-final-3.jpg"
     }
+  },
+  {
+    id: "chicago-river-blue-hour",
+    title: "River Blue Hour",
+    description: "Chicago River architecture and steel bridges glowing at blue hour in painterly detail.",
+    print: makePreviewBundlePrintFromDimensions({ width: 72, height: 48, unit: "in" }),
+    assets: {
+      glb: "/api/ar/chicago-river-blue-hour.glb",
+      usdz: "/api/ar/chicago-river-blue-hour.usdz",
+      poster: "/artworks/chicago-river-blue-hour.jpg"
+    }
+  },
+  {
+    id: "chicago-winter-l",
+    title: "Winter on the L",
+    description: "A tall Art Deco Chicago train scene with snowy Loop streets and warm evening light.",
+    print: makePreviewBundlePrintFromDimensions({ width: 48, height: 72, unit: "in" }),
+    assets: {
+      glb: "/api/ar/chicago-winter-l.glb",
+      usdz: "/api/ar/chicago-winter-l.usdz",
+      poster: "/artworks/chicago-winter-l.jpg"
+    }
+  },
+  {
+    id: "chicago-flag-geometry",
+    title: "City in Four Stars",
+    description: "A mid-century geometric skyline built from Chicago flag colors, river curves, and bridge forms.",
+    print: makePreviewBundlePrintFromDimensions({ width: 72, height: 48, unit: "in" }),
+    assets: {
+      glb: "/api/ar/chicago-flag-geometry.glb",
+      usdz: "/api/ar/chicago-flag-geometry.usdz",
+      poster: "/artworks/chicago-flag-geometry.jpg"
+    }
+  },
+  {
+    id: "bronzeville-jazz-night",
+    title: "Bronzeville After Dark",
+    description: "A warm contemporary mural celebrating Chicago jazz through music, motion, and neighborhood color.",
+    print: makePreviewBundlePrintFromDimensions({ width: 60, height: 48, unit: "in" }),
+    assets: {
+      glb: "/api/ar/bronzeville-jazz-night.glb",
+      usdz: "/api/ar/bronzeville-jazz-night.usdz",
+      poster: "/artworks/bronzeville-jazz-night.jpg"
+    }
+  },
+  {
+    id: "lakefront-sunrise-wash",
+    title: "Lakefront First Light",
+    description: "A quiet watercolor sunrise over Lake Michigan with the Chicago skyline in the morning mist.",
+    print: makePreviewBundlePrintFromDimensions({ width: 48, height: 72, unit: "in" }),
+    assets: {
+      glb: "/api/ar/lakefront-sunrise-wash.glb",
+      usdz: "/api/ar/lakefront-sunrise-wash.usdz",
+      poster: "/artworks/lakefront-sunrise-wash.jpg"
+    }
   }
 ];
 

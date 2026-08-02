@@ -10,17 +10,27 @@ function publicPath(pathname: string) {
 }
 
 describe("AR_SAMPLES", () => {
-  it("keeps only client-approved Chicago proofs in the gallery", () => {
+  it("includes the client-approved proofs and generated Chicago concepts", () => {
     expect(AR_SAMPLES.map((sample) => sample.id)).toEqual([
       "chicago-final-1",
       "chicago-final-2",
-      "chicago-final-3"
+      "chicago-final-3",
+      "chicago-river-blue-hour",
+      "chicago-winter-l",
+      "chicago-flag-geometry",
+      "bronzeville-jazz-night",
+      "lakefront-sunrise-wash"
     ]);
 
     expect(AR_SAMPLES.map((sample) => sample.print.label)).toEqual([
       "5 ft x 4.2 ft",
       "3 ft x 5 ft",
-      "4 ft x 5 ft"
+      "4 ft x 5 ft",
+      "6 ft x 4 ft",
+      "4 ft x 6 ft",
+      "6 ft x 4 ft",
+      "5 ft x 4 ft",
+      "4 ft x 6 ft"
     ]);
   });
 

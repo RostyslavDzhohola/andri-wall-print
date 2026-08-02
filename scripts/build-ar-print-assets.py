@@ -7,7 +7,7 @@ import struct
 import zipfile
 from pathlib import Path
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, features
 
 
 def align(value: int, boundary: int = 4) -> int:
@@ -57,7 +57,14 @@ def apply_alpha_cutout(image: Image.Image, alpha_cutoff: int) -> Image.Image:
     return image
 
 
-def normalize_artwork(source: Path, output: Path, preserve_aspect: bool, max_texture_px: int, alpha_cutoff: int) -> None:
+def normalize_artwork(
+    source: Path,
+    output: Path,
+    preserve_aspect: bool,
+    max_texture_px: int,
+    alpha_cutoff: int,
+    palette_colors: int | None,
+) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     with open_source_image(source, max_texture_px) as image:
         source_width, source_height = image.size
@@ -81,7 +88,18 @@ def normalize_artwork(source: Path, output: Path, preserve_aspect: bool, max_tex
 
             image = image.crop(box).resize((1024, 2048), Image.Resampling.LANCZOS)
 
-        apply_alpha_cutout(image, alpha_cutoff).save(output, "PNG")
+        normalized = apply_alpha_cutout(image, alpha_cutoff)
+
+        if palette_colors is not None:
+            normalized = normalized.convert("RGB").quantize(
+                colors=palette_colors,
+                method=Image.Quantize.LIBIMAGEQUANT
+                if features.check_feature("libimagequant")
+                else Image.Quantize.FASTOCTREE,
+                dither=Image.Dither.FLOYDSTEINBERG,
+            )
+
+        normalized.save(output, "PNG", optimize=True)
 
 
 def make_glb(texture_path: Path, output: Path, title: str, width_meters: float, height_meters: float) -> None:
@@ -292,16 +310,27 @@ def main() -> int:
     parser.add_argument("--preserve-aspect", action="store_true")
     parser.add_argument("--max-texture-px", default=2048, type=int)
     parser.add_argument("--alpha-cutoff", default=128, type=int)
+    parser.add_argument("--palette-colors", type=int)
     args = parser.parse_args()
 
     if not 1 <= args.alpha_cutoff <= 255:
         parser.error("--alpha-cutoff must be between 1 and 255")
 
+    if args.palette_colors is not None and not 2 <= args.palette_colors <= 256:
+        parser.error("--palette-colors must be between 2 and 256")
+
     texture_path = Path("public/artworks") / f"{args.id}.png"
     glb_path = Path("public/ar") / f"{args.id}.glb"
     usdz_path = Path("public/ar") / f"{args.id}.usdz"
 
-    normalize_artwork(args.source, texture_path, args.preserve_aspect, args.max_texture_px, args.alpha_cutoff)
+    normalize_artwork(
+        args.source,
+        texture_path,
+        args.preserve_aspect,
+        args.max_texture_px,
+        args.alpha_cutoff,
+        args.palette_colors,
+    )
     make_glb(texture_path, glb_path, args.title, args.width_meters, args.height_meters)
     make_usdz(texture_path, usdz_path, args.title, args.width_meters, args.height_meters)
 
