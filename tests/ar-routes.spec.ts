@@ -36,6 +36,10 @@ async function assetByteLength(response: APIResponse) {
   return (await response.body()).length;
 }
 
+function expectedExperimentalSafariHref(page: Page) {
+  return page.url().replace(/^https:/, "x-safari-https:").replace(/^http:/, "x-safari-http:");
+}
+
 async function expectNoBannedRenderedTerms(page: Page) {
   const bodyText = await page.locator("body").innerText();
 
@@ -848,7 +852,11 @@ test.describe("AR launcher access guidance", () => {
       await expect(page).toHaveURL("/");
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
       await expect(page.getByText("This browser cannot reliably start wall placement.")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Open in Safari (experimental)" })).toHaveAttribute(
+        "href",
+        expectedExperimentalSafariHref(page)
+      );
+      await expect(page.getByRole("button", { name: "Copy link" })).toHaveCount(0);
       await page.getByRole("button", { name: "Dismiss" }).click();
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toHaveCount(0);
     });
@@ -875,7 +883,10 @@ test.describe("AR launcher access guidance", () => {
       await expect(page).toHaveURL("/");
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
       await expect(page.getByText("This browser cannot reliably start wall placement.")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Open in Safari (experimental)" })).toHaveAttribute(
+        "href",
+        expectedExperimentalSafariHref(page)
+      );
     });
   });
 
@@ -889,31 +900,19 @@ test.describe("AR launcher access guidance", () => {
     });
 
     test("guides Arc users to Safari instead of silently resolving AR activation", async ({ page }) => {
-      await page.addInitScript(() => {
-        Object.defineProperty(window.navigator, "clipboard", {
-          configurable: true,
-          value: {
-            writeText: async (value: string) => {
-              (window as Window & { __copiedSafariUrl?: string }).__copiedSafariUrl = value;
-            }
-          }
-        });
-      });
-
-      await page.goto("/gallery");
+      await page.goto("/gallery?designId=chicago-final-4");
 
       await expect(page.getByTestId("quick-look-link")).toHaveAccessibleName("Open in Safari");
       await page.getByTestId("quick-look-link").click();
 
-      await expect(page).toHaveURL(/\/gallery$/);
+      await expect(page).toHaveURL(/\/gallery\?designId=chicago-final-4$/);
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
-      await expect(page.getByText("Copy this page link, open Safari, paste it, then tap Place on wall again.")).toBeVisible();
-
-      await page.getByRole("button", { name: "Copy link" }).click();
-      await expect
-        .poll(() => page.evaluate(() => (window as Window & { __copiedSafariUrl?: string }).__copiedSafariUrl))
-        .toMatch(/\/gallery$/);
-      await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
+      await expect(page.getByText("The button below uses an experimental Safari link.")).toBeVisible();
+      await expect(page.getByRole("link", { name: "Open in Safari (experimental)" })).toHaveAttribute(
+        "href",
+        expectedExperimentalSafariHref(page)
+      );
+      await expect(page.getByRole("button", { name: "Copy link" })).toHaveCount(0);
     });
   });
 
@@ -1046,11 +1045,11 @@ test("removed launch routes return direct 404 responses", async ({ page }) => {
     "/sign-in",
     "/sign-up"
   ]) {
-    const response = await page.goto(pathname);
+    const response = await page.request.get(pathname, { maxRedirects: 0 });
 
-    expect(response?.status(), `${pathname} should be deleted`).toBe(404);
-    expect(response?.request().redirectedFrom(), `${pathname} should not redirect`).toBeNull();
-    expect(new URL(page.url()).pathname, `${pathname} should remain the requested route`).toBe(pathname);
+    expect(response.status(), `${pathname} should be deleted`).toBe(404);
+    expect(response.headers().location, `${pathname} should not redirect`).toBeUndefined();
+    expect(new URL(response.url()).pathname, `${pathname} should remain the requested route`).toBe(pathname);
   }
 });
 

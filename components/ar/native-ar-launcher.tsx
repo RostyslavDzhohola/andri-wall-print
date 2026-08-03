@@ -12,6 +12,7 @@ import {
   getAndroidArUnavailableNotice,
   getArAccessNotice,
   getArActionLabel,
+  getExperimentalSafariHref,
   getFixedScaleQuickLookHref,
   hasReadyArAssetUrls,
   isChromeBrowserUserAgent,
@@ -83,10 +84,18 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
   const [arError, setArError] = useState<string | null>(null);
   const [dialogNotice, setDialogNotice] = useState<ArAccessNotice | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
-  const [safariLinkCopied, setSafariLinkCopied] = useState(false);
+  const [experimentalSafariHref, setExperimentalSafariHref] = useState<string | null>(null);
   const accessNotice = getArAccessNotice(diagnostics);
   const actionLabel = getArActionLabel(diagnostics, accessNotice);
   const showSendToIPhone = diagnostics ? !diagnostics.isIPhone && !diagnostics.isAndroid : false;
+
+  const getCurrentSharePath = () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  const prepareExperimentalSafariHandoff = () => {
+    const pageHref = new URL(getCurrentSharePath(), window.location.origin).toString();
+
+    setExperimentalSafariHref(getExperimentalSafariHref(pageHref));
+  };
 
   const clearPendingLaunchFallback = () => {
     if (launchFallbackTimerRef.current !== null) {
@@ -133,12 +142,12 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       launchFallbackTimerRef.current = null;
 
       if (!launchLeftPage && document.visibilityState === "visible") {
-        setSafariLinkCopied(false);
+        prepareExperimentalSafariHandoff();
         setDialogNotice({
           message: "Open in iPhone Safari.",
           title: "Open in Safari to place on wall",
           description:
-            "Wall placement did not start from this browser. Copy this page link, open Safari, paste it, then tap Place on wall again.",
+            "Wall placement did not start from this browser. The button below uses an experimental Safari link. If iOS blocks it, return here and use your browser's share menu.",
           blockLaunch: true
         });
       }
@@ -242,7 +251,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     if (currentAccessNotice?.blockLaunch) {
       event.preventDefault();
       setArError(null);
-      setSafariLinkCopied(false);
+      prepareExperimentalSafariHandoff();
       setDialogNotice(currentAccessNotice);
       return;
     }
@@ -275,22 +284,6 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
       setArError("Wall preview could not start from this browser. Open this client preview page in Safari on iPhone.");
     });
-  };
-
-  const getCurrentSharePath = () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
-  const copyLinkForSafari = async () => {
-    try {
-      const shareUrlResult = await resolveClientPreviewUrl(getCurrentSharePath());
-
-      await navigator.clipboard.writeText(shareUrlResult.url);
-      setSafariLinkCopied(true);
-      setShareStatus(shareUrlResult.warning ?? "Link copied. Open Safari and paste it.");
-    } catch (error) {
-      console.error("Failed to copy the Safari preview link.", error);
-      setSafariLinkCopied(false);
-      setShareStatus("Could not copy the link. Copy this page address, then paste it into Safari.");
-    }
   };
 
   const shareToPhone = async () => {
@@ -423,7 +416,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
         onOpenChange={(open) => {
           if (!open) {
             setDialogNotice(null);
-            setSafariLinkCopied(false);
+            setExperimentalSafariHref(null);
           }
         }}
       >
@@ -433,9 +426,11 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
             <DialogDescription>{dialogNotice?.description}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            {dialogNotice?.title.includes("Safari") ? (
-              <Button className="h-11 rounded-full px-5" onClick={copyLinkForSafari} type="button" variant="outline">
-                {safariLinkCopied ? "Link copied" : "Copy link"}
+            {dialogNotice?.title.includes("Safari") && experimentalSafariHref ? (
+              <Button asChild className="h-11 rounded-full px-5" variant="outline">
+                <a data-testid="experimental-safari-link" href={experimentalSafariHref}>
+                  Open in Safari (experimental)
+                </a>
               </Button>
             ) : null}
             <DialogClose asChild>

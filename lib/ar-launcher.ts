@@ -58,7 +58,7 @@ export function getArAccessNotice(diagnostics: ArDiagnostics | null): ArAccessNo
       message: "Use Safari on iPhone.",
       title: "Use Safari on this iPhone",
       description:
-        "This browser cannot reliably start wall placement. Copy this page link, open Safari, paste it, then tap Place on wall again.",
+        "This browser cannot reliably start wall placement. The button below uses an experimental Safari link. If iOS blocks it, return here and use your browser's share menu.",
       blockLaunch: true
     };
   }
@@ -124,6 +124,24 @@ export function getArActionLabel(diagnostics: ArDiagnostics | null, accessNotice
   }
 
   return "Open on iPhone";
+}
+
+export function getExperimentalSafariHref(pageHref: string) {
+  try {
+    const pageUrl = new URL(pageHref);
+
+    if (pageUrl.protocol === "https:") {
+      return pageUrl.href.replace(/^https:/, "x-safari-https:");
+    }
+
+    if (pageUrl.protocol === "http:") {
+      return pageUrl.href.replace(/^http:/, "x-safari-http:");
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 export function isChromeBrowserUserAgent(userAgent: string) {

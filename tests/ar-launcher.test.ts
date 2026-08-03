@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   getArAccessNotice,
   getArActionLabel,
+  getExperimentalSafariHref,
   getAssetContentType,
   getFixedScaleQuickLookHref,
   hasReadyArAssetUrls,
@@ -29,6 +30,14 @@ function diagnostics(overrides: Partial<ArDiagnostics> = {}): ArDiagnostics {
 }
 
 describe("AR launcher helpers", () => {
+  it("builds an experimental Safari deep link without losing route state", () => {
+    expect(getExperimentalSafariHref("https://www.thewallprintpro.com/gallery?designId=chicago-final-4#preview")).toBe(
+      "x-safari-https://www.thewallprintpro.com/gallery?designId=chicago-final-4#preview"
+    );
+    expect(getExperimentalSafariHref("http://localhost:3000/gallery")).toBe("x-safari-http://localhost:3000/gallery");
+    expect(getExperimentalSafariHref("notion://open")).toBeNull();
+  });
+
   it("builds fixed-scale Quick Look links for local USDZ assets", () => {
     expect(getFixedScaleQuickLookHref("/api/ar/chicago-final-1.usdz")).toBe("/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
   });
