@@ -27,11 +27,14 @@ import {
   HOME_SUBHEAD,
 } from "@/lib/product-copy";
 import { resolveReserveHref } from "@/lib/reserve-url";
+import { readWallPrintProCommunityGalleryEnabled } from "@/lib/runtime-env";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" }
 };
+
+export const dynamic = "force-dynamic";
 
 function ChicagoBadge() {
   return (
@@ -265,7 +268,7 @@ export default function Home() {
         headingClassName="max-w-[15ch] text-[2.25rem] sm:text-[2.75rem] md:max-w-[14ch] md:text-[3rem] lg:max-w-[17ch] lg:text-6xl"
         intro={HOME_SUBHEAD}
         eyebrow={<ChicagoBadge />}
-        sideContent={<HomepageDemoActions />}
+        sideContent={<HomepageDemoActions communityGalleryEnabled={readWallPrintProCommunityGalleryEnabled()} />}
         afterContent={<HomeSections reserveHref={reserveHref} />}
       />
     </>

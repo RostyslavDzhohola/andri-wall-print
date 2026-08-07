@@ -17,6 +17,11 @@ import {
   type NormalizedLeadContact
 } from "../lib/lead-request-contract";
 import { makeConceptDraftTitle } from "../lib/lead-request-presentation";
+import {
+  COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE,
+  COMMUNITY_GALLERY_CONSENT_VERSION,
+  isEnabledEnvironmentValue
+} from "../lib/community-gallery";
 import { normalizeReservedSessionId } from "../lib/reserved-session-id";
 import {
   FUNNEL_VISIT_DAILY_CAP,
@@ -257,6 +262,22 @@ function aiConceptsEnabled() {
   return (value === "1" || value === "true") && Boolean(process.env.OPENAI_API_KEY);
 }
 
+function communityGalleryEnabled() {
+  return isEnabledEnvironmentValue(process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED);
+}
+
+function makeGalleryConsentEvidence(consent: boolean | undefined, now: number) {
+  if (!communityGalleryEnabled() || consent !== true) {
+    return undefined;
+  }
+
+  return {
+    galleryPublicationConsent: true as const,
+    galleryConsentVersion: COMMUNITY_GALLERY_CONSENT_VERSION,
+    galleryConsentRecordedAt: now
+  };
+}
+
 export function selectConceptGenerationGate(input: {
   contactEmail?: string;
   contactRequestCount: number;
@@ -375,6 +396,7 @@ async function recordRateLimitedDraft(
     code: "CONTACT_RATE_LIMITED" | "GLOBAL_DAILY_CAP_REACHED";
     message: string;
     now: number;
+    galleryConsentEvidence?: ReturnType<typeof makeGalleryConsentEvidence>;
   }
 ) {
   const aiConceptDraftId = await ctx.db.insert("aiConceptDrafts", {
@@ -382,6 +404,7 @@ async function recordRateLimitedDraft(
     prompt: input.prompt,
     status: "rate_limited",
     provider: "openai",
+    ...input.galleryConsentEvidence,
     failureReason:
       input.code === "CONTACT_RATE_LIMITED"
         ? "AI concept draft limit reached for this contact today."
@@ -413,6 +436,7 @@ async function queueConceptDraftForLead(
     normalized: NormalizedLeadContact;
     print?: unknown;
     now: number;
+    galleryConsentEvidence?: ReturnType<typeof makeGalleryConsentEvidence>;
   }
 ) {
   if (!input.normalized.conceptPrompt) {
@@ -441,7 +465,8 @@ async function queueConceptDraftForLead(
       prompt: input.normalized.conceptPrompt,
       code: gate.code,
       message: gate.message,
-      now: input.now
+      now: input.now,
+      galleryConsentEvidence: input.galleryConsentEvidence
     });
   }
 
@@ -450,6 +475,7 @@ async function queueConceptDraftForLead(
     prompt: input.normalized.conceptPrompt,
     status: "queued",
     provider: "openai",
+    ...input.galleryConsentEvidence,
     requestedAt: input.now,
     updatedAt: input.now
   });
@@ -502,10 +528,21 @@ export async function startConceptGenerationHandler(ctx: any, args: {
   businessName?: string;
   wallDescription?: string;
   conceptPrompt: string;
+  galleryPublicationConsent?: boolean;
   print?: unknown;
 }) {
   const now = Date.now();
   let normalized: ReturnType<typeof normalizeLeadRequestInput>;
+
+  if (communityGalleryEnabled() && args.galleryPublicationConsent !== true) {
+    return {
+      ok: false,
+      code: "CONSENT_REQUIRED",
+      message: COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+    };
+  }
+
+  const galleryConsentEvidence = makeGalleryConsentEvidence(args.galleryPublicationConsent, now);
 
   if (!args.contactEmail || !isValidLeadEmail(args.contactEmail)) {
     return {
@@ -562,6 +599,7 @@ export async function startConceptGenerationHandler(ctx: any, args: {
 
   const leadRequestId = await ctx.db.insert("leadRequests", {
     ...normalized,
+    ...galleryConsentEvidence,
     ...(args.print ? { print: args.print } : {}),
     status: "new",
     createdAt: now,
@@ -591,7 +629,8 @@ export async function startConceptGenerationHandler(ctx: any, args: {
     leadRequestId,
     normalized,
     print: args.print,
-    now
+    now,
+    galleryConsentEvidence
   });
 
   if (!queued) {
@@ -624,6 +663,7 @@ export const startConceptGeneration = mutation({
     businessName: v.optional(v.string()),
     wallDescription: v.optional(v.string()),
     conceptPrompt: v.string(),
+    galleryPublicationConsent: v.optional(v.boolean()),
     print: v.optional(printValidator)
   },
   returns: startedConceptGenerationValidator,
@@ -685,6 +725,7 @@ type SubmitLeadRequestArgs = {
   businessName?: string;
   wallDescription?: string;
   conceptPrompt?: string;
+  galleryPublicationConsent?: boolean;
   intent?: string;
   reserveInterest?: boolean;
   upload?: {
@@ -700,6 +741,15 @@ type SubmitLeadRequestArgs = {
 export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequestArgs) {
   const now = Date.now();
   let normalized: ReturnType<typeof normalizeLeadRequestInput>;
+
+  if (args.conceptPrompt?.trim() && communityGalleryEnabled() && args.galleryPublicationConsent !== true) {
+    throw new ConvexError({
+      code: "CONSENT_REQUIRED",
+      message: COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+    });
+  }
+
+  const galleryConsentEvidence = makeGalleryConsentEvidence(args.galleryPublicationConsent, now);
 
   try {
     normalized = normalizeLeadRequestInput(args);
@@ -740,6 +790,7 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
 
   const leadRequestId = await ctx.db.insert("leadRequests", {
     ...normalized,
+    ...galleryConsentEvidence,
     ...(args.upload && verifiedUpload
       ? {
           upload: {
@@ -766,7 +817,8 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
         leadRequestId,
         normalized,
         print: args.print,
-        now
+        now,
+        galleryConsentEvidence
       });
       code = outcome?.code;
       message = outcome?.message ?? "Request saved. Add an email address to generate a concept draft.";
@@ -776,6 +828,7 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
         prompt: normalized.conceptPrompt,
         status: "disabled",
         provider: "openai",
+        ...galleryConsentEvidence,
         failureReason: "AI concept drafting is not configured.",
         requestedAt: now,
         completedAt: now,
@@ -796,7 +849,8 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
         leadRequestId,
         normalized,
         print: args.print,
-        now
+        now,
+        galleryConsentEvidence
       });
       draftStatus = outcome?.aiDraftStatus;
       code = outcome?.code;
@@ -823,6 +877,7 @@ export const submitLeadRequest = mutation({
     businessName: v.optional(v.string()),
     wallDescription: v.optional(v.string()),
     conceptPrompt: v.optional(v.string()),
+    galleryPublicationConsent: v.optional(v.boolean()),
     intent: v.optional(v.union(v.literal("contact"), v.literal("concept"), v.literal("reserve"))),
     reserveInterest: v.optional(v.boolean()),
     upload: v.optional(leadUploadValidator),
@@ -1049,6 +1104,12 @@ export const finalizeAiDraftReady = internalMutation({
       ...(args.publicPreviewSlug ? { publicPreviewSlug: args.publicPreviewSlug } : {}),
       updatedAt: now
     });
+
+    if (communityGalleryEnabled() && draft.galleryPublicationConsent === true) {
+      await ctx.scheduler.runAfter(0, internal.gallery.enqueueReadyAiConcept, {
+        draftId: draft._id
+      });
+    }
 
     return null;
   }

@@ -2,6 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { ArrowRight, CheckCircle2, ImagePlus, Loader2, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,11 @@ import {
   validatePublicUploadFile
 } from "@/lib/builder-upload-normalization";
 import {
+  COMMUNITY_GALLERY_CONSENT_HELP,
+  COMMUNITY_GALLERY_CONSENT_LABEL,
+  COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+} from "@/lib/community-gallery";
+import {
   LEAD_CONCEPT_PROMPT_MAX_LENGTH,
   isValidLeadEmail,
   isValidLeadPhone,
@@ -30,6 +36,7 @@ import { cn } from "@/lib/utils";
 
 type PublicRequestFormProps = {
   aiEnabled: boolean;
+  communityGalleryEnabled: boolean;
   defaultIntent: LeadRequestIntent;
   defaultConceptPrompt?: string;
   defaultDesignContext?: RequestDesignContext;
@@ -57,6 +64,7 @@ const phoneHelpId = "lead-phone-help";
 
 export function PublicRequestForm({
   aiEnabled,
+  communityGalleryEnabled,
   defaultIntent,
   defaultConceptPrompt,
   defaultDesignContext,
@@ -74,6 +82,7 @@ export function PublicRequestForm({
   const [projectType, setProjectType] = useState<(typeof projectTypeOptions)[number]>("Home wall");
   const [businessName, setBusinessName] = useState("");
   const [conceptPrompt, setConceptPrompt] = useState(defaultConceptPrompt ?? "");
+  const [galleryPublicationConsent, setGalleryPublicationConsent] = useState(false);
   const reserveInterest = defaultIntent === "reserve";
   const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -93,7 +102,8 @@ export function PublicRequestForm({
       contactName.trim() &&
       preferredContactSatisfied &&
       (!emailEntered || emailValid) &&
-      (!phoneEntered || phoneValid)
+      (!phoneEntered || phoneValid) &&
+      (!communityGalleryEnabled || !conceptPrompt.trim() || galleryPublicationConsent)
   );
 
   const handleFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +136,12 @@ export function PublicRequestForm({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (communityGalleryEnabled && conceptPrompt.trim() && !galleryPublicationConsent) {
+      setError(COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     setResult(null);
@@ -184,6 +200,7 @@ export function PublicRequestForm({
         projectType,
         ...(businessName.trim() ? { businessName } : {}),
         ...(conceptPrompt.trim() ? { conceptPrompt } : {}),
+        ...(conceptPrompt.trim() && galleryPublicationConsent ? { galleryPublicationConsent: true } : {}),
         intent,
         reserveInterest,
         ...(upload ? { upload } : {})
@@ -344,6 +361,26 @@ export function PublicRequestForm({
           value={conceptPrompt}
         />
       </div>
+
+      {communityGalleryEnabled && conceptPrompt.trim() ? (
+        <div className="grid gap-2 rounded-lg border bg-muted/30 p-4" data-testid="request-gallery-consent">
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6" htmlFor="request-gallery-publication-consent">
+            <input
+              checked={galleryPublicationConsent}
+              className="mt-1 size-4 shrink-0 accent-primary"
+              id="request-gallery-publication-consent"
+              onChange={(event) => setGalleryPublicationConsent(event.target.checked)}
+              required
+              type="checkbox"
+            />
+            <span>{COMMUNITY_GALLERY_CONSENT_LABEL}</span>
+          </label>
+          <p className="pl-7 text-xs leading-5 text-muted-foreground">
+            {COMMUNITY_GALLERY_CONSENT_HELP} Read our <Link className="underline" href="/privacy">Privacy Policy</Link> and{" "}
+            <Link className="underline" href="/terms">Terms</Link>.
+          </p>
+        </div>
+      ) : null}
 
       {uploadFirst ? null : uploadField}
 

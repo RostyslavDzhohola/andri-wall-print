@@ -131,7 +131,7 @@ test("Sites migration redirects retired work slugs", async ({ page }) => {
   await expect(page).toHaveURL(/\/work$/);
 });
 
-test("Sites migration preserves the request entry route when the form runtime is unavailable", async ({
+test("Sites migration preserves the configured request entry route", async ({
   page,
 }) => {
   await page.goto("/");
@@ -140,13 +140,8 @@ test("Sites migration preserves the request entry route when the form runtime is
     .first()
     .click();
   await expect(page).toHaveURL(/\/request$/);
-  await expect(
-    page.getByRole("heading", { name: "Wall Print Pro requests are unavailable." }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open gallery" })).toHaveAttribute(
-    "href",
-    "/gallery",
-  );
+  await expect(page.getByRole("heading", { name: "Request a wall print estimate." })).toBeVisible();
+  await expect(page.getByLabel("Name", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open draft preview" })).toHaveCount(0);
 });
 

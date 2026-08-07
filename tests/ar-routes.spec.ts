@@ -129,11 +129,14 @@ test("homepage renders a static artwork presentation with native AR assets", asy
   await expect(page.getByTestId("homepage-describe-continue")).toHaveText("Continue");
   await expect(page.getByLabel("Describe your wall print")).toHaveCount(0);
   await expect(page.getByTestId("homepage-concept-generate")).toHaveCount(0);
-  await page.getByLabel("Email").fill("buyer@example.com");
+  await page.getByLabel("Email", { exact: true }).fill("buyer@example.com");
   await page.getByTestId("homepage-describe-continue").click();
   await expect(page.getByText(/Step [12] of 2/)).toHaveCount(0);
   await page.getByLabel("Describe your wall print").fill("Gold leaf logo wall");
   await expect(page.getByLabel("Describe your wall print")).toHaveValue("Gold leaf logo wall");
+  await expect(page.getByTestId("homepage-gallery-consent")).toBeVisible();
+  await expect(page.getByLabel(/publicly display the AI-generated artwork anonymously/)).not.toBeChecked();
+  await expect(page.getByLabel(/publicly display the AI-generated artwork anonymously/)).toHaveAttribute("required", "");
   await expect(page.getByTestId("homepage-proof-note")).toHaveCount(0);
   await expect(page.getByText("printability confirmed at your estimate")).toHaveCount(0);
   // Choose-design entry reveals the gallery handoff with the selected sample.
@@ -415,6 +418,10 @@ test("homepage Describe flow preserves both steps and submits from the keyboard"
   await email.press("Enter");
   await expect(description).toBeFocused();
   await expect(description).toHaveValue("Chicago skyline\nfor a school lobby");
+  const consent = page.getByLabel(/publicly display the AI-generated artwork anonymously/);
+  await expect(consent).not.toBeChecked();
+  await expect(page.getByTestId("homepage-concept-generate")).toBeDisabled();
+  await consent.check();
   await description.press("Enter");
 
   await expect(page.getByTestId("homepage-concept-status")).toContainText("Artwork preview is ready for wall placement.");
@@ -425,6 +432,7 @@ test("homepage Describe flow preserves both steps and submits from the keyboard"
   expect(calls[0].body).toMatchObject({
     contactEmail: "buyer@example.com",
     prompt: "Chicago skyline\nfor a school lobby",
+    galleryPublicationConsent: true,
     selectedDesignId: "chicago-final-1"
   });
   expect(calls[1].url).toContain("leadRequestId=lead_hero_123");
@@ -461,13 +469,11 @@ test("homepage entry cards keep one compact responsive footprint", async ({ page
 
     await page.getByLabel("Email").fill(`${viewport.name}@example.com`);
     await page.getByLabel("Email").press("Enter");
-    heights.push((await page.getByTestId("homepage-entry-panel").boundingBox())?.height ?? 0);
-
     expect(Math.max(...heights) - Math.min(...heights), `${viewport.name} card-height difference`).toBeLessThanOrEqual(2);
 
     const metrics = await page.getByTestId("homepage-demo-actions").evaluate((root) => {
       const rootRect = root.getBoundingClientRect();
-      const targets = Array.from(root.querySelectorAll<HTMLElement>('button, input:not([type="file"]), textarea'))
+      const targets = Array.from(root.querySelectorAll<HTMLElement>('button, input:not([type="file"]):not([type="checkbox"]), textarea'))
         .filter((element) => element.getClientRects().length > 0)
         .map((element) => element.getBoundingClientRect().height);
 
@@ -485,6 +491,21 @@ test("homepage entry cards keep one compact responsive footprint", async ({ page
   }
 });
 
+test("request form requires unchecked publication consent for AI concepts", async ({ page }) => {
+  await page.goto("/request?intent=concept&conceptPrompt=Gold%20leaf%20logo%20wall");
+
+  const consent = page.getByLabel(/publicly display the AI-generated artwork anonymously/);
+  await expect(consent).toBeVisible();
+  await expect(consent).not.toBeChecked();
+  await expect(consent).toHaveAttribute("required", "");
+  await page.getByLabel("Name", { exact: true }).fill("Buyer");
+  await page.getByLabel("Email", { exact: true }).fill("buyer@example.com");
+  await expect(page.getByRole("button", { name: "Get estimate" })).toBeDisabled();
+  await consent.check();
+  await expect(page.getByRole("button", { name: "Get estimate" })).toBeEnabled();
+  await expect(page.getByTestId("request-gallery-consent")).toContainText("Free AI generation is offered in exchange");
+});
+
 test("gallery route lets users choose existing artwork for wall placement", async ({ page }) => {
   await page.goto("/gallery");
 
@@ -497,7 +518,7 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("home-nav-reserve")).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Saved previews" })).toHaveCount(0);
-  await expect(page.getByTestId("gallery-artwork-card")).toHaveCount(8);
+  await expect(page.getByTestId("gallery-artwork-list").getByTestId("gallery-artwork-card")).toHaveCount(8);
   await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/Pathways to Success|Lakefront Day|River Train Crossing/);
   await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/Chicago skyline|Chicago lakefront|Chicago train/);
   await expect(page.getByTestId("gallery-artwork-list")).not.toContainText(/\d+(?:\.\d+)?\s*ft/);
@@ -523,6 +544,29 @@ test("gallery route lets users choose existing artwork for wall placement", asyn
   await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute("href", "/request?intent=concept&designId=chicago-final-3");
   await expect(page.locator('[data-artwork-id="chicago-final-3"]')).toHaveAttribute("aria-pressed", "true");
   await expectNoBannedRenderedTerms(page);
+});
+
+test("community gallery selects AR artwork, loads more, and resolves the request from its published slug", async ({ page }) => {
+  await page.goto("/gallery");
+
+  await expect(page.getByTestId("community-gallery-section")).toBeVisible();
+  await expect(page.getByTestId("community-gallery-list").getByTestId("gallery-artwork-card")).toHaveCount(1);
+  await page.locator('[data-artwork-id="g-community-one"]').click();
+  await expect(page.getByTestId("gallery-selected-artwork")).toHaveAttribute("src", "/artworks/chicago-final-1.jpg");
+  await expect(page.getByTestId("gallery-request-selected-design")).toHaveAttribute(
+    "href",
+    "/request?intent=concept&gallerySlug=g-community-one"
+  );
+  await expectWallPlacementEntryPoint(page, "/api/ar/chicago-final-1.usdz#allowsContentScaling=0");
+
+  await page.getByTestId("community-gallery-load-more").click();
+  await expect(page.getByTestId("community-gallery-list").getByTestId("gallery-artwork-card")).toHaveCount(2);
+  await expect(page.getByTestId("community-gallery-load-more")).toHaveCount(0);
+
+  await page.getByTestId("gallery-request-selected-design").click();
+  await expect(page).toHaveURL(/\/request\?intent=concept&gallerySlug=g-community-one$/);
+  await expect(page.getByTestId("request-selected-design-context")).toContainText("Community AI concept");
+  await expect(page.getByLabel(/publicly display the AI-generated artwork anonymously/)).not.toBeChecked();
 });
 
 test("homepage selected design opens the public gallery before the request gate", async ({ page }) => {

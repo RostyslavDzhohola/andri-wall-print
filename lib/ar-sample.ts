@@ -11,6 +11,7 @@ export type ArSample = {
   title: string;
   description: string;
   shareUrl?: string;
+  sourceKind?: "community_ai";
   print: PreviewBundlePrint;
   assets: {
     glb: ArAssetPath;

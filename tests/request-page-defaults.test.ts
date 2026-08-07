@@ -58,6 +58,38 @@ describe("request page defaults", () => {
     });
   });
 
+  it("uses only server-resolved community gallery metadata", () => {
+    const publishedDesign = {
+      id: "published-safe-slug",
+      title: "Community AI concept",
+      description: "An anonymous published concept."
+    };
+
+    expect(
+      resolveRequestPageDefaults(
+        {
+          gallerySlug: "published-safe-slug",
+          conceptPrompt: "Attacker-supplied title and prompt"
+        },
+        publishedDesign
+      )
+    ).toMatchObject({
+      defaultDesignContext: publishedDesign,
+      defaultConceptPrompt: expect.stringContaining("Community AI concept")
+    });
+
+    expect(resolveRequestPageDefaults({ gallerySlug: "attacker-slug" }, publishedDesign)).toEqual({
+      defaultIntent: "concept",
+      focusUpload: false
+    });
+    expect(
+      resolveRequestPageDefaults(
+        { gallerySlug: "attacker-slug", conceptPrompt: "Attacker-supplied prompt" },
+        publishedDesign
+      )
+    ).toEqual({ defaultIntent: "concept", focusUpload: false });
+  });
+
   it("marks the upload-first workflow from the homepage CTA", () => {
     expect(resolveRequestPageDefaults({ focus: "upload" })).toMatchObject({
       defaultIntent: "concept",

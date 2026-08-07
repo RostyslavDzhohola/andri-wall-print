@@ -78,6 +78,36 @@ export default defineSchema({
   })
     .index("by_preview_bundle_createdAt", ["previewBundleId", "createdAt"])
     .index("by_public_slug_createdAt", ["publicSlug", "createdAt"]),
+  galleryEntries: defineTable({
+    aiConceptDraftId: v.id("aiConceptDrafts"),
+    previewBundleId: v.id("previewBundles"),
+    publicSlug: v.string(),
+    title: v.string(),
+    description: v.string(),
+    print: printValidator,
+    assetStorageIds: assetStorageIdsValidator,
+    assetMeta: assetMetaValidator,
+    consentVersion: v.string(),
+    consentRecordedAt: v.number(),
+    moderationModel: v.string(),
+    moderationOutcome: v.union(
+      v.literal("pending"),
+      v.literal("passed"),
+      v.literal("flagged"),
+      v.literal("error")
+    ),
+    moderationAttempts: v.number(),
+    flaggedCategories: v.optional(v.array(v.string())),
+    moderatedAt: v.optional(v.number()),
+    status: v.union(v.literal("pending"), v.literal("published"), v.literal("held"), v.literal("hidden")),
+    publishedAt: v.optional(v.number()),
+    hiddenAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  })
+    .index("by_ai_concept_draft", ["aiConceptDraftId"])
+    .index("by_public_slug", ["publicSlug"])
+    .index("by_status_createdAt", ["status", "createdAt"]),
   leadRequests: defineTable({
     contactName: v.string(),
     contactEmail: v.string(),
@@ -105,6 +135,9 @@ export default defineSchema({
     aiConceptDraftId: v.optional(v.id("aiConceptDrafts")),
     previewBundleId: v.optional(v.id("previewBundles")),
     publicPreviewSlug: v.optional(v.string()),
+    galleryPublicationConsent: v.optional(v.boolean()),
+    galleryConsentVersion: v.optional(v.string()),
+    galleryConsentRecordedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number()
   })
@@ -138,6 +171,9 @@ export default defineSchema({
     assetMeta: v.optional(assetMetaValidator),
     previewBundleId: v.optional(v.id("previewBundles")),
     publicPreviewSlug: v.optional(v.string()),
+    galleryPublicationConsent: v.optional(v.boolean()),
+    galleryConsentVersion: v.optional(v.string()),
+    galleryConsentRecordedAt: v.optional(v.number()),
     failureReason: v.optional(v.string()),
     refusalReason: v.optional(v.string()),
     providerMetadata: v.optional(v.string()),

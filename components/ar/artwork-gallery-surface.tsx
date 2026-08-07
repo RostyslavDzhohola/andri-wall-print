@@ -3,44 +3,51 @@
 import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { NativeArLauncher, type ArDiagnostics } from "@/components/ar/native-ar-launcher";
 import { Button } from "@/components/ui/button";
 import { AR_SAMPLES, DEFAULT_AR_SAMPLE, type ArSample } from "@/lib/ar-sample";
+import type { PublicGalleryPage } from "@/lib/convex-public-gallery";
 import { cn } from "@/lib/utils";
 
 type ArtworkGallerySurfaceProps = {
   initialSampleId?: string;
   samples?: ArSample[];
+  initialCommunityPage?: PublicGalleryPage;
 };
 
 export function ArtworkGallerySurface({
   initialSampleId,
-  samples = AR_SAMPLES
+  samples = AR_SAMPLES,
+  initialCommunityPage = { samples: [], continueCursor: null, isDone: true }
 }: ArtworkGallerySurfaceProps) {
-  const [selectedIndex, setSelectedIndex] = useState(() => {
-    const initialIndex = initialSampleId ? samples.findIndex((sample) => sample.id === initialSampleId) : -1;
-
-    return initialIndex >= 0 ? initialIndex : 0;
-  });
+  const [communitySamples, setCommunitySamples] = useState(initialCommunityPage.samples);
+  const [continueCursor, setContinueCursor] = useState(initialCommunityPage.continueCursor);
+  const [communityDone, setCommunityDone] = useState(initialCommunityPage.isDone);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityError, setCommunityError] = useState<string | null>(null);
+  const [selectedSampleId, setSelectedSampleId] = useState(initialSampleId ?? samples[0]?.id ?? DEFAULT_AR_SAMPLE.id);
   const [diagnostics, setDiagnostics] = useState<ArDiagnostics | null>(null);
   const previewRef = useRef<HTMLElement | null>(null);
-  const selectedSample = samples[selectedIndex] ?? samples[0] ?? DEFAULT_AR_SAMPLE;
-  const hasMultipleSamples = samples.length > 1;
+  const allSamples = useMemo(() => [...samples, ...communitySamples], [communitySamples, samples]);
+  const selectedSample = allSamples.find((sample) => sample.id === selectedSampleId) ?? allSamples[0] ?? DEFAULT_AR_SAMPLE;
+  const hasMultipleSamples = allSamples.length > 1;
   const requestSelectedDesignHref = `/request?${new URLSearchParams({
     intent: "concept",
-    designId: selectedSample.id
+    ...(selectedSample.sourceKind === "community_ai"
+      ? { gallerySlug: selectedSample.id }
+      : { designId: selectedSample.id })
   }).toString()}`;
 
   const selectArtwork = (sampleId: string) => {
-    const nextIndex = samples.findIndex((sample) => sample.id === sampleId);
+    const nextIndex = allSamples.findIndex((sample) => sample.id === sampleId);
 
     if (nextIndex < 0) {
       return;
     }
 
-    setSelectedIndex(nextIndex);
+    setSelectedSampleId(allSamples[nextIndex].id);
 
     if (!window.matchMedia("(min-width: 1024px)").matches) {
       window.setTimeout(() => {
@@ -50,11 +57,78 @@ export function ArtworkGallerySurface({
   };
 
   const selectPrevious = () => {
-    setSelectedIndex((current) => (current - 1 + samples.length) % samples.length);
+    const current = allSamples.findIndex((sample) => sample.id === selectedSample.id);
+    setSelectedSampleId(allSamples[(current - 1 + allSamples.length) % allSamples.length].id);
   };
 
   const selectNext = () => {
-    setSelectedIndex((current) => (current + 1) % samples.length);
+    const current = allSamples.findIndex((sample) => sample.id === selectedSample.id);
+    setSelectedSampleId(allSamples[(current + 1) % allSamples.length].id);
+  };
+
+  const loadMoreCommunityArtwork = async () => {
+    if (communityLoading || communityDone || !continueCursor) {
+      return;
+    }
+
+    setCommunityLoading(true);
+    setCommunityError(null);
+
+    try {
+      const response = await fetch(`/api/gallery?cursor=${encodeURIComponent(continueCursor)}`, {
+        headers: { Accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error("Community artwork is temporarily unavailable.");
+      }
+
+      const nextPage = (await response.json()) as PublicGalleryPage;
+      setCommunitySamples((current) => {
+        const known = new Set(current.map((sample) => sample.id));
+        return [...current, ...nextPage.samples.filter((sample) => !known.has(sample.id))];
+      });
+      setContinueCursor(nextPage.continueCursor);
+      setCommunityDone(nextPage.isDone);
+    } catch (error) {
+      setCommunityError(error instanceof Error ? error.message : "Community artwork is temporarily unavailable.");
+    } finally {
+      setCommunityLoading(false);
+    }
+  };
+
+  const renderArtworkCard = (sample: ArSample, index: number) => {
+    const isSelected = sample.id === selectedSample.id;
+
+    return (
+      <button
+        aria-label={sample.title ? `Select ${sample.title}` : `Select gallery image ${index + 1}`}
+        aria-pressed={isSelected}
+        className={cn(
+          "group block overflow-hidden rounded-lg border bg-card text-left shadow-sm outline-offset-4 transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+          isSelected ? "border-primary shadow-[0_18px_42px_rgba(28,79,89,0.14)]" : "border-border"
+        )}
+        data-artwork-id={sample.id}
+        data-testid="gallery-artwork-card"
+        key={sample.id}
+        onClick={() => selectArtwork(sample.id)}
+        type="button"
+      >
+        <span className="relative block aspect-[4/3] overflow-hidden bg-secondary">
+          <img
+            alt=""
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            draggable={false}
+            src={sample.assets.poster}
+          />
+          {sample.sourceKind === "community_ai" ? (
+            <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm">
+              AI concept
+            </span>
+          ) : null}
+        </span>
+      </button>
+    );
   };
 
   return (
@@ -133,36 +207,39 @@ export function ArtworkGallerySurface({
           </section>
 
           <section aria-label="Artwork choices" className="grid gap-3 lg:order-1">
-            <div className="grid gap-3 sm:grid-cols-2" data-testid="gallery-artwork-list">
-              {samples.map((sample, index) => {
-                const isSelected = sample.id === selectedSample.id;
-
-                return (
-                  <button
-                    aria-label={sample.title ? `Select ${sample.title}` : `Select gallery image ${index + 1}`}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      "group block overflow-hidden rounded-lg border bg-card text-left shadow-sm outline-offset-4 transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
-                      isSelected ? "border-primary shadow-[0_18px_42px_rgba(28,79,89,0.14)]" : "border-border"
-                    )}
-                    data-artwork-id={sample.id}
-                    data-testid="gallery-artwork-card"
-                    key={sample.id}
-                    onClick={() => selectArtwork(sample.id)}
-                    type="button"
-                  >
-                    <span className="relative block aspect-[4/3] overflow-hidden bg-secondary">
-                      <img
-                        alt=""
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                        draggable={false}
-                        src={sample.assets.poster}
-                      />
-                    </span>
-                  </button>
-                );
-              })}
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Ready-to-print designs</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">Curated Wall Print Pro artwork.</p>
             </div>
+            <div className="grid gap-3 sm:grid-cols-2" data-testid="gallery-artwork-list">
+              {samples.map(renderArtworkCard)}
+            </div>
+            {communitySamples.length || !communityDone ? (
+              <div className="mt-5 grid gap-3" data-testid="community-gallery-section">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">Community AI concepts</h2>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Anonymous concepts shared with permission and published after moderation.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2" data-testid="community-gallery-list">
+                  {communitySamples.map((sample, index) => renderArtworkCard(sample, samples.length + index))}
+                </div>
+                {!communityDone ? (
+                  <Button
+                    className="w-fit rounded-full"
+                    data-testid="community-gallery-load-more"
+                    disabled={communityLoading}
+                    onClick={() => void loadMoreCommunityArtwork()}
+                    type="button"
+                    variant="outline"
+                  >
+                    {communityLoading ? "Loading…" : "Load more"}
+                  </Button>
+                ) : null}
+                {communityError ? <p className="text-sm text-muted-foreground" role="status">{communityError}</p> : null}
+              </div>
+            ) : null}
           </section>
         </div>
       </section>

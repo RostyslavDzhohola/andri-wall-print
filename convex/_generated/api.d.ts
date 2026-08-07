@@ -13,6 +13,8 @@ import type * as arPreviews from "../arPreviews.js";
 import type * as bundleGeneration from "../bundleGeneration.js";
 import type * as crons from "../crons.js";
 import type * as dailyCaps from "../dailyCaps.js";
+import type * as gallery from "../gallery.js";
+import type * as galleryModeration from "../galleryModeration.js";
 import type * as leadRequests from "../leadRequests.js";
 import type * as previewBundles from "../previewBundles.js";
 import type * as retention from "../retention.js";
@@ -31,6 +33,8 @@ declare const fullApi: ApiFromModules<{
   bundleGeneration: typeof bundleGeneration;
   crons: typeof crons;
   dailyCaps: typeof dailyCaps;
+  gallery: typeof gallery;
+  galleryModeration: typeof galleryModeration;
   leadRequests: typeof leadRequests;
   previewBundles: typeof previewBundles;
   retention: typeof retention;

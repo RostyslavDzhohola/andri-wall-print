@@ -13,7 +13,8 @@ import {
   recoverStaleAiConceptDrafts,
   selectConceptGenerationGate,
   selectStaleAiDraftRecovery,
-  startConceptGenerationHandler
+  startConceptGenerationHandler,
+  submitLeadRequestHandler
 } from "@/convex/leadRequests";
 import { RESERVED_SESSION_ID_MAX_LENGTH } from "@/lib/reserved-session-id";
 import {
@@ -164,6 +165,66 @@ describe("concept generation gate", () => {
     process.env.WALL_PRINT_PRO_AI_CONCEPTS_ENABLED = "0";
     delete process.env.OPENAI_API_KEY;
   }
+
+  it("requires publication consent before any lead or generation quota is reserved", async () => {
+    enableAiConcepts();
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "1";
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx();
+
+    const result = await startConceptGenerationHandler(fake.ctx, {
+      contactEmail: "buyer@example.com",
+      conceptPrompt: "Chicago skyline mural",
+      galleryPublicationConsent: false
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "CONSENT_REQUIRED" });
+    expect(fake.tables.leadRequests).toHaveLength(0);
+    expect(fake.tables.aiConceptDrafts).toHaveLength(0);
+    expect(fake.tables.leadRateLimits).toHaveLength(0);
+    expect(fake.tables.globalGenerationCap).toHaveLength(0);
+    expect(fake.scheduled).toHaveLength(0);
+  });
+
+  it("stores server-authored consent evidence on the lead and draft", async () => {
+    enableAiConcepts();
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "true";
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx();
+
+    const result = await startConceptGenerationHandler(fake.ctx, {
+      contactEmail: "buyer@example.com",
+      conceptPrompt: "Chicago skyline mural",
+      galleryPublicationConsent: true
+    });
+
+    expect(result).toMatchObject({ ok: true, code: "QUEUED" });
+    for (const record of [fake.tables.leadRequests[0], fake.tables.aiConceptDrafts[0]]) {
+      expect(record).toMatchObject({
+        galleryPublicationConsent: true,
+        galleryConsentVersion: "2026-08-05",
+        galleryConsentRecordedAt: NOW
+      });
+    }
+  });
+
+  it("enforces consent on the full request-form mutation before creating a lead", async () => {
+    enableAiConcepts();
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "1";
+    const fake = createFakeCtx();
+
+    await expect(
+      submitLeadRequestHandler(fake.ctx, {
+        contactName: "Buyer",
+        contactEmail: "buyer@example.com",
+        conceptPrompt: "Chicago skyline mural",
+        intent: "concept"
+      })
+    ).rejects.toThrow(/Agree to anonymous gallery publication/);
+
+    expect(fake.tables.leadRequests).toHaveLength(0);
+    expect(fake.tables.globalGenerationCap).toHaveLength(0);
+  });
 
   it("rejects no or invalid email without reserving quota", () => {
     expect(

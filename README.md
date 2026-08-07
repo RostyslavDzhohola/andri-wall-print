@@ -74,7 +74,9 @@ Environment variables live in the Sites project dashboard (and Convex, for
 backend-only values) — not in this repo. At minimum: `NEXT_PUBLIC_SITE_URL`,
 `CONVEX_URL` / `NEXT_PUBLIC_CONVEX_URL`, `WALL_PRINT_PRO_RESERVE_URL`,
 `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`,
-`WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, and `OPENAI_API_KEY`. Full list, owners, and the
+`WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, `WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED`,
+and `OPENAI_API_KEY`. The community-gallery flag must be enabled in both Sites and
+Convex only after the disabled rollout checks pass. Full list, owners, and the
 deploy/post-deploy checklist are in `docs/handoff/launch-handoff.md`.
 
 Push Convex functions/schema after backend changes with the Convex CLI's
@@ -84,12 +86,13 @@ once confirmed).
 ## Backend
 
 Convex holds all backend state: `leadRequests`, `previewBundles`, `aiConceptDrafts`,
-`arPreviews` (legacy seed samples), `previewConfirmations`, `funnelEvents`, and
+`galleryEntries`, `arPreviews` (legacy seed samples), `previewConfirmations`, `funnelEvents`, and
 rate/cap tables (`leadRateLimits`, `globalGenerationCap`). A cron
 (`convex/crons.ts`) recovers stale in-flight preview generations every minute. AI
 concept image generation goes through OpenAI (`lib/openai-image-provider.ts`) and is
 rate-capped per lead and globally per day (`convex/leadRequests.ts`,
-`convex/dailyCaps.ts`).
+`convex/dailyCaps.ts`). Newly consented, AR-ready concepts are moderated asynchronously
+before their public-safe `galleryEntries` projection can be published.
 
 ## Repo map
 

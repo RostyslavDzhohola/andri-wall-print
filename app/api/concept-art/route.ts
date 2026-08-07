@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { AR_SAMPLE_IDS, DEFAULT_AR_SAMPLE, getArSample } from "@/lib/ar-sample";
+import { COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE } from "@/lib/community-gallery";
 import { isValidLeadEmail, LEAD_CONCEPT_PROMPT_MAX_LENGTH, normalizeLeadEmail } from "@/lib/lead-request-contract";
-import { readConvexRuntimeUrl } from "@/lib/runtime-env";
+import { readConvexRuntimeUrl, readWallPrintProCommunityGalleryEnabled } from "@/lib/runtime-env";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,6 +14,7 @@ type ConceptArtRequestBody = {
   contactName?: unknown;
   prompt?: unknown;
   selectedDesignId?: unknown;
+  galleryPublicationConsent?: unknown;
 };
 
 type ConvexSuccessResponse = {
@@ -66,7 +68,7 @@ function resultStatus(value: unknown) {
     return 202;
   }
 
-  if (value.code === "INVALID_EMAIL" || value.code === "INVALID_GENERATION_REQUEST") {
+  if (value.code === "INVALID_EMAIL" || value.code === "INVALID_GENERATION_REQUEST" || value.code === "CONSENT_REQUIRED") {
     return 400;
   }
 
@@ -98,6 +100,7 @@ async function startConceptGeneration(input: {
   contactName?: string;
   conceptPrompt: string;
   selectedDesignId?: unknown;
+  galleryPublicationConsent?: boolean;
 }) {
   const convexUrl = readConvexRuntimeUrl();
 
@@ -130,6 +133,7 @@ async function startConceptGeneration(input: {
           businessName: "Wall Print Pro",
           wallDescription: "Homepage instant artwork preview",
           conceptPrompt: `${input.conceptPrompt}. Use this selected proof as loose visual context, not a copy: ${selectedSample.title} - ${selectedSample.description}`,
+          ...(input.galleryPublicationConsent ? { galleryPublicationConsent: true } : {}),
           print: selectedSample.print
         },
         format: "json"
@@ -328,11 +332,23 @@ export async function POST(request: Request) {
     );
   }
 
+  if (readWallPrintProCommunityGalleryEnabled() && body.galleryPublicationConsent !== true) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "CONSENT_REQUIRED",
+        message: COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+      },
+      { status: 400 }
+    );
+  }
+
   const result = await startConceptGeneration({
     contactEmail,
     contactName: normalizeOptionalText(body.contactName),
     conceptPrompt: prompt,
-    selectedDesignId: body.selectedDesignId
+    selectedDesignId: body.selectedDesignId,
+    galleryPublicationConsent: body.galleryPublicationConsent === true
   });
 
   return NextResponse.json(result.body, {

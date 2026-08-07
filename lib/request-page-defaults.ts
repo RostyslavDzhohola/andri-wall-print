@@ -9,6 +9,7 @@ export type RequestSearchParamsInput = {
   intent?: string | string[];
   conceptPrompt?: string | string[];
   designId?: string | string[];
+  gallerySlug?: string | string[];
   focus?: string | string[];
 };
 
@@ -58,13 +59,31 @@ export function resolveRequestDesignContext(designId: string | string[] | undefi
   };
 }
 
-export function resolveRequestPageDefaults(searchParams: RequestSearchParamsInput | undefined): RequestPageDefaults {
+export function readRequestGallerySlug(value: string | string[] | undefined) {
+  return normalizeSearchText(firstSearchParam(value), 160);
+}
+
+export function resolveRequestPageDefaults(
+  searchParams: RequestSearchParamsInput | undefined,
+  publishedGalleryDesign?: RequestDesignContext
+): RequestPageDefaults {
   const intent = firstSearchParam(searchParams?.intent);
   const defaultIntent = intent && isLeadRequestIntent(intent) ? intent : "concept";
-  const defaultDesignContext = resolveRequestDesignContext(searchParams?.designId);
-  const defaultConceptPrompt =
-    normalizeSearchText(firstSearchParam(searchParams?.conceptPrompt), LEAD_CONCEPT_PROMPT_MAX_LENGTH) ??
-    (defaultDesignContext ? makeDesignConceptPrompt(defaultDesignContext) : undefined);
+  const requestedGallerySlug = readRequestGallerySlug(searchParams?.gallerySlug);
+  const defaultDesignContext = requestedGallerySlug
+    ? publishedGalleryDesign?.id === requestedGallerySlug
+      ? publishedGalleryDesign
+      : undefined
+    : resolveRequestDesignContext(searchParams?.designId);
+  const suppliedConceptPrompt = normalizeSearchText(
+    firstSearchParam(searchParams?.conceptPrompt),
+    LEAD_CONCEPT_PROMPT_MAX_LENGTH
+  );
+  const defaultConceptPrompt = requestedGallerySlug
+    ? defaultDesignContext
+      ? makeDesignConceptPrompt(defaultDesignContext)
+      : undefined
+    : suppliedConceptPrompt ?? (defaultDesignContext ? makeDesignConceptPrompt(defaultDesignContext) : undefined);
 
   const focusUpload = firstSearchParam(searchParams?.focus) === "upload";
 
