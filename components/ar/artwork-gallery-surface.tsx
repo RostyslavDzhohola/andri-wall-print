@@ -219,7 +219,7 @@ export function ArtworkGallerySurface({
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">Community AI concepts</h2>
                   <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Anonymous concepts shared with permission and published after moderation.
+                    Anonymous concepts, shared with permission.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2" data-testid="community-gallery-list">

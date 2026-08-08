@@ -31,6 +31,7 @@ import {
   type LeadContactMethod,
   type LeadRequestIntent
 } from "@/lib/lead-request-contract";
+import { resolveRequestArtworkMode } from "@/lib/request-artwork-mode";
 import type { RequestDesignContext } from "@/lib/request-page-defaults";
 import { cn } from "@/lib/utils";
 
@@ -97,13 +98,21 @@ export function PublicRequestForm({
   const phoneValid = isValidLeadPhone(contactPhone);
   const preferredContactSatisfied =
     preferredContactMethod === "email" ? emailValid : preferredContactMethod === "phone" ? phoneValid : emailValid || phoneValid;
+  const artworkMode = resolveRequestArtworkMode({
+    aiEnabled,
+    communityGalleryEnabled,
+    conceptPrompt,
+    hasExistingDesign: Boolean(defaultDesignContext),
+    hasUpload: Boolean(file),
+    galleryPublicationConsent
+  });
   const canSubmit = Boolean(
     !busy &&
       contactName.trim() &&
       preferredContactSatisfied &&
       (!emailEntered || emailValid) &&
       (!phoneEntered || phoneValid) &&
-      (!communityGalleryEnabled || !conceptPrompt.trim() || galleryPublicationConsent)
+      (!artworkMode.requiresGalleryConsent || galleryPublicationConsent)
   );
 
   const handleFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -137,7 +146,7 @@ export function PublicRequestForm({
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (communityGalleryEnabled && conceptPrompt.trim() && !galleryPublicationConsent) {
+    if (artworkMode.requiresGalleryConsent && !galleryPublicationConsent) {
       setError(COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE);
       return;
     }
@@ -199,8 +208,7 @@ export function PublicRequestForm({
         preferredContactMethod,
         projectType,
         ...(businessName.trim() ? { businessName } : {}),
-        ...(conceptPrompt.trim() ? { conceptPrompt } : {}),
-        ...(conceptPrompt.trim() && galleryPublicationConsent ? { galleryPublicationConsent: true } : {}),
+        ...artworkMode.submissionFields,
         intent,
         reserveInterest,
         ...(upload ? { upload } : {})
@@ -362,7 +370,7 @@ export function PublicRequestForm({
         />
       </div>
 
-      {communityGalleryEnabled && conceptPrompt.trim() ? (
+      {artworkMode.requiresGalleryConsent ? (
         <div className="grid gap-2 rounded-lg border bg-muted/30 p-4" data-testid="request-gallery-consent">
           <label className="flex min-h-11 items-start gap-3 text-sm leading-6" htmlFor="request-gallery-publication-consent">
             <input

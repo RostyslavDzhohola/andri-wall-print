@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AI_CONCEPT_DRAFT_STATUSES,
+  LEAD_WALL_DESCRIPTION_MAX_LENGTH,
   canFinalizeAiDraft,
   foldLeadContactEmail,
   isValidLeadPhone,
@@ -57,6 +58,18 @@ describe("lead request contract", () => {
       intent: "reserve",
       reserveInterest: true
     });
+  });
+
+  it("preserves the full request-form description when artwork is not generated", () => {
+    const wallDescription = "x".repeat(LEAD_WALL_DESCRIPTION_MAX_LENGTH);
+
+    expect(
+      normalizeLeadRequestInput({
+        contactName: "Existing Artwork Buyer",
+        contactEmail: "buyer@example.com",
+        wallDescription
+      }).wallDescription
+    ).toBe(wallDescription);
   });
 
   it("accepts phone-only leads when phone is the preferred contact path", () => {

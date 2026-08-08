@@ -566,7 +566,21 @@ test("community gallery selects AR artwork, loads more, and resolves the request
   await page.getByTestId("gallery-request-selected-design").click();
   await expect(page).toHaveURL(/\/request\?intent=concept&gallerySlug=g-community-one$/);
   await expect(page.getByTestId("request-selected-design-context")).toContainText("Community AI concept");
-  await expect(page.getByLabel(/publicly display the AI-generated artwork anonymously/)).not.toBeChecked();
+  await expect(page.getByTestId("request-gallery-consent")).toHaveCount(0);
+  await page.getByLabel("Name", { exact: true }).fill("Buyer");
+  await page.getByLabel("Email", { exact: true }).fill("buyer@example.com");
+  await expect(page.getByRole("button", { name: "Get estimate" })).toBeEnabled();
+});
+
+test("uploaded artwork does not require AI gallery publication consent", async ({ page }) => {
+  await page.goto("/request?intent=concept&conceptPrompt=Use%20my%20uploaded%20logo&focus=upload");
+
+  await expect(page.getByTestId("request-gallery-consent")).toBeVisible();
+  await page.locator("#lead-upload").setInputFiles("public/artworks/chicago-final-1.jpg");
+  await expect(page.getByTestId("request-gallery-consent")).toHaveCount(0);
+  await page.getByLabel("Name", { exact: true }).fill("Buyer");
+  await page.getByLabel("Email", { exact: true }).fill("buyer@example.com");
+  await expect(page.getByRole("button", { name: "Get estimate" })).toBeEnabled();
 });
 
 test("homepage selected design opens the public gallery before the request gate", async ({ page }) => {
