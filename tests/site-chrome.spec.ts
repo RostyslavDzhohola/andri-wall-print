@@ -109,6 +109,13 @@ test("the mobile reserve bar keeps its route visibility rules and does not cover
 
     await expect(reserveBar, route).toBeVisible();
 
+    if (route === "/gallery") {
+      await expect(
+        page.getByTestId("community-gallery-list").getByTestId("gallery-artwork-card").first(),
+        `${route}: community layout settled`
+      ).toBeVisible();
+    }
+
     if (route === "/") {
       const viewportHeight = page.viewportSize()!.height;
       const initialReserveBox = await reserveBar.locator("..").boundingBox();
