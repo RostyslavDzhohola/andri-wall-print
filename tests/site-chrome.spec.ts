@@ -178,6 +178,13 @@ test("core marketing routes fit phone, iPad, and desktop viewports", async ({ pa
       await expect(page.getByTestId("site-footer"), `${viewport.name}: ${route} footer`).toBeVisible();
       await expect(page.locator("main h1").first(), `${viewport.name}: ${route} heading`).toBeVisible();
 
+      if (route === "/gallery") {
+        await expect(
+          page.getByTestId("community-gallery-list").getByTestId("gallery-artwork-card").first(),
+          `${viewport.name}: ${route} community layout settled`
+        ).toBeVisible();
+      }
+
       const layout = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
