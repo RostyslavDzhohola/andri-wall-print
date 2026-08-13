@@ -358,6 +358,7 @@ export function PublicRequestForm({
         {defaultDesignContext ? (
           <p className="text-sm text-muted-foreground" data-testid="request-selected-design-context">
             Starting design: <span className="font-medium text-foreground">{defaultDesignContext.title}</span>
+            <span data-testid="request-selected-design-dimensions"> · {defaultDesignContext.print.label}</span>
           </p>
         ) : null}
         <Textarea

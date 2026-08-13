@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { metadata as galleryMetadata } from "@/app/gallery/page";
 import { metadata as homeMetadata } from "@/app/page";
+import { metadata as privacyMetadata } from "@/app/privacy/page";
 import { metadata as requestMetadata } from "@/app/request/page";
 import { metadata as reservedMetadata } from "@/app/reserved/page";
+import { metadata as termsMetadata } from "@/app/terms/page";
 import { metadata as workMetadata } from "@/app/work/page";
 
 const TITLE_TEMPLATE = "%s | Wall Print Pro";
@@ -17,6 +19,8 @@ describe("page metadata", () => {
     expect(homeMetadata.alternates?.canonical).toBe("/");
     expect(galleryMetadata.alternates?.canonical).toBe("/gallery");
     expect(requestMetadata.alternates?.canonical).toBe("/request");
+    expect(privacyMetadata.alternates?.canonical).toBe("/privacy");
+    expect(termsMetadata.alternates?.canonical).toBe("/terms");
     expect(String(workMetadata.alternates?.canonical)).toBe("https://www.thewallprintpro.com/work");
     expect(String(reservedMetadata.alternates?.canonical)).toBe("https://www.thewallprintpro.com/reserved");
   });

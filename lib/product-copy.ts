@@ -85,7 +85,7 @@ export function wallPreviewIssueMessage() {
 // ---------------------------------------------------------------------------
 
 export const HOME_NAV_ESTIMATE_CTA = "Get an estimate";
-export const HOME_LOCATION_BADGE = "Chicago · wall prints from $500";
+export const HOME_LOCATION_BADGE = "Des Plaines · Cook County · wall prints from $500";
 export const HOME_AUDIENCE_LINE = "Offices · restaurants · home feature walls.";
 
 // Chicago local-SEO woven in naturally (human-first, no stuffing).

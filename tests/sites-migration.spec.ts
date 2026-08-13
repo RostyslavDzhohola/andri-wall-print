@@ -159,7 +159,13 @@ test("Sites migration serves security headers on HTML responses", async ({
   expect(response.headers()["referrer-policy"]).toBe(
     "strict-origin-when-cross-origin",
   );
-  expect(response.headers()["x-frame-options"]).toBe("SAMEORIGIN");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["content-security-policy"]).toContain(
+    "frame-ancestors 'none'",
+  );
+  expect(response.headers()["content-security-policy"]).toContain(
+    "'wasm-unsafe-eval'",
+  );
   expect(response.headers()["permissions-policy"]).toBe(
     "camera=(self), microphone=(), geolocation=()",
   );

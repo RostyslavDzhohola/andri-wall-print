@@ -8,6 +8,7 @@ import { v } from "convex/values";
 import { generateFlatPrintAssets, type GeneratedFlatPrintAssets } from "../lib/ar-asset-generator";
 import { AR_ASSET_CONTENT_TYPES } from "../lib/ar-launcher";
 import { makeConceptDraftTitle } from "../lib/lead-request-presentation";
+import { safeErrorName } from "../lib/safe-logging";
 import { generateOpenAiConceptImage, makeWallPrintConceptPrompt, type OpenAiImageFailure } from "../lib/openai-image-provider";
 import { DEFAULT_PREVIEW_BUNDLE_PRINT, PREVIEW_GENERATOR_VERSION, type PreviewBundlePrint } from "../lib/preview-bundle-contract";
 
@@ -150,7 +151,7 @@ export async function generateConceptDraftHandler(
   }
 
   try {
-    const title = makeConceptDraftTitle({ businessName: draft.businessName });
+    const title = makeConceptDraftTitle();
     const prompt = makeWallPrintConceptPrompt({
       conceptPrompt: draft.prompt,
       businessName: draft.businessName,
@@ -281,7 +282,7 @@ export async function generateConceptDraftHandler(
     } catch (error) {
       console.error("Failed to create preview bundle from AI concept draft.", {
         draftId: args.draftId,
-        error
+        errorName: safeErrorName(error)
       });
       created = null;
     }
@@ -321,8 +322,8 @@ export async function generateConceptDraftHandler(
     } catch (finalizationError) {
       console.error("Failed to record an AI concept generation crash.", {
         draftId: args.draftId,
-        error,
-        finalizationError
+        errorName: safeErrorName(error),
+        finalizationErrorName: safeErrorName(finalizationError)
       });
     }
 

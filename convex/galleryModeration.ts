@@ -7,6 +7,7 @@ import { v } from "convex/values";
 
 import { moderateGeneratedArtwork } from "../lib/openai-moderation-provider";
 import { isEnabledEnvironmentValue } from "../lib/community-gallery";
+import { safeErrorName } from "../lib/safe-logging";
 
 const internal = generatedInternal;
 
@@ -55,7 +56,7 @@ export async function moderateGalleryEntryHandler(ctx: any, args: { entryId: Id<
     console.error("Community gallery moderation failed.", {
       entryId: args.entryId,
       attempt: args.attempt,
-      error: error instanceof Error ? error.message : "Unknown moderation error"
+      errorName: safeErrorName(error)
     });
     await ctx.runMutation(internal.gallery.recordModerationFailure, {
       entryId: args.entryId,

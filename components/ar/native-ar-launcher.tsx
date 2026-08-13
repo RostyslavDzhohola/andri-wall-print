@@ -2,7 +2,7 @@
 
 import { Share2, Smartphone } from "lucide-react";
 import type { MouseEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -89,15 +89,18 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
   const actionLabel = getArActionLabel(diagnostics, accessNotice);
   const showSendToIPhone = diagnostics ? !diagnostics.isIPhone && !diagnostics.isAndroid : false;
 
-  const getCurrentSharePath = () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const getCurrentSharePath = useCallback(
+    () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    [sample.shareUrl]
+  );
 
-  const prepareExperimentalSafariHandoff = () => {
+  const prepareExperimentalSafariHandoff = useCallback(() => {
     const pageHref = new URL(getCurrentSharePath(), window.location.origin).toString();
 
     setExperimentalSafariHref(getExperimentalSafariHref(pageHref));
-  };
+  }, [getCurrentSharePath]);
 
-  const clearPendingLaunchFallback = () => {
+  const clearPendingLaunchFallback = useCallback(() => {
     if (launchFallbackTimerRef.current !== null) {
       window.clearTimeout(launchFallbackTimerRef.current);
       launchFallbackTimerRef.current = null;
@@ -105,15 +108,15 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     launchFallbackCleanupRef.current?.();
     launchFallbackCleanupRef.current = null;
-  };
+  }, []);
 
-  const showAndroidArUnavailableNotice = () => {
+  const showAndroidArUnavailableNotice = useCallback(() => {
     clearPendingLaunchFallback();
     setArError(null);
     setDialogNotice(getAndroidArUnavailableNotice());
-  };
+  }, [clearPendingLaunchFallback]);
 
-  const scheduleLaunchFailureFallback = () => {
+  const scheduleLaunchFailureFallback = useCallback(() => {
     clearPendingLaunchFallback();
 
     let launchLeftPage = false;
@@ -152,7 +155,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
         });
       }
     }, 1400);
-  };
+  }, [clearPendingLaunchFallback, prepareExperimentalSafariHandoff]);
 
   useEffect(() => {
     if (!hasReadyArAssets) {
@@ -190,7 +193,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     return () => {
       timers.forEach(window.clearTimeout);
     };
-  }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
+  }, [hasReadyArAssets, onDiagnosticsChange]);
 
   useEffect(() => {
     if (!hasReadyArAssets) {
@@ -224,9 +227,9 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     return () => {
       modelViewer.removeEventListener("ar-status", handleArStatus);
     };
-  }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
+  }, [hasReadyArAssets, onDiagnosticsChange, showAndroidArUnavailableNotice]);
 
-  useEffect(() => clearPendingLaunchFallback, []);
+  useEffect(() => clearPendingLaunchFallback, [clearPendingLaunchFallback]);
 
   const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!hasReadyArAssets) {
@@ -273,8 +276,8 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     setArError(null);
     setDialogNotice(null);
     androidLaunchAttemptedRef.current = currentDiagnostics.isAndroid;
-    void modelViewer.activateAR().catch((error: unknown) => {
-      console.error("Failed to activate native AR.", error);
+    void modelViewer.activateAR().catch(() => {
+      console.error("Failed to activate native AR.");
 
       if (currentDiagnostics.isAndroid) {
         androidLaunchAttemptedRef.current = false;
@@ -291,8 +294,8 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     try {
       shareUrlResult = await resolveClientPreviewUrl(getCurrentSharePath());
-    } catch (error) {
-      console.error("Failed to resolve preview URL for sharing.", error);
+    } catch {
+      console.error("Failed to resolve preview URL for sharing.");
       setShareStatus("Could not prepare a shareable link. Try again.");
       return;
     }

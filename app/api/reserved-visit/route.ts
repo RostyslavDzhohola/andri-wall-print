@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
-
 import { normalizeReservedSessionId } from "@/lib/reserved-session-id";
+import { noStoreJson } from "@/lib/private-api-response";
 import { readConvexRuntimeUrl } from "@/lib/runtime-env";
 
 export const runtime = "nodejs";
@@ -26,7 +25,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function unavailable(status: number) {
-  return NextResponse.json({ status: "unavailable" }, { status });
+  return noStoreJson({ status: "unavailable" }, { status });
 }
 
 export async function POST(request: Request) {
@@ -86,5 +85,5 @@ export async function POST(request: Request) {
     return unavailable(503);
   }
 
-  return NextResponse.json({ status: "logged" }, { status: 202 });
+  return noStoreJson({ status: "logged" }, { status: 202 });
 }

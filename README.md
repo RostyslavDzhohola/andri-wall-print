@@ -77,7 +77,9 @@ backend-only values) — not in this repo. At minimum: `NEXT_PUBLIC_SITE_URL`,
 `WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, `WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED`,
 and `OPENAI_API_KEY`. The community-gallery flag must be enabled in both Sites and
 Convex only after the disabled rollout checks pass. Full list, owners, and the
-deploy/post-deploy checklist are in `docs/handoff/launch-handoff.md`.
+deploy/post-deploy checklist are in `docs/handoff/launch-handoff.md`; exact production
+targets, abort conditions, rollback, moderation/removal, lead SLA, spend controls,
+and incident response are in `docs/handoff/production-operations.md`.
 
 Push Convex functions/schema after backend changes with the Convex CLI's
 dev/deploy flow (`npx convex dev` locally; deploy to the target Convex deployment

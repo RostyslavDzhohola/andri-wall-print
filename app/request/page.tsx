@@ -32,7 +32,7 @@ type RequestPageProps = {
   searchParams?: Promise<RequestSearchParamsInput>;
 };
 
-function RequestSetupMissing() {
+export function RequestSetupMissing() {
   return (
     <main className="min-h-screen bg-background px-4 py-6 text-foreground">
       <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-3xl place-items-center">
@@ -72,7 +72,8 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
       ? {
           id: publishedGallerySample.id,
           title: publishedGallerySample.title,
-          description: publishedGallerySample.description
+          description: publishedGallerySample.description,
+          print: publishedGallerySample.print
         }
       : undefined
   );

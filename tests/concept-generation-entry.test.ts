@@ -226,6 +226,26 @@ describe("concept generation gate", () => {
     expect(fake.tables.globalGenerationCap).toHaveLength(0);
   });
 
+  it("ignores publication consent when the normalized request will not generate AI artwork", async () => {
+    enableAiConcepts();
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "1";
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const fake = createFakeCtx();
+
+    const result = await submitLeadRequestHandler(fake.ctx, {
+      contactName: "Buyer",
+      contactEmail: "buyer@example.com",
+      wallDescription: "Use the selected Lakefront Day design.",
+      galleryPublicationConsent: true,
+      intent: "concept"
+    });
+
+    expect(result).toMatchObject({ status: "new" });
+    expect(fake.tables.leadRequests[0]).not.toHaveProperty("galleryPublicationConsent");
+    expect(fake.tables.leadRequests[0]).not.toHaveProperty("galleryConsentVersion");
+    expect(fake.tables.aiConceptDrafts).toHaveLength(0);
+  });
+
   it("rejects no or invalid email without reserving quota", () => {
     expect(
       selectConceptGenerationGate({

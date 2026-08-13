@@ -8,12 +8,8 @@ type LeadRequestResultLike = {
   aiDraftStatus?: string;
 };
 
-export function makeConceptDraftTitle({ businessName }: { businessName?: string | null }) {
-  const normalizedBusinessName = businessName?.trim();
-
-  return normalizedBusinessName
-    ? `${normalizedBusinessName} concept draft`
-    : "Wall print concept draft";
+export function makeConceptDraftTitle() {
+  return "Wall print concept draft";
 }
 
 export function isAiConceptDraftStatus(value: string | undefined): value is AiConceptDraftStatus {

@@ -127,6 +127,10 @@ export function ArtworkGallerySurface({
             </span>
           ) : null}
         </span>
+        <span className="grid gap-0.5 px-3 py-2.5">
+          <span className="text-sm font-semibold text-foreground" data-testid="gallery-artwork-card-title">{sample.title}</span>
+          <span className="text-xs text-muted-foreground" data-testid="gallery-artwork-card-dimensions">{sample.print.label}</span>
+        </span>
       </button>
     );
   };
@@ -165,7 +169,16 @@ export function ArtworkGallerySurface({
                 src={selectedSample.assets.poster}
               />
               <div className="relative z-20 mx-3 mb-3 mt-4 rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur md:absolute md:bottom-4 md:left-4 md:right-4 md:mx-0 md:mb-0 md:mt-0">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="grid gap-3">
+                  <div className="grid gap-0.5">
+                    <h2 className="text-lg font-semibold text-foreground" data-testid="gallery-selected-artwork-title">
+                      {selectedSample.title}
+                    </h2>
+                    <p className="text-sm text-muted-foreground" data-testid="gallery-selected-print-size">
+                      {selectedSample.print.label}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                   {hasMultipleSamples ? (
                     <div className="flex items-center gap-2">
                       <Button
@@ -200,6 +213,7 @@ export function ArtworkGallerySurface({
                         Request this design
                       </Link>
                     </Button>
+                  </div>
                   </div>
                 </div>
               </div>

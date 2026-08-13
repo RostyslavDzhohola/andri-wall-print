@@ -2,7 +2,7 @@
 
 ## What This Site Does
 
-Wall Print Pro is a Chicago wall-printing funnel that sets a starting anchor with "wall prints from $600" before a buyer gets deep into the page. The buyer can see a print on their own wall by choosing a saved design, uploading art or a logo, or generating a concept, then opening the AR preview on a phone. Serious buyers reserve a print-job slot with a $100 Stripe deposit that is credited toward the final print price. After payment, `/reserved` explains the next steps and asks the buyer to text or call so the estimate visit can be scheduled.
+Wall Print Pro is a Des Plaines and Cook County wall-printing funnel that sets a starting anchor with "wall prints from $500" before a buyer gets deep into the page. The buyer can see a print on their own wall by choosing a saved design, uploading art or a logo, or generating a concept, then opening the AR preview on a phone. Serious buyers reserve a print-job slot with a $100 Stripe deposit that is credited toward the final print price. After payment, `/reserved` explains the next steps and asks the buyer to text or call so the estimate visit can be scheduled.
 
 ## Launch Gates - Fill These Before Submitting For Indexing
 
@@ -10,14 +10,14 @@ Do not submit the site for indexing until every item below is confirmed with the
 
 | File | What's Needed | Current Repo Evidence |
 |---|---|---|
-| `lib/product-copy.ts` | Confirm the public floor price. | `HOME_LOCATION_BADGE` says `Chicago · wall prints from $600`; comparison table starting price says Wall Print Pro `$600`. |
+| `lib/product-copy.ts` | Confirm the public floor price. | Public anchor currently says `wall prints from $500`; client approval remains a launch gate. |
 | `docs/plans/2026-07-03-public-funnel-launch.md` | Confirm the real floor price before indexing. | Plan calls the anchor price and real floor price a launch gate. |
-| `lib/local-business.ts` | Replace placeholder NAP: street address, city/region/postal code, phone, email, and any service-area/storefront geo. | Address is `123 W Example St, Suite 100`; phone is `+1-312-555-0100`; geo is approximate Chicago city center. |
+| `lib/local-business.ts` | Keep approved NAP synchronized everywhere. | `1453 E Walnut Ave, Des Plaines, IL 60016`; `(708) 543-3826`; `thewallprintpro@gmail.com`; Cook County. |
 | `app/page.tsx` | Footer NAP must stay aligned with `lib/local-business.ts`. | Footer renders from `LOCAL_BUSINESS_NAP`. |
-| `lib/site-url.ts` | Set the real production domain. | Placeholder fallback is `https://www.wallprintpro.com`; env key is `NEXT_PUBLIC_SITE_URL`. |
+| `lib/site-url.ts` | Keep the canonical production domain. | Fallback and approved value are `https://www.thewallprintpro.com`; env key is `NEXT_PUBLIC_SITE_URL`. |
 | `scripts/check-stripe-redirect.mjs` | Keep the Stripe redirect checklist aligned with the real production domain. | Expected redirect is `https://<domain>/reserved?session_id={CHECKOUT_SESSION_ID}`. |
 | `app/page.tsx` | Set the live Stripe Payment Link URL. | Reserve CTA reads `WALL_PRINT_PRO_RESERVE_URL`; fallback is `/request?intent=reserve`. |
-| `app/reserved/page.tsx` | Set the real public phone for post-payment scheduling. Use E.164 format in env. | Env override is `WALL_PRINT_PRO_PUBLIC_PHONE`; fallback display is `(312) 555-0100`. |
+| `app/reserved/page.tsx` | Keep the approved public phone for post-payment scheduling. Use E.164 format in env. | Env override is `WALL_PRINT_PRO_PUBLIC_PHONE`; fallback is the approved 708 NAP. |
 | `lib/runtime-env.ts` | Confirm launch env vars are present in hosting. | Reads `WALL_PRINT_PRO_RESERVE_URL`, `WALL_PRINT_PRO_PUBLIC_PHONE`, `WALL_PRINT_PRO_PUBLIC_CONTACT_URL`, `WALL_PRINT_PRO_AI_CONCEPTS_ENABLED`, `WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED`, `OPENAI_API_KEY`, `CONVEX_URL`, and `NEXT_PUBLIC_CONVEX_URL`. |
 | `app/page.tsx` and `lib/product-copy.ts` | Verify comparison-table numbers with the client. | Rows include `1200 DPI`, `~1 day`, `$600`, `$450+`, and `$2,500+`; component comments mark these as plausible placeholders. |
 | `content/work/ember-dragon-statement-wall.json` | Confirm portfolio job facts and replace placeholder install details. | `needsClientConfirmation: true`; note asks for real client, address/neighborhood, install photography, and true story. |
@@ -31,6 +31,8 @@ Do not submit the site for indexing until every item below is confirmed with the
 Use `docs/handoff/stripe-reserve-sop.md` as the client operating procedure for the $100 reserve deposit. It covers the one-time Stripe Payment Link setup, the `/reserved?session_id={CHECKOUT_SESSION_ID}` redirect, the phone test, daily Stripe mobile notifications, refund handling, and the local checker command.
 
 ## Secrets Ownership Checklist
+
+The complete names-only inventory, validation, rotation/revocation procedure, target identities, deployment order, rollback, moderation/removal, lead SLA, spend response, and incident matrix are in `docs/handoff/production-operations.md`. The current blocker/deferred split is in `docs/handoff/release-decision.md`.
 
 | Secret or Account | What It Is | Who Owns It | Where The Key Lives |
 |---|---|---|---|
@@ -86,5 +88,5 @@ One commit should contain the new content file and any new public images.
 ## Weekly Ops
 
 - Respond to Stripe reserve notifications within 24 hours. The Stripe mobile app push notification is the fastest signal.
-- Check Convex leads weekly: review funnel events and lead emails, especially manual AR-link follow-up when asset generation falls back to a 2D composite.
+- Check Convex leads every business day and respond within one business day; distinguish existing-design, upload, AI, and reserve requests as documented in `production-operations.md`.
 - Monthly: review OpenAI usage against the client-adjustable 50/day cap constant in `convex/leadRequests.ts` (`GLOBAL_CONCEPT_GENERATION_DAILY_CAP`).

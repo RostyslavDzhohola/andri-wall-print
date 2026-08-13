@@ -266,15 +266,19 @@ function communityGalleryEnabled() {
   return isEnabledEnvironmentValue(process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED);
 }
 
-function makeGalleryConsentEvidence(consent: boolean | undefined, now: number) {
-  if (!communityGalleryEnabled() || consent !== true) {
+function makeGalleryConsentEvidence(input: {
+  consent: boolean | undefined;
+  now: number;
+  willGenerateAiConcept: boolean;
+}) {
+  if (!input.willGenerateAiConcept || !communityGalleryEnabled() || input.consent !== true) {
     return undefined;
   }
 
   return {
     galleryPublicationConsent: true as const,
     galleryConsentVersion: COMMUNITY_GALLERY_CONSENT_VERSION,
-    galleryConsentRecordedAt: now
+    galleryConsentRecordedAt: input.now
   };
 }
 
@@ -542,8 +546,6 @@ export async function startConceptGenerationHandler(ctx: any, args: {
     };
   }
 
-  const galleryConsentEvidence = makeGalleryConsentEvidence(args.galleryPublicationConsent, now);
-
   if (!args.contactEmail || !isValidLeadEmail(args.contactEmail)) {
     return {
       ok: false,
@@ -575,6 +577,12 @@ export async function startConceptGenerationHandler(ctx: any, args: {
       message: "Enter a valid email address to generate a concept draft."
     };
   }
+
+  const galleryConsentEvidence = makeGalleryConsentEvidence({
+    consent: args.galleryPublicationConsent,
+    now,
+    willGenerateAiConcept: Boolean(normalized.conceptPrompt)
+  });
 
   if (args.print) {
     assertValidPrint(args.print as Parameters<typeof assertValidPrint>[0]);
@@ -742,15 +750,6 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
   const now = Date.now();
   let normalized: ReturnType<typeof normalizeLeadRequestInput>;
 
-  if (args.conceptPrompt?.trim() && communityGalleryEnabled() && args.galleryPublicationConsent !== true) {
-    throw new ConvexError({
-      code: "CONSENT_REQUIRED",
-      message: COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
-    });
-  }
-
-  const galleryConsentEvidence = makeGalleryConsentEvidence(args.galleryPublicationConsent, now);
-
   try {
     normalized = normalizeLeadRequestInput(args);
   } catch (error) {
@@ -759,6 +758,29 @@ export async function submitLeadRequestHandler(ctx: any, args: SubmitLeadRequest
       message: error instanceof Error ? error.message : "This request could not be saved."
     });
   }
+
+  if (args.upload && normalized.conceptPrompt) {
+    const { conceptPrompt, ...nonGenerationRequest } = normalized;
+    normalized = {
+      ...nonGenerationRequest,
+      wallDescription: normalized.wallDescription ?? conceptPrompt
+    };
+  }
+
+  const willGenerateAiConcept = Boolean(normalized.conceptPrompt);
+
+  if (willGenerateAiConcept && communityGalleryEnabled() && args.galleryPublicationConsent !== true) {
+    throw new ConvexError({
+      code: "CONSENT_REQUIRED",
+      message: COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+    });
+  }
+
+  const galleryConsentEvidence = makeGalleryConsentEvidence({
+    consent: args.galleryPublicationConsent,
+    now,
+    willGenerateAiConcept
+  });
 
   if (args.print) {
     assertValidPrint(args.print as Parameters<typeof assertValidPrint>[0]);
@@ -925,7 +947,7 @@ export const getConceptGenerationStatus = query({
       draftId: draft._id,
       status,
       message: publicConceptStatusMessage(status, reason),
-      title: makeConceptDraftTitle({ businessName: lead.businessName }),
+      title: makeConceptDraftTitle(),
       description: "Concept draft generated from a client request. Seller review required before artwork is final.",
       ...(lead.print ? { print: lead.print } : {}),
       ...(assets ? { assets } : {}),

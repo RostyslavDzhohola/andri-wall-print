@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
-
 import { AR_SAMPLE_IDS, DEFAULT_AR_SAMPLE, getArSample } from "@/lib/ar-sample";
 import { COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE } from "@/lib/community-gallery";
 import { isValidLeadEmail, LEAD_CONCEPT_PROMPT_MAX_LENGTH, normalizeLeadEmail } from "@/lib/lead-request-contract";
+import { noStoreJson } from "@/lib/private-api-response";
 import { readConvexRuntimeUrl, readWallPrintProCommunityGalleryEnabled } from "@/lib/runtime-env";
 
 export const runtime = "nodejs";
@@ -285,7 +284,7 @@ export async function GET(request: Request) {
   const leadRequestId = url.searchParams.get("leadRequestId")?.trim() ?? "";
 
   if (!leadRequestId) {
-    return NextResponse.json(
+    return noStoreJson(
       {
         ok: false,
         code: "MISSING_LEAD_REQUEST",
@@ -297,12 +296,7 @@ export async function GET(request: Request) {
 
   const result = await getConceptGenerationStatus(leadRequestId);
 
-  return NextResponse.json(result.body, {
-    status: result.status,
-    headers: {
-      "Cache-Control": "no-store"
-    }
-  });
+  return noStoreJson(result.body, { status: result.status });
 }
 
 export async function POST(request: Request) {
@@ -311,18 +305,18 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as ConceptArtRequestBody;
   } catch {
-    return NextResponse.json({ ok: false, message: "Send a wall-print idea to generate artwork." }, { status: 400 });
+    return noStoreJson({ ok: false, message: "Send a wall-print idea to generate artwork." }, { status: 400 });
   }
 
   const prompt = normalizePrompt(body.prompt);
   const contactEmail = normalizeRequestEmail(body);
 
   if (!prompt) {
-    return NextResponse.json({ ok: false, message: "Describe the wall print idea first." }, { status: 400 });
+    return noStoreJson({ ok: false, message: "Describe the wall print idea first." }, { status: 400 });
   }
 
   if (!contactEmail) {
-    return NextResponse.json(
+    return noStoreJson(
       {
         ok: false,
         code: "INVALID_EMAIL",
@@ -333,7 +327,7 @@ export async function POST(request: Request) {
   }
 
   if (readWallPrintProCommunityGalleryEnabled() && body.galleryPublicationConsent !== true) {
-    return NextResponse.json(
+    return noStoreJson(
       {
         ok: false,
         code: "CONSENT_REQUIRED",
@@ -351,10 +345,5 @@ export async function POST(request: Request) {
     galleryPublicationConsent: body.galleryPublicationConsent === true
   });
 
-  return NextResponse.json(result.body, {
-    status: result.status,
-    headers: {
-      "Cache-Control": "no-store"
-    }
-  });
+  return noStoreJson(result.body, { status: result.status });
 }
