@@ -223,6 +223,7 @@ describe("concept generation gate", () => {
     ).rejects.toThrow(/Agree to anonymous gallery publication/);
 
     expect(fake.tables.leadRequests).toHaveLength(0);
+    expect(fake.tables.leadRateLimits).toHaveLength(0);
     expect(fake.tables.globalGenerationCap).toHaveLength(0);
   });
 

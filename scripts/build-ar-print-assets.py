@@ -91,13 +91,16 @@ def normalize_artwork(
         normalized = apply_alpha_cutout(image, alpha_cutoff)
 
         if palette_colors is not None:
-            normalized = normalized.convert("RGB").quantize(
+            alpha = normalized.getchannel("A")
+            quantized = normalized.convert("RGB").quantize(
                 colors=palette_colors,
                 method=Image.Quantize.LIBIMAGEQUANT
                 if features.check_feature("libimagequant")
                 else Image.Quantize.FASTOCTREE,
                 dither=Image.Dither.FLOYDSTEINBERG,
             )
+            normalized = quantized.convert("RGBA")
+            normalized.putalpha(alpha)
 
         normalized.save(output, "PNG", optimize=True)
 

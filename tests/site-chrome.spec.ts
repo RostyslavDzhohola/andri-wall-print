@@ -16,6 +16,15 @@ const PRIMARY_NAVIGATION = [
   { label: "Our work", href: "/work" }
 ] as const;
 
+const MARKETING_VIEWPORTS = [
+  { name: "phone portrait", width: 390, height: 844 },
+  { name: "phone landscape", width: 844, height: 390 },
+  { name: "iPad portrait", width: 820, height: 1180 },
+  { name: "desktop", width: 1440, height: 900 }
+] as const;
+
+const CORE_MARKETING_ROUTES = ["/", "/gallery", "/request", "/work", "/reserved"] as const;
+
 async function blockThirdPartyMedia(page: Page) {
   await page.route(/(?:instagram\.com|facebook\.com|googleapis\.com|r2\.dev)/, (route) => route.abort());
 }
@@ -147,5 +156,29 @@ test("the mobile reserve bar keeps its route visibility rules and does not cover
   for (const route of ["/request", "/reserved", "/preview/not-a-real-preview"]) {
     await page.goto(route, { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("home-sticky-reserve"), route).toHaveCount(0);
+  }
+});
+
+test("core marketing routes fit phone, iPad, and desktop viewports", async ({ page }) => {
+  await blockThirdPartyMedia(page);
+
+  for (const viewport of MARKETING_VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+
+    for (const route of CORE_MARKETING_ROUTES) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page.getByTestId("site-header"), `${viewport.name}: ${route} header`).toBeVisible();
+      await expect(page.getByTestId("site-footer"), `${viewport.name}: ${route} footer`).toBeVisible();
+      await expect(page.locator("main h1").first(), `${viewport.name}: ${route} heading`).toBeVisible();
+
+      const layout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      }));
+
+      expect(layout.scrollWidth, `${viewport.name}: ${route} horizontal overflow`).toBeLessThanOrEqual(
+        layout.clientWidth + 1
+      );
+    }
   }
 });

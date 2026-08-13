@@ -53,6 +53,8 @@ describe("withSecurityHeaders", () => {
 
       expect(response.headers.get("Strict-Transport-Security")).toBe("max-age=31536000; includeSubDomains");
       expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(response.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+      expect(response.headers.get("Permissions-Policy")).toBe("camera=(self), microphone=(), geolocation=()");
       expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-site");
       expect(response.headers.has("Content-Security-Policy")).toBe(false);
       expect(response.headers.has("X-Frame-Options")).toBe(false);

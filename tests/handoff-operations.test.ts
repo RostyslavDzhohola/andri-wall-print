@@ -37,4 +37,13 @@ describe("production handoff operations", () => {
     expect(releaseDecision).toContain("Release blockers");
     expect(releaseDecision).toContain("Deferred non-blocking work");
   });
+
+  it("keeps marketing-site QA and operational logging proportionate", () => {
+    expect(releaseDecision).toContain("phones, iPads, and desktops in Chrome and Safari");
+    expect(releaseDecision).toContain("fake public production records are unnecessary");
+    expect(releaseDecision).toContain("claims, portfolio media, and public marketing copy are authorized");
+    expect(operations).toContain("release logging is intentionally simple");
+    expect(operations).toContain("private error-message text is discarded");
+    expect(operations).toContain("not a routine release gate");
+  });
 });

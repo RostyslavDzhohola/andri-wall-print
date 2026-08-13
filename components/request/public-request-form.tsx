@@ -106,13 +106,13 @@ export function PublicRequestForm({
     hasUpload: Boolean(file),
     galleryPublicationConsent
   });
+  const galleryConsentMissing = artworkMode.requiresGalleryConsent && !galleryPublicationConsent;
   const canSubmit = Boolean(
     !busy &&
       contactName.trim() &&
       preferredContactSatisfied &&
       (!emailEntered || emailValid) &&
-      (!phoneEntered || phoneValid) &&
-      (!artworkMode.requiresGalleryConsent || galleryPublicationConsent)
+      (!phoneEntered || phoneValid)
   );
 
   const handleFileSelection = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -388,6 +388,11 @@ export function PublicRequestForm({
             {COMMUNITY_GALLERY_CONSENT_HELP} Read our <Link className="underline" href="/privacy">Privacy Policy</Link> and{" "}
             <Link className="underline" href="/terms">Terms</Link>.
           </p>
+          {galleryConsentMissing ? (
+            <p className="pl-7 text-xs font-medium text-destructive" data-testid="request-gallery-consent-required" role="alert">
+              {COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -502,9 +502,13 @@ test("request form requires unchecked publication consent for AI concepts", asyn
   await expect(consent).toHaveAttribute("required", "");
   await page.getByLabel("Name", { exact: true }).fill("Buyer");
   await page.getByLabel("Email", { exact: true }).fill("buyer@example.com");
-  await expect(page.getByRole("button", { name: "Get estimate" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Get estimate" })).toBeEnabled();
+  await expect(page.getByTestId("request-gallery-consent-required")).toContainText(
+    "Agree to anonymous gallery publication"
+  );
   await consent.check();
   await expect(page.getByRole("button", { name: "Get estimate" })).toBeEnabled();
+  await expect(page.getByTestId("request-gallery-consent-required")).toHaveCount(0);
   await expect(page.getByTestId("request-gallery-consent")).toContainText("Free AI generation is offered in exchange");
 });
 

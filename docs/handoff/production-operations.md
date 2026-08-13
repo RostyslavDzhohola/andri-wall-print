@@ -52,7 +52,7 @@ This is the operator runbook for the public Wall Print Pro release. It names con
 3. In Convex, select production deployment `gregarious-kookabura-23`. Run the read-only function-spec check and compare it with the candidate:
 
    ```sh
-   npx convex function-spec --prod
+   pnpm exec convex function-spec --deployment gregarious-kookabura-23
    ```
 
 4. Before backend changes, set both feature flags explicitly false in Sites and Convex. Keep the public site usable for curated designs, uploads, and ordinary estimate requests.
@@ -91,7 +91,9 @@ Removal procedure:
 1. Record the request, requester verification method, public gallery slug, entry ID, current status, and operator.
 2. In the approved production Convex dashboard, locate the exact `galleryEntries` record and change only its status to `hidden`.
 3. Verify both the public list and exact slug lookup exclude it. Verify its `g-…` ID cannot resolve through a private `p-…` preview route.
-4. Preserve the pre/post status, timestamp, reason, and verification evidence. Do not delete the lead, private preview, or storage unless a separately approved retention/legal procedure requires it.
+4. Record that hiding removes discovery and slug lookup only: anyone who retained a direct Convex storage URL can still retrieve that asset.
+5. If the verified request requires asset revocation, record the poster/GLB/USDZ storage IDs, confirm retention requirements, then delete those exact public storage objects or replace them with access-controlled copies. Verify every old URL returns unavailable before closing the request. Never delete the lead or private preview without separate retention/legal approval.
+6. Preserve the pre/post status, timestamp, reason, affected storage IDs, URL checks, and operator evidence.
 
 ## Lead operations
 
@@ -130,4 +132,6 @@ Track owner, first-response timestamp, next action, and resolution. Contact data
 
 ## Log and privacy verification
 
-Use approved QA records only. Correlate by internal lead/draft/entry IDs and timestamps. Logs may contain status codes and sanitized error names, but must not contain contact email/phone, raw prompt, secret values, generated image bytes, or upstream error bodies. Record a pass only after the same approved test record is located across the expected Convex/OpenAI surfaces.
+For this low-volume marketing site, release logging is intentionally simple: write internal lead/draft/entry IDs, timestamps, bounded status codes, and sanitized error class names. Never log contact email/phone, raw prompts, secret values, generated image bytes, or upstream error bodies. Unit tests must prove that private error-message text is discarded.
+
+Cross-vendor correlation through Convex and OpenAI is an incident-response or separately approved paid-generation exercise, not a routine release gate. When it is needed, use one approved record and correlate only its internal ID and timestamp; do not copy private content into tickets, screenshots, or chat.

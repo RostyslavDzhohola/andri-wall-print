@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NativeArLauncher, type ArDiagnostics } from "@/components/ar/native-ar-launcher";
 import { Button } from "@/components/ui/button";
@@ -17,15 +17,36 @@ type ArtworkGallerySurfaceProps = {
   initialCommunityPage?: PublicGalleryPage;
 };
 
+const EMPTY_COMMUNITY_PAGE: PublicGalleryPage = { samples: [], continueCursor: null, isDone: true };
+const COMMUNITY_REQUEST_TIMEOUT_MS = 8_000;
+
+async function fetchCommunityGalleryPage(cursor: string | undefined, signal: AbortSignal) {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  const response = await fetch(`/api/gallery${query}`, {
+    headers: { Accept: "application/json" },
+    signal
+  });
+
+  if (!response.ok) {
+    throw new Error("Community artwork is temporarily unavailable.");
+  }
+
+  return (await response.json()) as PublicGalleryPage;
+}
+
 export function ArtworkGallerySurface({
   initialSampleId,
   samples = AR_SAMPLES,
-  initialCommunityPage = { samples: [], continueCursor: null, isDone: true }
+  initialCommunityPage
 }: ArtworkGallerySurfaceProps) {
-  const [communitySamples, setCommunitySamples] = useState(initialCommunityPage.samples);
-  const [continueCursor, setContinueCursor] = useState(initialCommunityPage.continueCursor);
-  const [communityDone, setCommunityDone] = useState(initialCommunityPage.isDone);
-  const [communityLoading, setCommunityLoading] = useState(false);
+  const shouldLoadInitialCommunityPage = initialCommunityPage === undefined;
+  const resolvedInitialCommunityPage = initialCommunityPage ?? EMPTY_COMMUNITY_PAGE;
+  const [communitySamples, setCommunitySamples] = useState(resolvedInitialCommunityPage.samples);
+  const [continueCursor, setContinueCursor] = useState(resolvedInitialCommunityPage.continueCursor);
+  const [communityDone, setCommunityDone] = useState(
+    shouldLoadInitialCommunityPage ? false : resolvedInitialCommunityPage.isDone
+  );
+  const [communityLoading, setCommunityLoading] = useState(shouldLoadInitialCommunityPage);
   const [communityError, setCommunityError] = useState<string | null>(null);
   const [selectedSampleId, setSelectedSampleId] = useState(initialSampleId ?? samples[0]?.id ?? DEFAULT_AR_SAMPLE.id);
   const [diagnostics, setDiagnostics] = useState<ArDiagnostics | null>(null);
@@ -39,6 +60,48 @@ export function ArtworkGallerySurface({
       ? { gallerySlug: selectedSample.id }
       : { designId: selectedSample.id })
   }).toString()}`;
+
+  useEffect(() => {
+    if (!shouldLoadInitialCommunityPage) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), COMMUNITY_REQUEST_TIMEOUT_MS);
+    let active = true;
+
+    const loadInitialCommunityPage = async () => {
+      try {
+        const nextPage = await fetchCommunityGalleryPage(undefined, controller.signal);
+
+        if (!active) {
+          return;
+        }
+
+        setCommunitySamples(nextPage.samples);
+        setContinueCursor(nextPage.continueCursor);
+        setCommunityDone(nextPage.isDone);
+      } catch {
+        if (active) {
+          setCommunityError("Community artwork is temporarily unavailable.");
+          setCommunityDone(true);
+        }
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (active) {
+          setCommunityLoading(false);
+        }
+      }
+    };
+
+    void loadInitialCommunityPage();
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [shouldLoadInitialCommunityPage]);
 
   const selectArtwork = (sampleId: string) => {
     const nextIndex = allSamples.findIndex((sample) => sample.id === sampleId);
@@ -73,17 +136,11 @@ export function ArtworkGallerySurface({
 
     setCommunityLoading(true);
     setCommunityError(null);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), COMMUNITY_REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`/api/gallery?cursor=${encodeURIComponent(continueCursor)}`, {
-        headers: { Accept: "application/json" }
-      });
-
-      if (!response.ok) {
-        throw new Error("Community artwork is temporarily unavailable.");
-      }
-
-      const nextPage = (await response.json()) as PublicGalleryPage;
+      const nextPage = await fetchCommunityGalleryPage(continueCursor, controller.signal);
       setCommunitySamples((current) => {
         const known = new Set(current.map((sample) => sample.id));
         return [...current, ...nextPage.samples.filter((sample) => !known.has(sample.id))];
@@ -93,6 +150,7 @@ export function ArtworkGallerySurface({
     } catch (error) {
       setCommunityError(error instanceof Error ? error.message : "Community artwork is temporarily unavailable.");
     } finally {
+      window.clearTimeout(timeoutId);
       setCommunityLoading(false);
     }
   };
@@ -228,7 +286,7 @@ export function ArtworkGallerySurface({
             <div className="grid gap-3 sm:grid-cols-2" data-testid="gallery-artwork-list">
               {samples.map(renderArtworkCard)}
             </div>
-            {communitySamples.length || !communityDone ? (
+            {communitySamples.length || communityLoading || communityError || !communityDone ? (
               <div className="mt-5 grid gap-3" data-testid="community-gallery-section">
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">Community AI concepts</h2>
@@ -239,7 +297,10 @@ export function ArtworkGallerySurface({
                 <div className="grid gap-3 sm:grid-cols-2" data-testid="community-gallery-list">
                   {communitySamples.map((sample, index) => renderArtworkCard(sample, samples.length + index))}
                 </div>
-                {!communityDone ? (
+                {communityLoading && communitySamples.length === 0 ? (
+                  <p className="text-sm text-muted-foreground" role="status">Loading community concepts…</p>
+                ) : null}
+                {!communityDone && continueCursor ? (
                   <Button
                     className="w-fit rounded-full"
                     data-testid="community-gallery-load-more"

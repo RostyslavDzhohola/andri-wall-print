@@ -30,7 +30,11 @@ describe("OpenAI gallery moderation provider", () => {
     });
     const [url, init] = fetcher.mock.calls[0];
     const body = JSON.parse(String(init?.body));
+    const headers = new Headers(init?.headers);
     expect(url).toBe("https://api.openai.com/v1/moderations");
+    expect(headers.get("Authorization")).toBe("Bearer test-key");
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
     expect(body).toEqual({
       model: "omni-moderation-latest",
       input: [
@@ -74,5 +78,25 @@ describe("OpenAI gallery moderation provider", () => {
         fetcher: vi.fn(async () => new Response("unavailable", { status: 503 })) as typeof fetch
       })
     ).rejects.toThrow(/status 503/);
+  });
+
+  it("aborts a moderation request that exceeds its deadline", async () => {
+    const fetcher = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) =>
+        await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+        })
+    ) as typeof fetch;
+
+    await expect(
+      moderateGeneratedArtwork({
+        apiKey: "test-key",
+        prompt: "prompt",
+        imageBytes: Uint8Array.from([1]),
+        imageContentType: "image/png",
+        fetcher,
+        timeoutMs: 1
+      })
+    ).rejects.toMatchObject({ name: "AbortError" });
   });
 });
