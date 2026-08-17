@@ -232,7 +232,7 @@ export function ArtworkGallerySurface({
                     <h2 className="text-lg font-semibold text-foreground" data-testid="gallery-selected-artwork-title">
                       {selectedSample.title}
                     </h2>
-                    <p className="text-sm text-muted-foreground" data-testid="gallery-selected-print-size">
+                    <p className="text-sm text-foreground" data-testid="gallery-selected-print-size">
                       {selectedSample.print.label}
                     </p>
                   </div>

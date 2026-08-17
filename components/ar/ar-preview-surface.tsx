@@ -113,7 +113,7 @@ export function ArPreviewSurface({
                   <div className="grid gap-3">
                     <div className="grid gap-0.5">
                       <p className="font-semibold text-foreground" data-testid="selected-artwork-title">{selectedSample.title}</p>
-                      <p className="text-sm text-muted-foreground" data-testid="selected-artwork-dimensions">{selectedSample.print.label}</p>
+                      <p className="text-sm text-foreground" data-testid="selected-artwork-dimensions">{selectedSample.print.label}</p>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="order-1 ml-auto sm:order-2">

@@ -78,6 +78,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
   const hasReadyArAssets = hasReadyArAssetUrls(sample);
   const quickLookUrl = hasReadyArAssets ? getFixedScaleQuickLookHref(sample.assets.usdz) : "#";
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
+  const quickLookLinkRef = useRef<HTMLAnchorElement | null>(null);
   const androidLaunchAttemptedRef = useRef(false);
   const launchFallbackTimerRef = useRef<number | null>(null);
   const launchFallbackCleanupRef = useRef<(() => void) | null>(null);
@@ -385,6 +386,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
                   data-testid="quick-look-link"
                   href={quickLookUrl}
                   onClick={placeInAr}
+                  ref={quickLookLinkRef}
                   rel="ar"
                   title={accessNotice?.message ?? "Place this print on a wall"}
                 >
@@ -423,7 +425,12 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
           }
         }}
       >
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            quickLookLinkRef.current?.focus();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{dialogNotice?.title}</DialogTitle>
             <DialogDescription>{dialogNotice?.description}</DialogDescription>

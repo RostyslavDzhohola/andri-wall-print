@@ -773,6 +773,43 @@ test("homepage removes intentional motion when reduced motion is requested", asy
   await expect(page.locator(".entry-crossfade")).toHaveCSS("animation-name", "none");
 });
 
+test("public navigation, FAQ, gallery cards, and pagination work from the keyboard", async ({ page }, testInfo) => {
+  await page.goto("/");
+
+  const brandLink = page.getByRole("link", { name: "Wall Print Pro homepage" });
+  if (testInfo.project.name === "chromium") {
+    await page.keyboard.press("Tab");
+    await expect(brandLink).toBeFocused();
+    await expect
+      .poll(() => brandLink.evaluate((element) => element.matches(":focus-visible")))
+      .toBe(true);
+  }
+
+  const uploadTab = page.getByTestId("homepage-entry-upload");
+  await uploadTab.focus();
+  await page.keyboard.press("Enter");
+  await expect(uploadTab).toHaveAttribute("aria-selected", "true");
+
+  const firstFaq = page.locator("details").first();
+  const firstFaqSummary = firstFaq.locator("summary");
+  await firstFaqSummary.focus();
+  await page.keyboard.press("Enter");
+  await expect(firstFaq).toHaveAttribute("open", "");
+
+  await page.goto("/gallery");
+  const lakefrontCard = page.locator('[data-artwork-id="chicago-final-2"]');
+  await lakefrontCard.focus();
+  await page.keyboard.press("Space");
+  await expect(lakefrontCard).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("gallery-selected-artwork-title")).toHaveText("Lakefront Day");
+
+  const loadMore = page.getByTestId("community-gallery-load-more");
+  await loadMore.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("community-gallery-list").getByTestId("gallery-artwork-card")).toHaveCount(2);
+  await expect(loadMore).toHaveCount(0);
+});
+
 test.describe("AR launcher access guidance", () => {
   test.describe("desktop browser", () => {
     test.use({
@@ -924,7 +961,9 @@ test.describe("AR launcher access guidance", () => {
       await page.getByTestId("quick-look-link").hover();
       await expect(page.getByTestId("ar-access-warning")).toContainText("Use Safari on iPhone.");
 
-      await page.getByTestId("quick-look-link").click();
+      const quickLookLink = page.getByTestId("quick-look-link");
+      await quickLookLink.focus();
+      await page.keyboard.press("Enter");
       await expect(page).toHaveURL("/");
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
       await expect(page.getByText("This browser cannot reliably start wall placement.")).toBeVisible();
@@ -933,7 +972,13 @@ test.describe("AR launcher access guidance", () => {
         expectedExperimentalSafariHref(page)
       );
       await expect(page.getByRole("button", { name: "Copy link" })).toHaveCount(0);
-      await page.getByRole("button", { name: "Dismiss" }).click();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toHaveCount(0);
+      await expect(quickLookLink).toBeFocused();
+
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toBeVisible();
+      await page.getByRole("button", { name: "Dismiss" }).press("Enter");
       await expect(page.getByRole("heading", { name: "Use Safari on this iPhone" })).toHaveCount(0);
     });
   });

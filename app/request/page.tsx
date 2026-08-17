@@ -45,7 +45,9 @@ export function RequestSetupMissing() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
-            <p className="text-base leading-7 text-muted-foreground">Ask the admin to refresh the request setup before collecting leads.</p>
+            <p className="text-base leading-7 text-muted-foreground">
+              The estimate form is temporarily unavailable. Browse the gallery and check back later to send your project details.
+            </p>
             <Button asChild className="w-fit rounded-full" size="lg">
               <Link href="/gallery">Open gallery</Link>
             </Button>
