@@ -31,7 +31,8 @@ describe("request page defaults", () => {
       defaultConceptPrompt: expect.stringContaining("Lakefront Day"),
       defaultDesignContext: {
         id: "chicago-final-2",
-        title: "Lakefront Day"
+        title: "Lakefront Day",
+        print: expect.objectContaining({ label: "3 ft x 5 ft" })
       }
     });
   });
@@ -46,7 +47,8 @@ describe("request page defaults", () => {
       defaultConceptPrompt: "Make this work for a reception wall",
       defaultDesignContext: {
         id: "chicago-final-1",
-        title: "Pathways to Success"
+        title: "Pathways to Success",
+        print: expect.objectContaining({ label: "5 ft x 4.2 ft" })
       }
     });
   });
@@ -56,6 +58,44 @@ describe("request page defaults", () => {
       defaultIntent: "concept",
       focusUpload: false
     });
+  });
+
+  it("uses only server-resolved community gallery metadata", () => {
+    const publishedDesign = {
+      id: "published-safe-slug",
+      title: "Community AI concept",
+      description: "An anonymous published concept.",
+      print: {
+        aspectRatio: "5:4",
+        widthMeters: 1.524,
+        heightMeters: 1.2192,
+        label: "5 ft x 4 ft"
+      }
+    };
+
+    expect(
+      resolveRequestPageDefaults(
+        {
+          gallerySlug: "published-safe-slug",
+          conceptPrompt: "Attacker-supplied title and prompt"
+        },
+        publishedDesign
+      )
+    ).toMatchObject({
+      defaultDesignContext: publishedDesign,
+      defaultConceptPrompt: expect.stringContaining("Community AI concept")
+    });
+
+    expect(resolveRequestPageDefaults({ gallerySlug: "attacker-slug" }, publishedDesign)).toEqual({
+      defaultIntent: "concept",
+      focusUpload: false
+    });
+    expect(
+      resolveRequestPageDefaults(
+        { gallerySlug: "attacker-slug", conceptPrompt: "Attacker-supplied prompt" },
+        publishedDesign
+      )
+    ).toEqual({ defaultIntent: "concept", focusUpload: false });
   });
 
   it("marks the upload-first workflow from the homepage CTA", () => {

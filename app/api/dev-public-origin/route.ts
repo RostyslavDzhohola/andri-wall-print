@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { noStoreJson } from "@/lib/private-api-response";
+
 export const dynamic = "force-dynamic";
 
 type NgrokTunnel = {
@@ -38,27 +40,27 @@ function publicOriginFromTunnel(tunnel: NgrokTunnel) {
 
 export async function GET() {
   if (process.env.NODE_ENV !== "development") {
-    return new NextResponse(null, { status: 404 });
+    return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
 
   const configuredOrigin = configuredClientPreviewOrigin();
 
   if (configuredOrigin) {
-    return NextResponse.json({ origin: configuredOrigin, source: "configured" });
+    return noStoreJson({ origin: configuredOrigin, source: "configured" });
   }
 
   try {
     const response = await fetch("http://127.0.0.1:4040/api/tunnels", { cache: "no-store" });
 
     if (!response.ok) {
-      return NextResponse.json({ origin: null, source: "none" });
+      return noStoreJson({ origin: null, source: "none" });
     }
 
     const payload = (await response.json()) as { tunnels?: NgrokTunnel[] };
     const origin = payload.tunnels?.map(publicOriginFromTunnel).find((value): value is string => Boolean(value)) ?? null;
 
-    return NextResponse.json({ origin, source: origin ? "ngrok" : "none" });
+    return noStoreJson({ origin, source: origin ? "ngrok" : "none" });
   } catch {
-    return NextResponse.json({ origin: null, source: "none" });
+    return noStoreJson({ origin: null, source: "none" });
   }
 }

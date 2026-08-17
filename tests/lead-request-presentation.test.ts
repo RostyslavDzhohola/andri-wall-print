@@ -8,10 +8,8 @@ import {
 
 describe("lead request presentation", () => {
   it("builds PII-neutral concept draft titles", () => {
-    expect(makeConceptDraftTitle({ businessName: "Lakefront Studio" })).toBe("Lakefront Studio concept draft");
-    expect(makeConceptDraftTitle({})).toBe("Wall print concept draft");
-    expect(makeConceptDraftTitle({ businessName: null })).toBe("Wall print concept draft");
-    expect(makeConceptDraftTitle({ businessName: "   " })).toBe("Wall print concept draft");
+    expect(makeConceptDraftTitle()).toBe("Wall print concept draft");
+    expect(makeConceptDraftTitle()).not.toContain("Lakefront Studio");
   });
 
   it("labels every public AI concept draft state", () => {

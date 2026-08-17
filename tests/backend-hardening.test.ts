@@ -423,6 +423,39 @@ describe("backend quota hardening", () => {
     });
   });
 
+  it("normalizes a crafted upload-plus-concept request to upload context without publication consent", async () => {
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "1";
+    process.env.WALL_PRINT_PRO_AI_CONCEPTS_ENABLED = "1";
+    process.env.OPENAI_API_KEY = "test-key";
+    const fake = createFakeCtx({
+      storageMetadata: {
+        storage_lead: { contentType: "image/png", size: 1200, sha256: SHA_A }
+      }
+    });
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+
+    await submitLeadRequestHandler(fake.ctx, {
+      contactName: "Buyer",
+      contactEmail: "buyer@example.com",
+      conceptPrompt: "Private uploaded-logo instructions",
+      galleryPublicationConsent: true,
+      upload: {
+        storageId: "storage_lead",
+        originalFileName: "logo.png",
+        contentType: "image/png",
+        byteLength: 1200
+      }
+    });
+
+    expect(fake.tables.leadRequests[0]).toMatchObject({
+      wallDescription: "Private uploaded-logo instructions"
+    });
+    expect(fake.tables.leadRequests[0]).not.toHaveProperty("conceptPrompt");
+    expect(fake.tables.leadRequests[0]).not.toHaveProperty("galleryPublicationConsent");
+    expect(fake.tables.aiConceptDrafts).toHaveLength(0);
+    expect(fake.scheduled).toHaveLength(0);
+  });
+
   it("throws on invalid print metadata before either lead insert path writes", async () => {
     const invalidPrint = {
       aspectRatio: "1:1",

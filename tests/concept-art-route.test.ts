@@ -59,6 +59,45 @@ describe("/api/concept-art", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("rejects missing publication consent before calling Convex when the gallery is enabled", async () => {
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "1";
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const response = await POST(
+      conceptArtRequest({ contactEmail: "buyer@example.com", prompt: "Chicago skyline mural" })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ code: "CONSENT_REQUIRED" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards affirmative publication consent to Convex", async () => {
+    process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";
+    process.env.WALL_PRINT_PRO_COMMUNITY_GALLERY_ENABLED = "true";
+    let mutationBody: any;
+    globalThis.fetch = vi.fn(async (_input, init) => {
+      mutationBody = JSON.parse(String(init?.body));
+      return Response.json({
+        status: "success",
+        value: { ok: true, code: "QUEUED", leadRequestId: "lead_123", message: "Queued" }
+      });
+    }) as typeof fetch;
+
+    const response = await POST(
+      conceptArtRequest({
+        contactEmail: "buyer@example.com",
+        prompt: "Chicago skyline mural",
+        galleryPublicationConsent: true
+      })
+    );
+
+    expect(response.status).toBe(202);
+    expect(mutationBody.args.galleryPublicationConsent).toBe(true);
+  });
+
   it("calls the gated Convex mutation instead of the image provider", async () => {
     const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
     process.env.CONVEX_URL = "https://steady-otter-123.convex.cloud";

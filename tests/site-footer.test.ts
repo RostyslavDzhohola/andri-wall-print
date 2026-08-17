@@ -15,6 +15,8 @@ describe("shared site footer", () => {
     expect(html).toContain("Des Plaines, IL 60016");
     expect(html).toContain('href="tel:7085433826"');
     expect(html).toContain('href="mailto:thewallprintpro@gmail.com"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain('href="/terms"');
     expect(html).toContain('data-testid="site-footer-facebook"');
     expect(html).toContain('href="https://www.facebook.com/profile.php?id=61587045900230"');
     expect(html).toContain('data-testid="site-footer-instagram"');

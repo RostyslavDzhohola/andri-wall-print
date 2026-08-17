@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
 import { HOME_FOOTER_TAGLINE } from "@/lib/product-copy";
 import { FACEBOOK_PROFILE_URL, INSTAGRAM_PROFILE_URL } from "@/lib/social-proof";
@@ -34,6 +36,10 @@ export function SiteFooter() {
         <div className="grid gap-2">
           <p className="text-lg font-semibold text-foreground">{LOCAL_BUSINESS_NAP.name}</p>
           <p className="max-w-sm text-sm leading-6 text-muted-foreground">{HOME_FOOTER_TAGLINE}</p>
+          <nav aria-label="Legal" className="flex gap-4 text-sm">
+            <Link className="text-primary underline-offset-4 hover:underline" href="/privacy">Privacy</Link>
+            <Link className="text-primary underline-offset-4 hover:underline" href="/terms">Terms</Link>
+          </nav>
           <nav aria-label="Social media" className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
             <a
               className="inline-flex min-h-11 items-center gap-2 rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

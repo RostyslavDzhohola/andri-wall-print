@@ -117,6 +117,7 @@ export function parseConvexPreviewValue(value: unknown): ArSample | null {
     id,
     title,
     description,
+    ...(readString(value.sourceKind) === "community_ai" ? { sourceKind: "community_ai" as const } : {}),
     print: {
       aspectRatio,
       widthMeters,

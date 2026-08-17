@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-
+import { parseHomepageArtworkPostBody } from "@/lib/homepage-artwork-contract";
+import { noStoreJson } from "@/lib/private-api-response";
 import { readConvexRuntimeUrl } from "@/lib/runtime-env";
 
 export const runtime = "nodejs";
@@ -37,7 +37,7 @@ async function callConvex(kind: "mutation" | "query", path: string, args: unknow
   const body = (await response.json()) as ConvexResponse;
 
   if (body.status === "error") {
-    throw new Error(body.errorMessage || "Wall preview could not be prepared.");
+    throw new Error("Wall preview could not be prepared.");
   }
 
   return body.value;
@@ -47,48 +47,44 @@ export async function GET(request: Request) {
   const publicSlug = new URL(request.url).searchParams.get("slug")?.trim() ?? "";
 
   if (!publicSlug) {
-    return NextResponse.json({ ok: false, message: "Wall preview status is unavailable." }, { status: 400 });
+    return noStoreJson({ ok: false, message: "Wall preview status is unavailable." }, { status: 400 });
   }
 
   try {
     const preview = await callConvex("query", "arPreviews:getPublicPreview", { slug: publicSlug });
 
-    return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
-  } catch (error) {
-    return NextResponse.json(
-      { ok: false, message: error instanceof Error ? error.message : "Wall preview status is unavailable." },
-      { status: 503, headers: { "Cache-Control": "no-store" } }
-    );
+    return noStoreJson(preview);
+  } catch {
+    return noStoreJson({ ok: false, message: "Wall preview status is unavailable." }, { status: 503 });
   }
 }
 
 export async function POST(request: Request) {
-  let body: Record<string, unknown>;
+  let rawBody: unknown;
 
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    rawBody = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, message: "Wall preview request could not be read." }, { status: 400 });
+    return noStoreJson({ ok: false, message: "Wall preview request could not be read." }, { status: 400 });
+  }
+
+  const body = parseHomepageArtworkPostBody(rawBody);
+
+  if (!body) {
+    return noStoreJson({ ok: false, message: "Wall preview request is invalid." }, { status: 400 });
   }
 
   try {
     if (body.action === "upload_url") {
       const uploadUrl = await callConvex("mutation", "previewBundles:generateHomepageUploadUrl", {});
 
-      return NextResponse.json({ ok: true, uploadUrl });
+      return noStoreJson({ ok: true, uploadUrl });
     }
 
-    if (body.action === "create") {
-      const created = await callConvex("mutation", "previewBundles:createHomepageUploadBundle", body.input);
+    const created = await callConvex("mutation", "previewBundles:createHomepageUploadBundle", body.input);
 
-      return NextResponse.json({ ok: true, preview: created });
-    }
-
-    return NextResponse.json({ ok: false, message: "Wall preview action is not supported." }, { status: 400 });
-  } catch (error) {
-    return NextResponse.json(
-      { ok: false, message: error instanceof Error ? error.message : "Wall preview could not be prepared." },
-      { status: 503 }
-    );
+    return noStoreJson({ ok: true, preview: created });
+  } catch {
+    return noStoreJson({ ok: false, message: "Wall preview could not be prepared." }, { status: 503 });
   }
 }

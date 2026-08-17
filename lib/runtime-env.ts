@@ -6,6 +6,7 @@ const ENV_KEYS = {
   wallPrintProPublicContactUrl: "WALL_PRINT_PRO" + "_PUBLIC_CONTACT_URL",
   wallPrintProReserveUrl: "WALL_PRINT_PRO" + "_RESERVE_URL",
   wallPrintProAiConceptsEnabled: "WALL_PRINT_PRO" + "_AI_CONCEPTS_ENABLED",
+  wallPrintProCommunityGalleryEnabled: "WALL_PRINT_PRO" + "_COMMUNITY_GALLERY_ENABLED",
   openaiApiKey: "OPENAI" + "_API_KEY"
 } as const;
 
@@ -41,4 +42,10 @@ export function readWallPrintProAiConceptsEnabled() {
 
 export function readWallPrintProAiConceptsConfigured() {
   return readWallPrintProAiConceptsEnabled() && Boolean(readConvexRuntimeUrl());
+}
+
+export function readWallPrintProCommunityGalleryEnabled() {
+  const value = readRuntimeEnv(ENV_KEYS.wallPrintProCommunityGalleryEnabled);
+
+  return (value === "1" || value === "true") && Boolean(readConvexRuntimeUrl());
 }

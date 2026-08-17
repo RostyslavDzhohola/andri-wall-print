@@ -34,7 +34,7 @@ export function canFinalizeAiDraft(from: AiConceptDraftStatus, to: AiConceptDraf
 
 export const LEAD_CONCEPT_PROMPT_MAX_LENGTH = 900;
 export const LEAD_TEXT_FIELD_MAX_LENGTH = 240;
-export const LEAD_WALL_DESCRIPTION_MAX_LENGTH = 700;
+export const LEAD_WALL_DESCRIPTION_MAX_LENGTH = LEAD_CONCEPT_PROMPT_MAX_LENGTH;
 export const LEAD_AI_RATE_LIMIT_PER_DAY = 3;
 export const LEAD_PHONE_MIN_DIGITS = 10;
 export const LEAD_PHONE_MAX_DIGITS = 15;

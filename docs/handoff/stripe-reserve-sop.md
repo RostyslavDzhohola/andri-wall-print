@@ -45,6 +45,8 @@ full control.
 Your developer can also run a quick automated check of the link:
 `node scripts/check-stripe-redirect.mjs <your-payment-link-url>`
 
+> **Payment proof:** Stripe Dashboard payment status and the Stripe receipt are the authoritative evidence that money was paid. The site's `reserved_visit` Convex event is analytics only; it may be capped, delayed, or absent and must never be used as proof of payment.
+
 ## Daily routine
 
 - **Install the Stripe mobile app** (iPhone/Android) and turn on push

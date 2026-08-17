@@ -110,7 +110,12 @@ export function ArPreviewSurface({
               />
               <Card className="relative z-20 mx-3 mb-3 mt-4 bg-card/95 py-3 shadow-lg backdrop-blur" data-testid="artwork-controls">
                 <CardContent className="px-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="grid gap-3">
+                    <div className="grid gap-0.5">
+                      <p className="font-semibold text-foreground" data-testid="selected-artwork-title">{selectedSample.title}</p>
+                      <p className="text-sm text-foreground" data-testid="selected-artwork-dimensions">{selectedSample.print.label}</p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="order-1 ml-auto sm:order-2">
                       {hasReadyArAssets ? (
                         <NativeArLauncher sample={selectedSample} diagnostics={diagnostics} onDiagnosticsChange={setDiagnostics} />
@@ -157,6 +162,7 @@ export function ArPreviewSurface({
                         </Tooltip>
                       </div>
                     ) : null}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

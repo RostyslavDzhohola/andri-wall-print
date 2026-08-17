@@ -2,6 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { ArrowRight, CheckCircle2, ImagePlus, Loader2, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,11 @@ import {
   validatePublicUploadFile
 } from "@/lib/builder-upload-normalization";
 import {
+  COMMUNITY_GALLERY_CONSENT_HELP,
+  COMMUNITY_GALLERY_CONSENT_LABEL,
+  COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+} from "@/lib/community-gallery";
+import {
   LEAD_CONCEPT_PROMPT_MAX_LENGTH,
   isValidLeadEmail,
   isValidLeadPhone,
@@ -25,11 +31,13 @@ import {
   type LeadContactMethod,
   type LeadRequestIntent
 } from "@/lib/lead-request-contract";
+import { resolveRequestArtworkMode } from "@/lib/request-artwork-mode";
 import type { RequestDesignContext } from "@/lib/request-page-defaults";
 import { cn } from "@/lib/utils";
 
 type PublicRequestFormProps = {
   aiEnabled: boolean;
+  communityGalleryEnabled: boolean;
   defaultIntent: LeadRequestIntent;
   defaultConceptPrompt?: string;
   defaultDesignContext?: RequestDesignContext;
@@ -57,6 +65,7 @@ const phoneHelpId = "lead-phone-help";
 
 export function PublicRequestForm({
   aiEnabled,
+  communityGalleryEnabled,
   defaultIntent,
   defaultConceptPrompt,
   defaultDesignContext,
@@ -74,6 +83,7 @@ export function PublicRequestForm({
   const [projectType, setProjectType] = useState<(typeof projectTypeOptions)[number]>("Home wall");
   const [businessName, setBusinessName] = useState("");
   const [conceptPrompt, setConceptPrompt] = useState(defaultConceptPrompt ?? "");
+  const [galleryPublicationConsent, setGalleryPublicationConsent] = useState(false);
   const reserveInterest = defaultIntent === "reserve";
   const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -88,6 +98,15 @@ export function PublicRequestForm({
   const phoneValid = isValidLeadPhone(contactPhone);
   const preferredContactSatisfied =
     preferredContactMethod === "email" ? emailValid : preferredContactMethod === "phone" ? phoneValid : emailValid || phoneValid;
+  const artworkMode = resolveRequestArtworkMode({
+    aiEnabled,
+    communityGalleryEnabled,
+    conceptPrompt,
+    hasExistingDesign: Boolean(defaultDesignContext),
+    hasUpload: Boolean(file),
+    galleryPublicationConsent
+  });
+  const galleryConsentMissing = artworkMode.requiresGalleryConsent && !galleryPublicationConsent;
   const canSubmit = Boolean(
     !busy &&
       contactName.trim() &&
@@ -126,6 +145,12 @@ export function PublicRequestForm({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (artworkMode.requiresGalleryConsent && !galleryPublicationConsent) {
+      setError(COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     setResult(null);
@@ -183,7 +208,7 @@ export function PublicRequestForm({
         preferredContactMethod,
         projectType,
         ...(businessName.trim() ? { businessName } : {}),
-        ...(conceptPrompt.trim() ? { conceptPrompt } : {}),
+        ...artworkMode.submissionFields,
         intent,
         reserveInterest,
         ...(upload ? { upload } : {})
@@ -333,6 +358,7 @@ export function PublicRequestForm({
         {defaultDesignContext ? (
           <p className="text-sm text-muted-foreground" data-testid="request-selected-design-context">
             Starting design: <span className="font-medium text-foreground">{defaultDesignContext.title}</span>
+            <span data-testid="request-selected-design-dimensions"> · {defaultDesignContext.print.label}</span>
           </p>
         ) : null}
         <Textarea
@@ -344,6 +370,31 @@ export function PublicRequestForm({
           value={conceptPrompt}
         />
       </div>
+
+      {artworkMode.requiresGalleryConsent ? (
+        <div className="grid gap-2 rounded-lg border bg-muted/30 p-4" data-testid="request-gallery-consent">
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6" htmlFor="request-gallery-publication-consent">
+            <input
+              checked={galleryPublicationConsent}
+              className="mt-1 size-4 shrink-0 accent-primary"
+              id="request-gallery-publication-consent"
+              onChange={(event) => setGalleryPublicationConsent(event.target.checked)}
+              required
+              type="checkbox"
+            />
+            <span>{COMMUNITY_GALLERY_CONSENT_LABEL}</span>
+          </label>
+          <p className="pl-7 text-xs leading-5 text-muted-foreground">
+            {COMMUNITY_GALLERY_CONSENT_HELP} Read our <Link className="underline" href="/privacy">Privacy Policy</Link> and{" "}
+            <Link className="underline" href="/terms">Terms</Link>.
+          </p>
+          {galleryConsentMissing ? (
+            <p className="pl-7 text-xs font-medium text-destructive" data-testid="request-gallery-consent-required" role="alert">
+              {COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {uploadFirst ? null : uploadField}
 

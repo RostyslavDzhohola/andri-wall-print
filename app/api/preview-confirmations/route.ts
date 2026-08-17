@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
-
 import { submitPublicPreviewConfirmation } from "@/lib/convex-public-confirmation";
+import { noStoreJson } from "@/lib/private-api-response";
 import { normalizePreviewConfirmationNote } from "@/lib/preview-confirmation-contract";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -13,11 +12,11 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ status: "unavailable", reason: "Invalid confirmation request." }, { status: 400 });
+    return noStoreJson({ status: "unavailable", reason: "Invalid confirmation request." }, { status: 400 });
   }
 
   if (!isRecord(body) || typeof body.publicSlug !== "string" || !body.publicSlug.trim()) {
-    return NextResponse.json({ status: "unavailable", reason: "Invalid confirmation request." }, { status: 400 });
+    return noStoreJson({ status: "unavailable", reason: "Invalid confirmation request." }, { status: 400 });
   }
 
   const result = await submitPublicPreviewConfirmation({
@@ -25,5 +24,5 @@ export async function POST(request: Request) {
     buyerNote: normalizePreviewConfirmationNote(body.buyerNote)
   });
 
-  return NextResponse.json(result, { status: result.status === "confirmed" ? 200 : 503 });
+  return noStoreJson(result, { status: result.status === "confirmed" ? 200 : 503 });
 }

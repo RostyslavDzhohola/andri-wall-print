@@ -2,7 +2,7 @@
 
 import { Share2, Smartphone } from "lucide-react";
 import type { MouseEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,9 +12,11 @@ import {
   getAndroidArUnavailableNotice,
   getArAccessNotice,
   getArActionLabel,
+  getExperimentalSafariHref,
   getFixedScaleQuickLookHref,
   hasReadyArAssetUrls,
   isChromeBrowserUserAgent,
+  isKnownIOSNonSafariBrowserUserAgent,
   type ArAccessNotice,
   type ArDiagnostics
 } from "@/lib/ar-launcher";
@@ -47,10 +49,7 @@ function getBrowserDeviceDiagnostics(modelViewer: ModelViewerElement | null): Ar
   const isIPhone = /iPhone/.test(userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(userAgent) || isIPadOSDesktopMode;
   const isAndroid = /Android/.test(userAgent);
-  const isKnownIOSNonSafari =
-    /CriOS\/|FxiOS\/|EdgiOS\/|OPiOS\/|DuckDuckGo\/|FBAN|FBAV|Instagram|Line\/|Telegram|MicroMessenger|WhatsApp|GSA\/|LinkedInApp|Pinterest|TikTok/i.test(
-      userAgent
-    );
+  const isKnownIOSNonSafari = isKnownIOSNonSafariBrowserUserAgent(userAgent);
   const isChrome = isChromeBrowserUserAgent(userAgent);
   const isSafari = /Version\/[\d.]+.*Safari\//.test(userAgent) && !isKnownIOSNonSafari && !/Chrome\/|Chromium\/|Edg\//.test(userAgent);
   const isTouchCapable = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
@@ -79,17 +78,30 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
   const hasReadyArAssets = hasReadyArAssetUrls(sample);
   const quickLookUrl = hasReadyArAssets ? getFixedScaleQuickLookHref(sample.assets.usdz) : "#";
   const modelViewerRef = useRef<ModelViewerElement | null>(null);
+  const quickLookLinkRef = useRef<HTMLAnchorElement | null>(null);
   const androidLaunchAttemptedRef = useRef(false);
   const launchFallbackTimerRef = useRef<number | null>(null);
   const launchFallbackCleanupRef = useRef<(() => void) | null>(null);
   const [arError, setArError] = useState<string | null>(null);
   const [dialogNotice, setDialogNotice] = useState<ArAccessNotice | null>(null);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [experimentalSafariHref, setExperimentalSafariHref] = useState<string | null>(null);
   const accessNotice = getArAccessNotice(diagnostics);
   const actionLabel = getArActionLabel(diagnostics, accessNotice);
   const showSendToIPhone = diagnostics ? !diagnostics.isIPhone && !diagnostics.isAndroid : false;
 
-  const clearPendingLaunchFallback = () => {
+  const getCurrentSharePath = useCallback(
+    () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    [sample.shareUrl]
+  );
+
+  const prepareExperimentalSafariHandoff = useCallback(() => {
+    const pageHref = new URL(getCurrentSharePath(), window.location.origin).toString();
+
+    setExperimentalSafariHref(getExperimentalSafariHref(pageHref));
+  }, [getCurrentSharePath]);
+
+  const clearPendingLaunchFallback = useCallback(() => {
     if (launchFallbackTimerRef.current !== null) {
       window.clearTimeout(launchFallbackTimerRef.current);
       launchFallbackTimerRef.current = null;
@@ -97,15 +109,15 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
 
     launchFallbackCleanupRef.current?.();
     launchFallbackCleanupRef.current = null;
-  };
+  }, []);
 
-  const showAndroidArUnavailableNotice = () => {
+  const showAndroidArUnavailableNotice = useCallback(() => {
     clearPendingLaunchFallback();
     setArError(null);
     setDialogNotice(getAndroidArUnavailableNotice());
-  };
+  }, [clearPendingLaunchFallback]);
 
-  const scheduleLaunchFailureFallback = () => {
+  const scheduleLaunchFailureFallback = useCallback(() => {
     clearPendingLaunchFallback();
 
     let launchLeftPage = false;
@@ -134,16 +146,17 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       launchFallbackTimerRef.current = null;
 
       if (!launchLeftPage && document.visibilityState === "visible") {
+        prepareExperimentalSafariHandoff();
         setDialogNotice({
           message: "Open in iPhone Safari.",
           title: "Open in Safari to place on wall",
           description:
-            "Wall placement did not start from this browser. Open this same preview link in Safari on your iPhone, then tap Place on wall again.",
+            "Wall placement did not start from this browser. The button below uses an experimental Safari link. If iOS blocks it, return here and use your browser's share menu.",
           blockLaunch: true
         });
       }
     }, 1400);
-  };
+  }, [clearPendingLaunchFallback, prepareExperimentalSafariHandoff]);
 
   useEffect(() => {
     if (!hasReadyArAssets) {
@@ -181,7 +194,7 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     return () => {
       timers.forEach(window.clearTimeout);
     };
-  }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
+  }, [hasReadyArAssets, onDiagnosticsChange]);
 
   useEffect(() => {
     if (!hasReadyArAssets) {
@@ -215,9 +228,9 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     return () => {
       modelViewer.removeEventListener("ar-status", handleArStatus);
     };
-  }, [hasReadyArAssets, onDiagnosticsChange, sample.id]);
+  }, [hasReadyArAssets, onDiagnosticsChange, showAndroidArUnavailableNotice]);
 
-  useEffect(() => clearPendingLaunchFallback, []);
+  useEffect(() => clearPendingLaunchFallback, [clearPendingLaunchFallback]);
 
   const placeInAr = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!hasReadyArAssets) {
@@ -242,11 +255,12 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     if (currentAccessNotice?.blockLaunch) {
       event.preventDefault();
       setArError(null);
+      prepareExperimentalSafariHandoff();
       setDialogNotice(currentAccessNotice);
       return;
     }
 
-    if (currentDiagnostics.isIOS && (currentDiagnostics.quickLookRel || !modelViewer?.activateAR)) {
+    if (currentDiagnostics.isIOS) {
       scheduleLaunchFailureFallback();
       return;
     }
@@ -263,8 +277,8 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     setArError(null);
     setDialogNotice(null);
     androidLaunchAttemptedRef.current = currentDiagnostics.isAndroid;
-    void modelViewer.activateAR().catch((error: unknown) => {
-      console.error("Failed to activate native AR.", error);
+    void modelViewer.activateAR().catch(() => {
+      console.error("Failed to activate native AR.");
 
       if (currentDiagnostics.isAndroid) {
         androidLaunchAttemptedRef.current = false;
@@ -276,15 +290,13 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
     });
   };
 
-  const getCurrentSharePath = () => sample.shareUrl ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
   const shareToPhone = async () => {
     let shareUrlResult: Awaited<ReturnType<typeof resolveClientPreviewUrl>>;
 
     try {
       shareUrlResult = await resolveClientPreviewUrl(getCurrentSharePath());
-    } catch (error) {
-      console.error("Failed to resolve preview URL for sharing.", error);
+    } catch {
+      console.error("Failed to resolve preview URL for sharing.");
       setShareStatus("Could not prepare a shareable link. Try again.");
       return;
     }
@@ -363,23 +375,33 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
           </Tooltip>
         ) : (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <a
-                className={cn(
-                  buttonVariants(),
-                  "h-12 rounded-full px-5 py-3 text-base shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
-                )}
-                data-testid="quick-look-link"
-                href={quickLookUrl}
-                onClick={placeInAr}
-                rel="ar"
-                title={accessNotice?.message ?? "Place this print on a wall"}
+            <div className="inline-grid">
+              <TooltipTrigger asChild>
+                <a
+                  aria-label={actionLabel}
+                  className={cn(
+                    buttonVariants(),
+                    "col-start-1 row-start-1 h-12 w-full rounded-full px-5 py-3 text-base shadow-[0_18px_38px_rgba(28,79,89,0.32)]"
+                  )}
+                  data-testid="quick-look-link"
+                  href={quickLookUrl}
+                  onClick={placeInAr}
+                  ref={quickLookLinkRef}
+                  rel="ar"
+                  title={accessNotice?.message ?? "Place this print on a wall"}
+                >
+                  <img className="sr-only" src={sample.assets.poster} alt={actionLabel} />
+                </a>
+              </TooltipTrigger>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none z-10 col-start-1 row-start-1 flex items-center justify-center gap-2 px-5 py-3 text-base text-primary-foreground"
+                data-testid="quick-look-label"
               >
-                <img className="sr-only" src={sample.assets.poster} alt="" aria-hidden="true" />
                 <Smartphone className="size-5" />
                 {actionLabel}
-              </a>
-            </TooltipTrigger>
+              </span>
+            </div>
             <TooltipContent
               className="max-w-64 text-center text-xs leading-5"
               data-testid="ar-access-warning"
@@ -394,13 +416,33 @@ export function NativeArLauncher({ sample, diagnostics, onDiagnosticsChange }: N
       <span className="sr-only" aria-live="polite">
         {shareStatus}
       </span>
-      <Dialog open={Boolean(dialogNotice)} onOpenChange={(open) => !open && setDialogNotice(null)}>
-        <DialogContent>
+      <Dialog
+        open={Boolean(dialogNotice)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialogNotice(null);
+            setExperimentalSafariHref(null);
+          }
+        }}
+      >
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            quickLookLinkRef.current?.focus();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{dialogNotice?.title}</DialogTitle>
             <DialogDescription>{dialogNotice?.description}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
+            {dialogNotice?.title.includes("Safari") && experimentalSafariHref ? (
+              <Button asChild className="h-11 rounded-full px-5" variant="outline">
+                <a data-testid="experimental-safari-link" href={experimentalSafariHref}>
+                  Open in Safari (experimental)
+                </a>
+              </Button>
+            ) : null}
             <DialogClose asChild>
               <Button className="h-11 rounded-full px-5" type="button">
                 Dismiss

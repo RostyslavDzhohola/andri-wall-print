@@ -131,6 +131,9 @@ export function PublicPreviewConfirmation({ sample, publicSlug, canSubmit }: Pub
             <div className="break-words text-base font-semibold leading-snug" data-testid="public-confirmation-file-name">
               {sample.title}
             </div>
+            <div className="text-sm text-muted-foreground" data-testid="public-confirmation-dimensions">
+              {sample.print.label}
+            </div>
           </div>
         </div>
 

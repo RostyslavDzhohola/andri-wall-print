@@ -21,7 +21,7 @@ export function buildLocalBusinessJsonLd() {
     "@id": `${siteUrl}/#localbusiness`,
     name: LOCAL_BUSINESS_NAP.name,
     description:
-      "Custom wall printing in Chicago — large-format wall murals and prints installed on interior walls across the city.",
+      "Custom wall printing from Des Plaines across Cook County — large-format wall murals and prints installed on interior walls.",
     url: siteUrl,
     telephone: LOCAL_BUSINESS_NAP.telephone,
     email: LOCAL_BUSINESS_NAP.email,

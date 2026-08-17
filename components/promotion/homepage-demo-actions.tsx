@@ -18,6 +18,11 @@ import {
   validatePublicUploadFile
 } from "@/lib/builder-upload-normalization";
 import {
+  COMMUNITY_GALLERY_CONSENT_HELP,
+  COMMUNITY_GALLERY_CONSENT_LABEL,
+  COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE
+} from "@/lib/community-gallery";
+import {
   HOME_AT_CAPACITY_BODY,
   HOME_AT_CAPACITY_TITLE,
   HOME_COMPOSITE_ONLY_BODY,
@@ -249,10 +254,11 @@ async function fetchConceptStatus(leadRequestId: string) {
   };
 }
 
-export function HomepageDemoActions() {
+export function HomepageDemoActions({ communityGalleryEnabled = false }: { communityGalleryEnabled?: boolean }) {
   const { selectedBaseSample, showPreviewSample } = useArPreviewSelection();
   const [conceptPrompt, setConceptPrompt] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [galleryPublicationConsent, setGalleryPublicationConsent] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>("idle");
   const [generationMessage, setGenerationMessage] = useState<string | null>(null);
   const [lastLeadRequestId, setLastLeadRequestId] = useState<string | null>(null);
@@ -399,6 +405,13 @@ export function HomepageDemoActions() {
       return;
     }
 
+    if (communityGalleryEnabled && !galleryPublicationConsent) {
+      setGenerationStatus("idle");
+      setGenerationMessage(COMMUNITY_GALLERY_CONSENT_REQUIRED_MESSAGE);
+      setCanCheckAgain(false);
+      return;
+    }
+
     if (!canStartHomepageConceptGeneration({ status: generationStatus, prompt, email })) {
       setGenerationStatus("idle");
       setGenerationMessage(!prompt ? "Describe the wall print idea first." : "Enter a valid email address to generate a concept draft.");
@@ -422,6 +435,7 @@ export function HomepageDemoActions() {
         body: JSON.stringify({
           prompt,
           contactEmail: email,
+          ...(galleryPublicationConsent ? { galleryPublicationConsent: true } : {}),
           selectedDesignId: selectedBaseSample.id
         })
       });
@@ -903,6 +917,26 @@ export function HomepageDemoActions() {
                 Press Enter to generate the preview. Press Shift and Enter for a new line.
               </span>
 
+              {communityGalleryEnabled ? (
+                <div className="grid gap-1.5 rounded-lg border bg-muted/30 p-3" data-testid="homepage-gallery-consent">
+                  <label className="flex min-h-11 items-start gap-2.5 text-xs leading-5" htmlFor="homepage-gallery-publication-consent">
+                    <input
+                      checked={galleryPublicationConsent}
+                      className="mt-0.5 size-4 shrink-0 accent-primary"
+                      id="homepage-gallery-publication-consent"
+                      onChange={(event) => setGalleryPublicationConsent(event.target.checked)}
+                      required
+                      type="checkbox"
+                    />
+                    <span>{COMMUNITY_GALLERY_CONSENT_LABEL}</span>
+                  </label>
+                  <p className="pl-6 text-xs leading-5 text-muted-foreground">
+                    {COMMUNITY_GALLERY_CONSENT_HELP} Read our <Link className="underline" href="/privacy">Privacy Policy</Link> and{" "}
+                    <Link className="underline" href="/terms">Terms</Link>.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="flex items-center gap-2">
                 <Button
                   className="min-h-11 rounded-full px-3"
@@ -918,7 +952,7 @@ export function HomepageDemoActions() {
                 <Button
                   className="min-h-11 rounded-full px-4"
                   data-testid="homepage-concept-generate"
-                  disabled={isGenerating}
+                  disabled={isGenerating || (communityGalleryEnabled && !galleryPublicationConsent)}
                   size="lg"
                   type="submit"
                 >

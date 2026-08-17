@@ -5,6 +5,7 @@ import { resolveGalleryInitialDesignId } from "@/lib/gallery-page-defaults";
 describe("gallery page defaults", () => {
   it("uses a valid design id as the initial public gallery artwork", () => {
     expect(resolveGalleryInitialDesignId({ designId: "chicago-final-2" })).toBe("chicago-final-2");
+    expect(resolveGalleryInitialDesignId({ designId: "chicago-river-blue-hour" })).toBe("chicago-river-blue-hour");
   });
 
   it("uses the first supplied design id when the query param is repeated", () => {

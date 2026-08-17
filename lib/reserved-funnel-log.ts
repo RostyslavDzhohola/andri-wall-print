@@ -16,7 +16,7 @@ export function logReservedVisit(sessionId?: string): void {
         throw new Error(`Reserved visit logging failed with HTTP ${response.status}`);
       }
     })
-    .catch((error) => {
-      console.error("Reserved visit logging failed", error);
+    .catch(() => {
+      console.error("Reserved visit logging failed");
     });
 }

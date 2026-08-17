@@ -1,4 +1,4 @@
-import { AR_SAMPLE_IDS, getArSample } from "./ar-sample";
+import { AR_SAMPLE_IDS, getArSample, type ArSample } from "./ar-sample";
 import {
   LEAD_CONCEPT_PROMPT_MAX_LENGTH,
   isLeadRequestIntent,
@@ -9,6 +9,7 @@ export type RequestSearchParamsInput = {
   intent?: string | string[];
   conceptPrompt?: string | string[];
   designId?: string | string[];
+  gallerySlug?: string | string[];
   focus?: string | string[];
 };
 
@@ -16,6 +17,7 @@ export type RequestDesignContext = {
   id: string;
   title: string;
   description: string;
+  print: ArSample["print"];
 };
 
 export type RequestPageDefaults = {
@@ -37,7 +39,7 @@ function normalizeSearchText(value: string | undefined, maxLength: number) {
 
 export function makeDesignConceptPrompt(design: RequestDesignContext) {
   return normalizeSearchText(
-    `Use the "${design.title}" Wall Print Pro design as the starting point. ${design.description}`,
+    `Use the "${design.title}" Wall Print Pro design as the starting point at ${design.print.label}. ${design.description}`,
     LEAD_CONCEPT_PROMPT_MAX_LENGTH
   );
 }
@@ -54,17 +56,36 @@ export function resolveRequestDesignContext(designId: string | string[] | undefi
   return {
     id: sample.id,
     title: sample.title,
-    description: sample.description
+    description: sample.description,
+    print: sample.print
   };
 }
 
-export function resolveRequestPageDefaults(searchParams: RequestSearchParamsInput | undefined): RequestPageDefaults {
+export function readRequestGallerySlug(value: string | string[] | undefined) {
+  return normalizeSearchText(firstSearchParam(value), 160);
+}
+
+export function resolveRequestPageDefaults(
+  searchParams: RequestSearchParamsInput | undefined,
+  publishedGalleryDesign?: RequestDesignContext
+): RequestPageDefaults {
   const intent = firstSearchParam(searchParams?.intent);
   const defaultIntent = intent && isLeadRequestIntent(intent) ? intent : "concept";
-  const defaultDesignContext = resolveRequestDesignContext(searchParams?.designId);
-  const defaultConceptPrompt =
-    normalizeSearchText(firstSearchParam(searchParams?.conceptPrompt), LEAD_CONCEPT_PROMPT_MAX_LENGTH) ??
-    (defaultDesignContext ? makeDesignConceptPrompt(defaultDesignContext) : undefined);
+  const requestedGallerySlug = readRequestGallerySlug(searchParams?.gallerySlug);
+  const defaultDesignContext = requestedGallerySlug
+    ? publishedGalleryDesign?.id === requestedGallerySlug
+      ? publishedGalleryDesign
+      : undefined
+    : resolveRequestDesignContext(searchParams?.designId);
+  const suppliedConceptPrompt = normalizeSearchText(
+    firstSearchParam(searchParams?.conceptPrompt),
+    LEAD_CONCEPT_PROMPT_MAX_LENGTH
+  );
+  const defaultConceptPrompt = requestedGallerySlug
+    ? defaultDesignContext
+      ? makeDesignConceptPrompt(defaultDesignContext)
+      : undefined
+    : suppliedConceptPrompt ?? (defaultDesignContext ? makeDesignConceptPrompt(defaultDesignContext) : undefined);
 
   const focusUpload = firstSearchParam(searchParams?.focus) === "upload";
 

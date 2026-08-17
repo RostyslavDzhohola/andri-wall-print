@@ -5,14 +5,20 @@ import { BrandMark } from "@/components/brand/brand-mark";
 import { PublicRequestForm } from "@/components/request/public-request-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPublishedGalleryEntryBySlug } from "@/lib/convex-public-gallery";
 import {
   readConvexRuntimeUrl,
   readWallPrintProAiConceptsConfigured,
+  readWallPrintProCommunityGalleryEnabled,
   readWallPrintProPublicContactUrl,
   readWallPrintProPublicPhone
 } from "@/lib/runtime-env";
 import { LOCAL_BUSINESS_NAP } from "@/lib/local-business";
-import { resolveRequestPageDefaults, type RequestSearchParamsInput } from "@/lib/request-page-defaults";
+import {
+  readRequestGallerySlug,
+  resolveRequestPageDefaults,
+  type RequestSearchParamsInput
+} from "@/lib/request-page-defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +32,7 @@ type RequestPageProps = {
   searchParams?: Promise<RequestSearchParamsInput>;
 };
 
-function RequestSetupMissing() {
+export function RequestSetupMissing() {
   return (
     <main className="min-h-screen bg-background px-4 py-6 text-foreground">
       <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-3xl place-items-center">
@@ -39,7 +45,9 @@ function RequestSetupMissing() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
-            <p className="text-base leading-7 text-muted-foreground">Ask the admin to refresh the request setup before collecting leads.</p>
+            <p className="text-base leading-7 text-muted-foreground">
+              The estimate form is temporarily unavailable. Browse the gallery and check back later to send your project details.
+            </p>
             <Button asChild className="w-fit rounded-full" size="lg">
               <Link href="/gallery">Open gallery</Link>
             </Button>
@@ -56,7 +64,21 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const requestDefaults = resolveRequestPageDefaults(resolvedSearchParams);
+  const requestedGallerySlug = readRequestGallerySlug(resolvedSearchParams?.gallerySlug);
+  const publishedGallerySample = requestedGallerySlug
+    ? await getPublishedGalleryEntryBySlug(requestedGallerySlug)
+    : null;
+  const requestDefaults = resolveRequestPageDefaults(
+    resolvedSearchParams,
+    publishedGallerySample
+      ? {
+          id: publishedGallerySample.id,
+          title: publishedGallerySample.title,
+          description: publishedGallerySample.description,
+          print: publishedGallerySample.print
+        }
+      : undefined
+  );
   const uploadFirst = requestDefaults.focusUpload;
 
   return (
@@ -75,6 +97,7 @@ export default async function RequestPage({ searchParams }: RequestPageProps) {
           <CardContent className="pt-6">
             <PublicRequestForm
               aiEnabled={readWallPrintProAiConceptsConfigured()}
+              communityGalleryEnabled={readWallPrintProCommunityGalleryEnabled()}
               defaultConceptPrompt={requestDefaults.defaultConceptPrompt}
               defaultDesignContext={requestDefaults.defaultDesignContext}
               defaultIntent={requestDefaults.defaultIntent}
